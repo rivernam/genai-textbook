@@ -456,7 +456,7 @@ span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 
 <li>모델이 어휘 전체에 대한 logit을 내고 softmax로 확률 분포를 만드는 과정을 설명할 수 있습니다.</li>
 <li>같은 질문에 응답이 매번 다른 이유를 샘플링으로 설명하고, temperature와 top-p가 확률 분포를 어떻게 바꾸는지 계산으로 보일 수 있습니다.</li>
 </ol>
-<p>예제 1-1~1-3은 PC에서 공개 LLM인 Qwen2.5-0.5B-Instruct(파라미터 약 5억 개)를 실행합니다. 서비스 모델은 토큰마다의 확률을 돌려주지 않으므로, 확률을 직접 보려면 PC에서 실행하는 모델이 필요합니다. 예제 1-4만 API(application programming interface)로 서비스 모델을 호출합니다. 생성한 문장과 소수점 아래 숫자는 PC, 라이브러리 버전, 실행할 때마다 교재와 다를 수 있습니다.</p>
+<p>예제 1-1~1-3은 PC에서 공개 LLM인 Qwen2.5-0.5B-Instruct(파라미터 약 5억 개)를 실행합니다. API로 제공되는 모델은 토큰마다의 확률을 돌려주지 않으므로, 확률을 직접 보려면 PC에서 실행하는 모델이 필요합니다. 예제 1-4만 API(application programming interface)로 모델을 호출합니다. 생성한 문장과 소수점 아래 숫자는 PC, 라이브러리 버전, 실행할 때마다 교재와 다를 수 있습니다.</p>
 <h2 id="LLM이-응답을-만드는-과정">LLM이 응답을 만드는 과정</h2>
 <div class="gist">
 <p>LLM은 입력 끝에 올 토큰 하나를 확률로 고르고, 그 토큰을 붙여 다시 다음 토큰을 고르는 일을 되풀이해 응답을 만듭니다. 이 반복 어디에도 사실을 찾아보는 단계는 없습니다.</p>
@@ -720,7 +720,7 @@ T=2.0: 웨이퍼를 개별 칩으로 자르는 공정을خارج搖supported bar
 <p>temperature로 분포를 조정한 뒤 top-p로 꼬리를 자르는 식으로 함께 쓸 수 있습니다. 실습 1-2에서 top-p를 직접 작성합니다.</p>
 <h2 id="같은-질문에-응답이-매번-다른-이유">같은 질문에 응답이 매번 다른 이유</h2>
 <div class="gist">
-<p>서비스 모델도 샘플링으로 토큰을 고르므로, 같은 질문에 표현이 다른 응답이 돌아옵니다. 앞에서 뽑힌 토큰 하나가 달라지면 그 토큰이 다음 입력이 되므로 그 뒤의 글 전체가 달라질 수 있습니다.</p>
+<p>API로 제공되는 모델도 샘플링으로 토큰을 고르므로, 같은 질문에 표현이 다른 응답이 돌아옵니다. 앞에서 뽑힌 토큰 하나가 달라지면 그 토큰이 다음 입력이 되므로 그 뒤의 글 전체가 달라질 수 있습니다.</p>
 </div>
 <p>LLM 서비스도 토큰마다 샘플링하므로 같은 질문에 다른 토큰이 뽑힐 수 있습니다. 뽑힌 토큰은 다음 계산의 입력이 되므로, 토큰 하나가 달라지면 그 뒤의 확률 분포가 모두 바뀝니다. 예제 1-3에서는 확률 0.65%인 " 제공"이 뽑히자 문장이 전혀 다른 내용으로 이어졌습니다.</p>
 <figure>
@@ -732,7 +732,7 @@ T=2.0: 웨이퍼를 개별 칩으로 자르는 공정을خارج搖supported bar
 
 <section class="box example" id="예제-1-4">
 <header><span class="box-no">예제 1-4</span><span class="box-title">같은 질문 세 번</span><span class="box-where">노트북 <code>01_LLM은_어떻게_글을_만드는가.ipynb</code>의 <code>예제 1-4</code></span></header>
-<p>같은 질문을 서비스 모델에 세 번 보내 표현, 문장 순서, 덧붙인 내용이 어떻게 다른지 봅니다. <code>llm.ask()</code>는 공통 호출 함수 <code>llm.py</code>의 함수로, 질문을 API로 보내고 응답(<code>reply.text</code>)을 돌려줍니다. <code>model='소형'</code>은 <span class="term" tabindex="0" data-def="같은 제공사의 모델을 능력과 가격으로 나눈 구분. 교재에서는 소형, 기본, 대형으로 부른다">모델 등급</span> 가운데 가장 작은 모델입니다(5장 "LLM API"에서 자세히 다룹니다). 이 셀은 API를 3번 호출합니다.</p>
+<p>같은 질문을 API로 모델에 세 번 보내 표현, 문장 순서, 덧붙인 내용이 어떻게 다른지 봅니다. <code>llm.ask()</code>는 공통 호출 함수 <code>llm.py</code>의 함수로, 질문을 API로 보내고 응답(<code>reply.text</code>)을 돌려줍니다. <code>model='소형'</code>은 <span class="term" tabindex="0" data-def="같은 제공사의 모델을 능력과 가격으로 나눈 구분. 교재에서는 소형, 기본, 대형으로 부른다">모델 등급</span> 가운데 가장 작은 모델입니다(5장 "LLM API"에서 자세히 다룹니다). 이 셀은 API를 3번 호출합니다.</p>
 <div class="codehilite"><pre><span></span><code><span class="n">question</span> <span class="o">=</span> <span class="s1">'반도체 후공정의 다이싱 공정을 두 문장으로 설명해 주세요.'</span>
 <span class="k">for</span> <span class="n">attempt</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">):</span>
     <span class="n">reply</span> <span class="o">=</span> <span class="n">llm</span><span class="o">.</span><span class="n">ask</span><span class="p">(</span><span class="n">question</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s1">'소형'</span><span class="p">,</span> <span class="n">max_tokens</span><span class="o">=</span><span class="mi">1000</span><span class="p">)</span>
@@ -753,11 +753,11 @@ T=2.0: 웨이퍼를 개별 칩으로 자르는 공정을خارج搖supported bar
 <h3 id="temperature를-설정할-수-있는가">temperature를 설정할 수 있는가</h3>
 <ul>
 <li>Anthropic의 최신 Claude 모델은 temperature를 바꿀 수 없습니다. Claude Opus 4.7 이후의 모델은 temperature, top_p, top_k를 기본값에서 바꾸면 오류(400)를 돌려주고, API 버전 2026-10-21부터는 넣기만 해도 오류가 납니다. 현재 Python SDK(software development kit) 2.x에는 이 인자가 없습니다(2026-11 확인).</li>
-<li>OpenAI 호환 API는 대개 <code>temperature</code>와 <code>top_p</code>를 받지만, 범위와 기본값은 서버마다 다릅니다.</li>
+<li>OpenAI 호환 API는 대개 <code>temperature</code>와 <code>top_p</code>를 지원하지만, 범위와 기본값은 서버의 문서에서 확인합니다.</li>
 </ul>
 <p>그래서 이 교재의 <code>llm.py</code>는 temperature를 인자로 받지 않습니다.</p>
 <h3 id="temperature를-0으로-해도-같지-않은-이유">temperature를 0으로 해도 같지 않은 이유</h3>
-<p>temperature를 0으로 설정하면 이론상 언제나 1위 토큰만 고르지만, 실제로는 응답이 완전히 같지 않을 때가 있습니다(Anthropic 문서도 같은 출력을 보장하지 않는다고 적고 있습니다). He(2025)는 원인을 서버가 여러 요청을 묶어(배치) 계산하는 방식으로 설명합니다.</p>
+<p>temperature를 0으로 설정하면 이론상 언제나 1위 토큰만 고르지만, 실제로는 응답이 완전히 같지 않을 때가 있습니다(Anthropic 문서에도 같은 출력을 보장하지 않는다는 설명이 있습니다). He(2025)는 원인을 서버가 여러 요청을 묶어(배치) 계산하는 방식으로 설명합니다.</p>
 <figure>
 <svg viewBox="0 0 680 158" role="img" aria-label="같은 입력이라도 요청을 혼자 계산할 때와 8개를 묶어 계산할 때 계산 순서가 달라져 logit의 끝자리가 바뀌는 그림. 혼자 계산하면 위해가 11.5003, 위한이 11.5001이라 위해를 고르고, 묶어 계산하면 위해 11.5001, 위한 11.5002라 위한을 골라 뒤의 글이 달라집니다. 숫자는 가정한 값입니다.">
 <text x="10" y="34" fill="var(--ink)" font-size="13" font-weight="700">요청을 혼자 계산</text><text x="10" y="52" fill="var(--ink-soft)" font-size="11">묶음 크기 1</text><rect x="170" y="14" width="200" height="44" rx="6" fill="var(--sheet)" stroke="var(--line)"/><text x="270" y="33" text-anchor="middle" fill="var(--ink)" font-size="12">" 위해" logit 11.5003</text><text x="270" y="50" text-anchor="middle" fill="var(--ink)" font-size="12">" 위한" logit 11.5001</text><line x1="370" y1="36" x2="384" y2="36" stroke="var(--teal)" stroke-width="2"/><polygon points="384,31 392,36 384,41" fill="var(--teal)"/><rect x="392" y="14" width="100" height="44" rx="6" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="442" y="41" text-anchor="middle" fill="var(--ink)" font-size="13" font-weight="700">" 위해"</text><line x1="492" y1="36" x2="504" y2="36" stroke="var(--teal)" stroke-width="2"/><polygon points="504,31 512,36 504,41" fill="var(--teal)"/><rect x="512" y="14" width="158" height="44" rx="6" fill="var(--sheet)" stroke="var(--line)"/><text x="591" y="41" text-anchor="middle" fill="var(--ink)" font-size="12">…위해 …로 이어짐</text><text x="10" y="96" fill="var(--ink)" font-size="13" font-weight="700">요청 8개를 묶어 계산</text><text x="10" y="114" fill="var(--ink-soft)" font-size="11">계산 순서가 달라짐</text><rect x="170" y="76" width="200" height="44" rx="6" fill="var(--sheet)" stroke="var(--line)"/><text x="270" y="95" text-anchor="middle" fill="var(--ink)" font-size="12">" 위해" logit 11.5001</text><text x="270" y="112" text-anchor="middle" fill="var(--ink)" font-size="12">" 위한" logit 11.5002</text><line x1="370" y1="98" x2="384" y2="98" stroke="var(--teal)" stroke-width="2"/><polygon points="384,93 392,98 384,103" fill="var(--teal)"/><rect x="392" y="76" width="100" height="44" rx="6" fill="var(--amber-wash)" stroke="var(--amber)"/><text x="442" y="103" text-anchor="middle" fill="var(--amber)" font-size="13" font-weight="700">" 위한"</text><line x1="492" y1="98" x2="504" y2="98" stroke="var(--teal)" stroke-width="2"/><polygon points="504,93 512,98 504,103" fill="var(--teal)"/><rect x="512" y="76" width="158" height="44" rx="6" fill="var(--sheet)" stroke="var(--line)"/><text x="591" y="103" text-anchor="middle" fill="var(--ink)" font-size="12">…위한 …로 이어짐</text><text x="340" y="146" text-anchor="middle" fill="var(--ink-soft)" font-size="12">temperature 0이라도 1위가 바뀌면 그 뒤의 글이 달라집니다. 숫자는 설명을 위해 가정한 값입니다</text>
