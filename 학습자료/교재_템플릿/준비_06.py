@@ -1,4 +1,5 @@
-# 설치: python -m pip install transformers torch (예제 6-2만 씁니다)
+# 설치: python -m pip install transformers torch
+# 위 패키지는 예제 6-2만 씁니다
 # 6장과 관통 프로젝트 2단계에서 씁니다
 import csv
 import random

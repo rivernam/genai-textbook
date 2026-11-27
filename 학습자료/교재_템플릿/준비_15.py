@@ -1,3 +1,5 @@
+# 설치: python -m pip install pypdf beautifulsoup4
+# 위 패키지는 관통 프로젝트 6단계만 씁니다. 5단계의 문서 도구(doc_tools.py)가 PDF와 HTML 문서를 읽기 때문입니다
 # 15장의 예제와 실습이 쓰는 짧은 사내 문서입니다. 가상 회사의 문서이고, BRD로 시작하는 두 건은 일부러 오염시킨 게시글입니다
 import re
 
