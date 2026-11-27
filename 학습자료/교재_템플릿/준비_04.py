@@ -15,9 +15,10 @@ def parse_labels(text):
     """응답에서 "Q01: 라벨" 형식의 줄을 찾아 {번호: 라벨}로 돌려줍니다"""
     found = {}
     for line in text.splitlines():
-        match = re.match(r'\s*[-*]?\s*(Q\d{2})\s*[:：]\s*(.+?)\s*$', line)
+        # "Q01: 라벨", "**Q01**: 라벨", "| Q01 | 라벨 |" 같은 줄을 모두 읽습니다
+        match = re.match(r'[\s|*-]*(Q\d{2})[\s*]*[:：|][\s*]*(.+?)[\s*|]*$', line)
         if match:
-            found[match.group(1)] = match.group(2).strip()
+            found[match.group(1)] = match.group(2).split('|')[0].strip()   # 표라면 첫 칸만
     return found
 
 
