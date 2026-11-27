@@ -465,7 +465,7 @@ span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 
 </ul>
 <section class="box example" id="예제-10-1">
 <header><span class="box-no">예제 10-1</span><span class="box-title">RAG에 집계 질문하기</span><span class="box-where">노트북 <code>10_지식을_구조화하는_다른_방법.ipynb</code>의 <code>예제 10-1</code></span></header>
-<p>진행 중인 품질 이슈 보고서의 건수를 RAG로 묻습니다. 검색된 청크 5개가 어느 문서에서 왔는지, 모델이 몇 건이라고 답하는지 보고, 보고서 18건을 모두 열어 센 정답과 비교합니다. 이 셀은 API를 1번 호출합니다.</p>
+<p>진행 중인 품질 이슈 보고서의 건수를 RAG로 묻습니다. 검색된 청크 5개가 어느 문서에서 왔는지, 모델이 몇 건이라고 답하는지 보고, 2026년 보고서 16건을 모두 열어 센 정답과 비교합니다. 이 셀은 API를 1번 호출합니다.</p>
 <div class="codehilite"><pre><span></span><code><span class="n">question</span> <span class="o">=</span> <span class="s1">'2026년 품질 이슈 보고서 가운데 진행 상태가 "진행 중"인 것은 몇 건이고, 어느 보고서인가요?'</span>
 <span class="n">hits</span> <span class="o">=</span> <span class="n">search</span><span class="p">(</span><span class="n">question</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>                                   <span class="c1"># 질문과 가까운 청크 5개(top-k의 k=5)</span>
 <span class="nb">print</span><span class="p">(</span><span class="s1">'검색된 청크의 문서:'</span><span class="p">,</span> <span class="p">[</span><span class="n">hit</span><span class="p">[</span><span class="s1">'id'</span><span class="p">]</span> <span class="k">for</span> <span class="n">hit</span> <span class="ow">in</span> <span class="n">hits</span><span class="p">])</span>
@@ -479,8 +479,26 @@ span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'</span><span class="se">\n</span><span class="s1">정답: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">ongoing</span><span class="p">)</span><span class="si">}</span><span class="s1">건 </span><span class="si">{</span><span class="n">ongoing</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
 </code></pre></div>
 
+<div class="result">
+<div class="codehilite"><pre><span></span><code>검색된 청크의 문서: ['EDU-008', 'MTG-20260105', 'MTG-20261116', 'EDU-008', 'MTG-20260406']
+**확인할 수 없습니다.** 제공된 문서에는 2026년 QIR의 진행 상태가 "진행 중"인지 명시된 건이 없습니다.
+
+- **[MTG-20261116] 11월 3주차 주간 품질 회의**에서 진행 중인 QIR 점검이 있었지만, 각 QIR의 진행 상태 표기는 없습니다. 이 문서에서 언급된 건은 다음과 같습니다.
+  - QIR-2026-018(BG256 기포): M-03 진공 펌프 교체 후 기포 불량 0.2%
+  - QIR-2026-019(QX48 와이어 스윕 재발): 트랜스퍼 시간 14초 평가 후 유닛 비율 0.4%
+  - QIR-2026-020(SP8 두께 미달): 보정 절차 누락 대응 방안 검토 중
+  - QIR-2026-022(SP8 리드 도금 변색): 협력사 C 회신 관련 내용이 있으나 문서가 중간에 끊겨 있음
+- 문서가 잘려 있어 이 회의에 더 많은 QIR이 있었는지 확인할 수 없습니다.
+- **[EDU-008] 품질 이슈 보고서 작성 안내**에 따르면, 2주 안에 원인을 찾지 못한 QIR은 "진행 중"으로 두고 주간 품질 회의에서 경과를 보고합니다. 다만 위 문서만으로는 어느 QIR이 이 기준에 해당하는지 판단할 수 없습니다.
+
+정확한 건수를 알려면 QIR 목록이나 각 보고서의 개요 항목(진행 상태)을 확인해야 합니다.
+
+정답: 5건 ['QIR-2026-018', 'QIR-2026-019', 'QIR-2026-020', 'QIR-2026-021', 'QIR-2026-022']
+</code></pre></div>
+
+</div>
 </section>
-<p>{{예제10-1해설}}</p>
+<p>검색된 청크 5개는 보고서 작성 안내(EDU-008)의 청크 2개와 회의록 3건에서 왔고, 진행 중인 보고서 5건은 하나도 없습니다. 질문의 임베딩과 가장 가까운 청크가 보고서 자체가 아니라, 보고서 쓰는 법을 설명한 안내와 품질 회의록이었기 때문입니다. 교재의 실행에서 모델은 건수를 확정할 수 없다고 답하고, 회의록에 안건으로 나온 보고서 4건만 들었습니다. 회의록에 나오지 않은 QIR-2026-021은 답에서 빠졌습니다. 모델은 근거가 없는 것을 지어내지는 않았지만, 본 것 밖의 보고서는 알 수 없었습니다. 검색 결과는 임베딩 모델과 청크가 같으면 실행할 때마다 같습니다.</p>
 <figure>
 <svg viewBox="0 0 680 250" role="img" aria-label="왼쪽은 정답인 진행 중 보고서 5건(QIR-2026-018, 019, 020, 021, 022), 오른쪽은 예제 10-1에서 검색된 청크 5개의 문서(EDU-008, MTG-20260105, MTG-20261116, EDU-008, MTG-20260406)입니다. 두 목록에 겹치는 문서가 없고, 세 번째 청크의 회의록 MTG-20261116만 진행 중인 보고서 4건을 안건으로 언급합니다.">
 <text x="170" y="20" text-anchor="middle" fill="var(--ink)" font-size="13" font-weight="700">정답: 진행 중인 보고서 5건</text>
@@ -505,13 +523,13 @@ span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 
 <div class="gist">
 <p>LLM Wiki는 문서가 들어올 때 LLM이 주제별 페이지를 쓰고 고쳐 두는 방식입니다. 여러 문서를 모으는 일을 질문 전에 해 두므로 경과나 요약을 묻는 질문에 강하지만, 정리가 틀리면 그 오류도 페이지에 남으므로 출처 표기와 사람의 검토를 규칙으로 둡니다.</p>
 </div>
-<p><span class="term" tabindex="0" data-def="LLM이 원본 문서를 읽어 주제별 Markdown 페이지로 정리하고, 페이지끼리 링크로 잇고, 새 문서가 들어오면 관련 페이지를 고쳐 나가는 문서 모음. 질문이 오기 전에 정리해 둔다. 장에서 한 번 쓴 뒤에는 &quot;위키&quot;로 줄여 쓸 수 있다">LLM Wiki</span>(LLM wiki)는 LLM이 원본 문서를 읽어 주제별 Markdown 페이지로 정리하고, 페이지끼리 링크로 잇고, 새 문서가 들어오면 관련 페이지를 고쳐 나가는 문서 모음입니다. Karpathy가 2026년에 코딩 에이전트에게 주는 설계 메모로 공개한 방식입니다. 그는 RAG가 질문마다 지식을 처음부터 다시 찾아 조합하고 질문 사이에 아무것도 쌓이지 않는다는 점을 들어, 문서가 들어올 때 한 번 정리해 두고 그 결과를 계속 고쳐 나가는 위키를 제안했습니다.</p>
+<p><span class="term" tabindex="0" data-def="LLM이 원본 문서를 읽어 주제별 Markdown 페이지로 정리하고, 페이지끼리 링크로 잇고, 새 문서가 들어오면 관련 페이지를 고쳐 나가는 문서 모음. 질문이 오기 전에 정리해 둔다. 장에서 한 번 쓴 뒤에는 &quot;위키&quot;로 줄여 쓸 수 있다">LLM Wiki</span>는 LLM이 원본 문서를 읽어 주제별 Markdown 페이지로 정리하고, 페이지끼리 링크로 잇고, 새 문서가 들어오면 관련 페이지를 고쳐 나가는 문서 모음입니다. Karpathy가 코딩 에이전트에게 건네는 설계 메모로 GitHub에 공개한 방식입니다. 그는 RAG가 질문마다 지식을 처음부터 다시 찾아 조합하고 질문 사이에 아무것도 쌓이지 않는다는 점을 들어, 문서가 들어올 때 한 번 정리해 두고 그 결과를 계속 고쳐 나가는 위키를 제안했습니다.</p>
 <h3 id="위키의-구성">위키의 구성</h3>
 <p>위키는 세 층으로 이루어집니다.</p>
 <ul>
 <li>원본: 사람이 골라 넣은 문서입니다. LLM은 읽기만 하고 고치지 않습니다. 위키의 내용이 맞는지 확인할 때 기준이 됩니다.</li>
 <li>위키 페이지: LLM이 쓰고 고치는 Markdown 파일입니다. 설비, 제품, 불량, 결정 사항처럼 주제마다 한 페이지를 두고, 다른 페이지로 이어지는 낱말은 <code>[[페이지 이름]]</code> 형식의 링크로 씁니다. 페이지 목록과 한 줄 설명을 적은 <code>index.md</code>, 언제 어떤 원본으로 무엇을 고쳤는지 적는 <code>log.md</code>를 함께 둡니다.</li>
-<li>규칙 파일: 페이지의 종류, 절 구성, 출처를 적는 방법, 원본끼리 값이 다를 때 할 일을 적은 지시입니다. 코딩 에이전트로 위키를 만들면 이 내용을 규칙 파일(14장)에 적어, 작업할 때마다 에이전트가 읽게 합니다.</li>
+<li>규칙 파일(Karpathy는 schema라고 부릅니다): 페이지의 종류, 절 구성, 출처를 적는 방법, 원본끼리 값이 다를 때 할 일을 적은 지시입니다. 코딩 에이전트로 위키를 만들면 이 내용을 규칙 파일(14장)에 적어, 작업할 때마다 에이전트가 읽게 합니다.</li>
 </ul>
 <figure>
 <svg viewBox="0 0 680 300" role="img" aria-label="위쪽 줄은 RAG입니다. 문서를 청크로 자르고 임베딩해 두고, 질문이 올 때마다 검색해 청크 k개와 질문으로 답하며, 답한 내용은 남지 않습니다. 아래쪽 줄은 LLM Wiki입니다. 원본은 읽기만 하고, LLM이 규칙 파일을 따라 빌드와 갱신을 해 위키 페이지(index.md 페이지 목록, log.md 작업 기록, 링크로 이어진 주제 페이지)를 써 둡니다. 질문이 오면 index.md에서 페이지를 찾아 답합니다. 점검은 모순, 끊긴 링크, 출처 없는 문장을 찾습니다.">
@@ -541,7 +559,7 @@ span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 
 </figure>
 
 <h3 id="빌드-질문-갱신-점검">빌드, 질문, 갱신, 점검</h3>
-<p>위키로 하는 일은 네 가지입니다.</p>
+<p>Karpathy는 위키로 하는 일을 ingest, query, lint 세 가지로 부릅니다. 이 장은 ingest를 처음 원본을 한꺼번에 넣는 빌드와 한 건씩 넣는 갱신으로 나눠 네 가지로 설명합니다.</p>
 <ul>
 <li>빌드: 처음 한 번 원본을 모두 읽고 페이지, <code>index.md</code>, <code>log.md</code>를 씁니다. 원본을 모두 읽으므로 시간과 토큰이 가장 많이 듭니다.</li>
 <li>질문: <code>index.md</code>에서 관련 페이지를 찾아 읽고 답합니다. 페이지에 적힌 출처를 따라 원본을 열어 확인할 수 있습니다. 쓸 만한 답은 새 페이지로 저장해 다음 질문에 씁니다.</li>
@@ -565,15 +583,95 @@ span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'</span><span class="se">\n</span><span class="s1">제목을 뺀 줄 </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span><span class="si">}</span><span class="s1">개 가운데 출처가 없는 줄 </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">unsourced</span><span class="p">)</span><span class="si">}</span><span class="s1">개, [검토 필요] </span><span class="si">{</span><span class="n">page</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s2">"[검토 필요]"</span><span class="p">)</span><span class="si">}</span><span class="s1">곳'</span><span class="p">)</span>
 </code></pre></div>
 
+<div class="result">
+<div class="codehilite"><pre><span></span><code>너는 사내 문서로 위키를 만들고 고치는 편집자다. 다음 규칙을 지킨다.
+1. 원본에 있는 내용만 쓴다. 원본에서 확인할 수 없는 내용은 쓰지 않는다.
+2. 사실을 적은 문장마다 끝에 출처 문서 번호를 [QIR-2025-031]처럼 붙인다.
+3. 원본끼리 값이나 기준이 다르면 한쪽으로 정하지 않는다. 그 문장 앞에 [검토 필요]를 붙이고 양쪽 값과 출처를 모두 적는다.
+4. 페이지는 Markdown으로 쓰고 "## 요약", "## 경과", "## 현재 기준", "## 관련 문서" 절을 둔다.
+5. 다른 위키 페이지가 될 만한 낱말은 [[페이지 이름]]으로 잇는다.
+
+# QX48 와이어 스윕
+
+## 요약
+
+QX48은 몰딩 후 X선 검사에서 와이어 스윕 비율이 기준(5% 이하)을 넘는 유닛이 나온 제품이다. 2025년 6월에는 몰딩 프레스 M-02의 트랜스퍼 시간과 리드 프레임 변경이 원인으로 확인되어 트랜스퍼 시간을 10초에서 12초로 늘렸고, 해당 건은 2025-07-14에 종결되었다 [QIR-2025-031][SOP-MD-001]. 2026년 9월에는 9월 1일부터 바뀐 몰딩 컴파운드(CMP-B)와 관련된 것으로 보이는 와이어 스윕이 M-01과 M-02 모두에서 나왔으며, 원인은 아직 확인 중이다 [QIR-2026-019][NOTI-2026-017]. 트랜스퍼 시간 14초 평가가 진행 중이며, 평가가 끝날 때까지 QX48은 로트마다 X선 검사를 3스트립으로 늘려 운용한다 [QIR-2026-019].
+
+## 경과
+
+**2025년 6월: 1차 발생 (QIR-2025-031)**
+- 2025-06-23 발행. 로트 L250619-02, L250620-01에서 와이어 스윕 비율 5%를 넘는 유닛이 4.2% 나왔다. 평소에는 0.5% 아래였다 [QIR-2025-031].
+- 휜 와이어는 대부분 패키지의 게이트 반대쪽 모서리에 있었다 [QIR-2025-031].
+- 원인: 몰딩 프레스 [[몰딩 프레스 M-02]]의 트랜스퍼 시간이 10초로, 같은 조건을 쓰는 다른 프레스보다 컴파운드가 빠르게 흘렀다. 6월에 바뀐 [[QX48 리드 프레임]]은 와이어가 0.4mm 길어 같은 흐름 속도에서도 더 쉽게 밀렸다 [QIR-2025-031].
+- 조치: QX48 트랜스퍼 시간을 12초로 늘렸다. 두 로트는 [[MRB]] 판정으로 X선 전수 선별 후 출하했다 [QIR-2025-031].
+
+**2025년 7월: 표준 개정**
+- [[SOP-MD-001 몰딩 작업 표준]] 3차 개정(2025-07-14)으로 QX48 트랜스퍼 시간을 10초에서 12초로 바꾸었다 [SOP-MD-001].
+- 같은 날 QIR-2025-031은 종결되었다 [QIR-2025-031].
+
+**2026년 8월: 컴파운드 공급사 변경 공지**
+- 2026-08-17 공지. 9월 1일 입고분부터 QX48과 SP8의 [[몰딩 컴파운드]]를 CMP-A에서 CMP-B로 바꾼다. 변경 사유는 CMP-A 공급사의 단종 예정 통보이다 [NOTI-2026-017].
+- CMP-B는 시험 생산 5로트에서 신뢰성 시험을 통과했다. 8월 말까지 입고된 CMP-A는 모두 소진한 뒤 CMP-B를 쓰며, 두 컴파운드를 한 로트에 섞지 않는다 [NOTI-2026-017].
+
+**2026년 9월: 재발 (QIR-2026-019)**
+</code></pre></div>
+
+<details class="more-result">
+<summary>나머지 41줄 보기</summary>
+<div class="codehilite"><pre><span></span><code>- 2026-09-14 발행. 9월 둘째 주부터 QX48 와이어 스윕 비율이 5%를 넘는 유닛이 1.5% 안팎으로 나왔다. 특정 프레스에 몰리지 않고 M-01과 M-02 모두에서 나왔다 [QIR-2026-019].
+- 로트 범위는 L260908-01~L260910-02이다 [QIR-2026-019].
+- 원인 후보: 9월 1일부터 바뀐 CMP-B는 175℃에서 점도가 이전 컴파운드보다 높아, 같은 트랜스퍼 조건에서 와이어를 더 세게 민다. 원인은 확인 중이며 공급사에 점도 데이터를 요청했다 [QIR-2026-019].
+- 현재 진행 상태는 "진행 중"이다 [QIR-2026-019].
+
+## 현재 기준
+
+**공정 조건 (SOP-MD-001 개정 4 기준)**
+- QX48 금형 온도 175±5℃, 트랜스퍼 압력 7.0MPa, 트랜스퍼 시간 12초, 경화 시간 90초 [SOP-MD-001].
+- 금형 온도가 설정값에서 5℃를 넘게 벗어나면 프레스가 경보를 내고 멈춘다. 경보 조치는 [[몰딩 프레스 운용 매뉴얼]](MAN-MP-001)을 따른다 [SOP-MD-001].
+- 후경화는 175℃에서 4시간이다 [SOP-MD-001].
+- 주의: 이 표준의 출력본은 최신 개정본이 아닐 수 있다 [SOP-MD-001].
+
+**컴파운드**
+- 2026년 9월 1일 입고분부터 QX48의 몰딩 컴파운드는 CMP-B이다 [NOTI-2026-017].
+- 보관과 해동 기준은 SOP-MD-002를 따른다 [NOTI-2026-017].
+- CMP-A와 CMP-B를 한 로트에 섞지 않는다 [NOTI-2026-017].
+
+**검사 기준**
+- 몰딩 후 스트립마다 미충전, 기포, 와이어 노출을 육안으로 확인한다 [SOP-MD-001].
+- 와이어 스윕 비율(와이어 길이 대비 휜 거리)은 5% 이하로 한다 [SOP-MD-001].
+
+**[검토 필요] 로트별 X선 검사 스트립 수**
+- SOP-MD-001 개정 4(2026-02-23): 로트마다 1스트립을 X선으로 촬영한다 [SOP-MD-001].
+- QIR-2026-019(2026-09-14): QX48은 로트마다 X선 검사를 3스트립으로 늘려 운용한다. 이는 트랜스퍼 시간 평가 결과가 나올 때까지의 조치이다 [QIR-2026-019].
+- 두 원본의 값이 다르다. 출력본 SOP가 최신이 아닐 가능성도 있으므로, 현재 적용 값은 확인이 필요하다.
+
+**[검토 필요] 트랜스퍼 시간**
+- 현재 SOP 기준: 12초 [SOP-MD-001][QIR-2026-019].
+- 평가 중인 값: 14초. 평가 결과가 나오기 전까지 확정되지 않았다 [QIR-2026-019].
+- 14초 적용 여부와 SOP 개정 계획은 원본에서 확인할 수 없다.
+
+## 관련 문서
+
+- QIR-2025-031: QX48 와이어 스윕 증가 (2025-06-23, 종결 2025-07-14) [QIR-2025-031]
+- QIR-2026-019: QX48 와이어 스윕 재발 (2026-09-14, 진행 중) [QIR-2026-019]
+- NOTI-2026-017: 몰딩 컴파운드 공급사 변경 안내 (2026-08-17) [NOTI-2026-017]
+- SOP-MD-001: 몰딩 작업 표준 (개정 4) [SOP-MD-001]
+- [[몰딩 프레스 M-01]], [[몰딩 프레스 M-02]], [[몰딩 컴파운드]], [[MRB]], [[X선 검사]]
+
+제목을 뺀 줄 42개 가운데 출처가 없는 줄 12개, [검토 필요] 2곳
+</code></pre></div>
+
+</details>
+</div>
 </section>
-<p>{{예제10-2해설}}</p>
+<p>교재의 실행에서 모델은 2025년과 2026년의 두 사건을 시간 순서로 모으고, 문장 끝에 출처 문서 번호를 붙였습니다. 작업 표준의 X선 검사 빈도(로트마다 1스트립)와 2026년 보고서의 임시 조치(3스트립)처럼 원본끼리 값이 다른 곳에는 [검토 필요]를 붙이고 양쪽 값을 모두 적었습니다. 점검 코드가 센 "출처가 없는 줄"에는 표의 머리글과 굵은 소제목처럼 사실을 적지 않은 줄과, "어느 값이 현재 적용 기준인지 원본만으로는 정할 수 없다"처럼 모델의 판단을 적은 줄, 문서 번호를 대괄호 없이 적은 관련 문서 목록이 섞여 있을 수 있습니다. 형식으로 찾는 점검은 사람이 열어 볼 줄을 줄여 줄 뿐이고, 원본에 없는 내용이 들어갔는지는 사람이 원본과 대조해야 알 수 있습니다.</p>
 <h3 id="위키가-틀리는-방식">위키가 틀리는 방식</h3>
 <p>위키의 페이지는 LLM이 생성한 글입니다. 요약하면서 원본에 없는 내용을 덧붙이거나(2장의 환각), 서로 다른 두 대상을 하나로 묶어 세는 일이 생길 수 있습니다. RAG의 오류는 그 질문의 답 하나에 그치지만, 위키의 오류는 페이지에 남아 다음 질문과 다음 갱신의 재료가 됩니다. 그래서 위키를 업무에 쓰기 전에 다음을 정해 둡니다.</p>
 <ul>
 <li>근거: 사실을 적은 문장마다 출처 문서 번호를 붙이게 하고, 출처가 없는 문장은 점검에서 찾아냅니다. 중요한 판단에 쓰는 페이지는 담당자가 원본과 대조합니다.</li>
 <li>[검토 필요]의 판정: 모델은 원본끼리 값이 다르다는 것은 찾지만, 어느 값이 맞는지는 판단하지 못합니다. 개정된 기준인지, 임시 조치인지, 오기인지는 사람이 원본을 열어 정하고, 누가 판정하는지 정해 둡니다.</li>
 <li>갱신: 누가 어떤 문서를 원본에 넣는지 정합니다. 원본에 넣지 않은 문서는 위키에 없는 것과 같습니다.</li>
-<li>권한: 볼 권한이 다른 문서를 한 위키에 넣으면 요약과 답에 섞입니다. 권한이 같은 문서끼리 위키를 나눕니다(15장 "권한 필터").</li>
+<li>권한: 열람 권한이 다른 문서를 한 위키에 넣으면, 권한이 없는 사람이 받는 요약과 답에 그 문서의 내용이 섞입니다. 권한이 같은 문서끼리 위키를 나눕니다(15장 "권한 필터").</li>
 <li>규모: Karpathy는 <code>index.md</code> 하나로 페이지를 찾는 방식이 원본 100건 안팎, 페이지 수백 개 규모에서 동작한다고 적었습니다. 그보다 커지면 위키 페이지 자체를 검색하는 도구가 필요합니다.</li>
 </ul>
 <h2 id="온톨로지와-지식-그래프">온톨로지와 지식 그래프</h2>
@@ -594,8 +692,8 @@ span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 
 <rect x="10" y="50" width="70" height="28" rx="6" fill="var(--sheet)" stroke="var(--line)"/><text x="45" y="69" text-anchor="middle" fill="var(--ink)" font-size="12" font-weight="700">제품</text><rect x="160" y="50" width="70" height="28" rx="6" fill="var(--sheet)" stroke="var(--line)"/><text x="195" y="69" text-anchor="middle" fill="var(--ink)" font-size="12" font-weight="700">설비</text><rect x="75" y="131" width="90" height="28" rx="6" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="120" y="150" text-anchor="middle" fill="var(--ink)" font-size="12" font-weight="700">보고서</text><rect x="10" y="230" width="70" height="28" rx="6" fill="var(--sheet)" stroke="var(--line)"/><text x="45" y="249" text-anchor="middle" fill="var(--ink)" font-size="12" font-weight="700">부서</text><rect x="160" y="230" width="70" height="28" rx="6" fill="var(--sheet)" stroke="var(--line)"/><text x="195" y="249" text-anchor="middle" fill="var(--ink)" font-size="12" font-weight="700">문서</text>
 <line x1="110" y1="131" x2="60.1" y2="84.8" stroke="var(--ink-soft)" stroke-width="2"/><polygon points="55,80 57.4,87.7 62.9,81.8" fill="var(--ink-soft)"/><text x="62" y="112" text-anchor="end" fill="var(--ink-soft)" font-size="11">제품</text>
 <line x1="135" y1="131" x2="184.9" y2="84.8" stroke="var(--ink-soft)" stroke-width="2"/><polygon points="190,80 182.1,81.8 187.6,87.7" fill="var(--ink-soft)"/><text x="172" y="112" text-anchor="start" fill="var(--ink-soft)" font-size="11">발생 설비</text>
-<line x1="105" y1="159" x2="59.1" y2="222.3" stroke="var(--ink-soft)" stroke-width="2"/><polygon points="55,228 62.3,224.7 55.9,220.0" fill="var(--ink-soft)"/><text x="70" y="200" text-anchor="end" fill="var(--ink-soft)" font-size="11">담당 부서</text>
-<line x1="135" y1="159" x2="185.6" y2="222.5" stroke="var(--ink-soft)" stroke-width="2"/><polygon points="190,228 188.8,220.0 182.5,225.0" fill="var(--ink-soft)"/><text x="172" y="200" text-anchor="start" fill="var(--ink-soft)" font-size="11">개정 문서</text>
+<line x1="105" y1="159" x2="59.1" y2="222.3" stroke="var(--ink-soft)" stroke-width="2"/><polygon points="55,228 62.3,224.7 55.9,220.0" fill="var(--ink-soft)"/><text x="62" y="200" text-anchor="end" fill="var(--ink-soft)" font-size="11">담당 부서</text>
+<line x1="135" y1="159" x2="185.6" y2="222.5" stroke="var(--ink-soft)" stroke-width="2"/><polygon points="190,228 188.8,220.0 182.5,225.0" fill="var(--ink-soft)"/><text x="180" y="200" text-anchor="start" fill="var(--ink-soft)" font-size="11">개정 문서</text>
 <line x1="158" y1="244" x2="90" y2="244" stroke="var(--ink-soft)" stroke-dasharray="4 3"/><polygon points="82,244 90,240 90,248" fill="var(--ink-soft)"/><text x="120" y="272" text-anchor="middle" fill="var(--ink-soft)" font-size="11">관리 부서(메타데이터)</text>
 <text x="120" y="292" text-anchor="middle" fill="var(--ink-soft)" font-size="11">보고서의 상태: 진행 중, 종결</text>
 <line x1="248" y1="10" x2="248" y2="290" stroke="var(--line)"/>
@@ -608,7 +706,7 @@ span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 
 <line x1="427" y1="88" x2="427.0" y2="121.0" stroke="var(--ink-soft)" stroke-width="2"/><polygon points="427,128 431.0,121.0 423.0,121.0" fill="var(--ink-soft)"/><text x="433" y="113" text-anchor="start" fill="var(--ink-soft)" font-size="11">제품</text>
 <line x1="427" y1="200" x2="427.0" y2="167.0" stroke="var(--ink-soft)" stroke-width="2"/><polygon points="427,160 423.0,167.0 431.0,167.0" fill="var(--ink-soft)"/><text x="433" y="183" text-anchor="start" fill="var(--ink-soft)" font-size="11">제품</text>
 <line x1="485" y1="214" x2="546.0" y2="214.0" stroke="var(--ink-soft)" stroke-width="2"/><polygon points="553,214 546.0,210.0 546.0,218.0" fill="var(--ink-soft)"/><text x="519" y="206" text-anchor="middle" fill="var(--ink-soft)" font-size="11">상태</text>
-<text x="465" y="262" text-anchor="middle" fill="var(--ink-soft)" font-size="11">굵은 청록색 선은 예제 10-4가 따라간 경로입니다</text>
+<text x="465" y="262" text-anchor="middle" fill="var(--ink-soft)" font-size="11">굵은 청록색 선은 예제 10-4가 따라간 경로입니다(발생 설비 선은 거꾸로 따라갑니다)</text>
 </svg>
 <figcaption>온톨로지는 개체 종류와 관계 이름만 정하고, 지식 그래프는 그 틀대로 실제 보고서와 설비, 문서를 잇습니다.</figcaption>
 </figure>
@@ -617,7 +715,7 @@ span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 
 <p>온톨로지를 정할 때 가장 먼저 정할 것은 개체의 단위입니다. 이 장의 온톨로지는 불량 한 건을 보고서 하나로 다룹니다. "와이어 스윕"이라는 불량 유형을 개체로 두면 그래프는 작아지지만, 와이어 스윕에 이어진 조치가 어느 설비, 어느 시점의 일인지 그래프만으로는 알 수 없습니다. 어떤 질문에 답할지 먼저 적고, 그 질문에 필요한 단위로 개체를 정합니다.</p>
 <p>다음은 이름입니다. 같은 설비를 한 트리플은 "M-02", 다른 트리플은 "몰딩 프레스 M-02"로 적으면 프로그램은 두 점을 다른 개체로 세므로 건수가 틀립니다. 같은 개체를 같은 이름으로 맞추는 일을 entity resolution이라고 합니다. 이 장에서는 온톨로지에 "설비는 설비 번호만 적는다"처럼 이름 규칙을 적어 추출할 때부터 맞춥니다.</p>
 <h3 id="LLM으로-트리플-뽑기">LLM으로 트리플 뽑기</h3>
-<p>문서에서 트리플을 뽑는 일은 LLM에 맡길 수 있습니다. 온톨로지를 프롬프트에 넣고, 출력 형식은 JSON(JavaScript Object Notation) 스키마로 정합니다(6장 "구조화 출력"). 관계 이름을 enum으로 적으면 제약 디코딩이 온톨로지에 없는 관계 이름을 만들지 못하게 합니다. 대상의 이름이 규칙대로인지, 원본에 실제로 있는 사실인지는 스키마가 보장하지 않으므로, 사람이 정한 정답 트리플과 비교해 확인합니다.</p>
+<p>문서에서 트리플을 뽑는 일은 LLM에 맡길 수 있습니다. 온톨로지를 프롬프트에 넣고, 출력 형식은 JSON(JavaScript Object Notation) 스키마로 정합니다(6장 "구조화 출력"). 관계 이름을 enum으로 적으면 제약 디코딩이 온톨로지에 없는 관계 이름을 만들지 못하게 합니다(서버가 <code>json_schema</code> 방식을 지원할 때. 6장). 대상의 이름이 규칙대로인지, 원본에 실제로 있는 사실인지는 스키마가 보장하지 않으므로, 사람이 정한 정답 트리플과 비교해 확인합니다.</p>
 <section class="box example" id="예제-10-3">
 <header><span class="box-no">예제 10-3</span><span class="box-title">온톨로지로 트리플 뽑기</span><span class="box-where">노트북 <code>10_지식을_구조화하는_다른_방법.ipynb</code>의 <code>예제 10-3</code></span></header>
 <p>품질 이슈 보고서 18건에서 준비 코드의 온톨로지(<code>ONTOLOGY</code>)에 맞는 트리플을 뽑습니다. 관계별로 몇 개가 나왔는지, 사람이 원본을 읽고 정한 정답 트리플(<code>ANSWER_TRIPLES</code>)과 몇 개가 같은지 봅니다. 이 셀은 API를 18번 호출합니다.</p>
@@ -640,8 +738,30 @@ span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 
 <span class="nb">print</span><span class="p">(</span><span class="s1">'정답에 없는 트리플:'</span><span class="p">,</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">triples</span><span class="p">)</span> <span class="o">-</span> <span class="n">ANSWER_TRIPLES</span><span class="p">))</span>
 </code></pre></div>
 
+<div class="result">
+<div class="codehilite"><pre><span></span><code>개체 종류
+- 보고서: 품질 이슈 보고서. QIR-2026-014처럼 문서 번호로 적는다
+- 제품: QX48, SP8, BG256처럼 제품 코드로 적는다
+- 설비: W-07처럼 설비 번호만 적는다. "와이어 본더" 같은 설비 이름은 붙이지 않는다
+- 부서: 조립기술팀처럼 팀 이름만 적는다
+- 문서: SOP-PL-001처럼 문서 번호만 적는다
+관계(주어 → 대상)
+- 제품: 보고서 → 불량이 난 제품
+- 발생 설비: 보고서 → 불량이 난 설비. 설비가 여럿이면 하나씩 따로 적는다
+- 담당 부서: 보고서 → 담당자의 부서
+- 개정 문서: 보고서 → 재발 방지를 위해 새로 만들거나 고친 문서
+- 상태: 보고서 → "진행 중" 또는 "종결"
+규칙: 원본에 적힌 관계만 뽑는다. 해당하는 값이 원본에 없으면 그 관계는 만들지 않는다.
+
+트리플 87개, 관계별: {'제품': 18, '발생 설비': 18, '담당 부서': 18, '개정 문서': 15, '상태': 18}
+QIR-2026-014의 트리플: [('QIR-2026-014', '제품', 'QX48'), ('QIR-2026-014', '발생 설비', 'W-07'), ('QIR-2026-014', '담당 부서', '조립기술팀'), ('QIR-2026-014', '개정 문서', 'SOP-PL-001'), ('QIR-2026-014', '개정 문서', 'MAN-WB-001'), ('QIR-2026-014', '상태', '종결')]
+정답 트리플 87개 가운데 같은 것 87개
+정답에 없는 트리플: []
+</code></pre></div>
+
+</div>
 </section>
-<p>{{예제10-3해설}}</p>
+<p>관계 이름은 스키마의 enum에 적은 다섯 가지만 나왔습니다. 교재의 실행에서는 뽑은 트리플 87개가 정답 트리플 87개와 모두 같았습니다. 관련 설비가 "해당 없음(입고 자재)"인 QIR-2026-022에서는 발생 설비 트리플을 만들지 않았고, 설비 두 대가 적힌 QIR-2026-019에서는 두 개를 만들었습니다. 이 보고서들은 개요 표와 현상, 원인, 조치 절을 갖춘 같은 양식이어서 추출하기 쉬운 조건이었습니다. 양식이 없는 회의록이나 메일에서 뽑으면 이름이 어긋나거나 원본에 없는 관계가 섞일 수 있으므로, 이렇게 표본의 정답과 비교하는 단계를 둡니다.</p>
 <h3 id="관계를-따라가는-질문">관계를 따라가는 질문</h3>
 <p>트리플을 모아 두면 질문은 프로그램이 관계를 따라가는 일이 됩니다. 집계 질문은 조건에 맞는 트리플을 세면 되고, 멀티홉 질문은 앞 트리플의 대상을 다음 트리플의 주어로 넣어 차례로 찾으면 됩니다. 모든 트리플을 대상으로 계산하므로 예제 10-1처럼 일부만 보고 답하는 일이 없고, 같은 그래프로 같은 질문을 하면 언제나 같은 답이 나옵니다. 문서마다 관리 부서처럼 이미 정리된 메타데이터(8장)는 LLM 없이 트리플로 바꿔 더합니다.</p>
 <section class="box example" id="예제-10-4">
@@ -666,12 +786,22 @@ span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 
             <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">equipment</span><span class="si">}</span><span class="s1"> → </span><span class="si">{</span><span class="n">report</span><span class="si">}</span><span class="s1"> → </span><span class="si">{</span><span class="n">doc</span><span class="si">}</span><span class="s1"> → </span><span class="si">{</span><span class="p">[</span><span class="n">dept</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">_</span><span class="p">,</span><span class="w"> </span><span class="n">_</span><span class="p">,</span><span class="w"> </span><span class="n">dept</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">find</span><span class="p">(</span><span class="n">doc</span><span class="p">,</span><span class="w"> </span><span class="s2">"관리 부서"</span><span class="p">)]</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
 </code></pre></div>
 
+<div class="result">
+<div class="codehilite"><pre><span></span><code>진행 중인 보고서 5건: ['QIR-2026-018', 'QIR-2026-019', 'QIR-2026-020', 'QIR-2026-021', 'QIR-2026-022']
+제품별 보고서 수: {'QX48': 9, 'BG256': 5, 'SP8': 4}
+M-02 → QIR-2025-031 → SOP-MD-001 → ['몰딩기술팀']
+M-01 → QIR-2026-007 → SOP-MD-002 → ['몰딩기술팀']
+A-01 → QIR-2026-016 → MAN-BA-001 → ['조립기술팀']
+A-01 → QIR-2026-016 → SOP-BA-001 → ['조립기술팀']
+</code></pre></div>
+
+</div>
 </section>
-<p>{{예제10-4해설}}</p>
-<p>그래프는 넣은 사실만 압니다. 이 장의 그래프는 품질 이슈 보고서와 문서 목록에서만 만들었으므로, 회의록에서 내린 결정은 그래프에 없습니다(실습 10-2). 문장으로 설명해야 하는 내용, 예를 들어 불량의 원인이 어떻게 밝혀졌는지는 트리플 몇 개로 담기 어렵습니다. 그래프로 답할 수 있는 질문은 온톨로지를 정할 때 정해집니다.</p>
+<p>진행 중인 보고서는 정답과 같은 5건이고, 제품별 보고서 수(QX48 9건, BG256 5건, SP8 4건)도 18건 전체에서 셌습니다. 예제 10-1의 RAG와 달리 일부 문서만 보고 세는 일이 없습니다. 보고서가 두 건 이상 나온 설비는 M-02, M-01, A-01이고, 각 설비에서 출발해 보고서, 고친 문서, 그 문서의 관리 부서까지 세 관계를 차례로 따라갔습니다. M-01과 M-02에는 진행 중인 QIR-2026-019도 이어져 있지만, 이 보고서에는 개정 문서 트리플이 없어 경로가 이어지지 않았습니다. 트리플이 같으면 이 결과는 실행할 때마다 같습니다.</p>
+<p>그래프는 넣은 사실만 압니다. 이 장의 그래프는 품질 이슈 보고서와 문서 목록에서만 만들었으므로, 회의록에서 내린 결정은 그래프에 없습니다(실습 10-2). 문장으로 설명해야 하는 내용, 예를 들어 불량의 원인이 어떻게 밝혀졌는지는 트리플 몇 개로 담기 어렵습니다. 그래프로 답할 수 있는 질문의 범위는 온톨로지에 넣은 개체와 관계가 정합니다.</p>
 <h2 id="세-방식을-고르는-기준">세 방식을 고르는 기준</h2>
 <div class="gist">
-<p>한두 문서에 답이 있는 질문이 대부분이고 문서가 많으면 RAG, 여러 문서의 경과를 모아 읽는 질문이 많고 문서가 팀 단위이면 LLM Wiki, 세거나 관계를 따라가는 질문이 반복되면 지식 그래프를 먼저 갖춥니다. 셋은 함께 쓸 수 있습니다.</p>
+<p>답이 한두 문서에 적힌 질문에는 RAG, 여러 문서의 경과를 모아 읽어야 하는 질문에는 LLM Wiki, 세거나 관계를 따라가는 질문이 반복되면 지식 그래프를 먼저 갖춥니다. 셋은 함께 쓸 수 있습니다.</p>
 </div>
 <table>
 <thead>
@@ -702,13 +832,13 @@ span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 
 <td>온톨로지에 없는 관계, 서술로 설명할 내용</td>
 </tr>
 <tr>
-<td>다룰 수 있는 문서 규모</td>
-<td>수만 건(인덱스에 청크를 더함)</td>
-<td>원본 100건 안팎(<code>index.md</code>로 찾을 때)</td>
-<td>개체와 관계를 정한 범위</td>
+<td>문서가 늘 때</td>
+<td>청크를 인덱스에 더하면 되므로 문서 수의 제약이 적음</td>
+<td><code>index.md</code>로 찾는 방식은 원본 100건 안팎까지</td>
+<td>답할 수 있는 질문은 문서 수보다 온톨로지의 범위가 정함</td>
 </tr>
 <tr>
-<td>먼저 드는 일</td>
+<td>도입할 때 할 일</td>
 <td>청킹, 임베딩, 평가셋(7~9장)</td>
 <td>규칙 파일, 빌드, 사람의 검토</td>
 <td>온톨로지 정의, 추출 결과 검증</td>
@@ -730,10 +860,10 @@ span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 
 <p>고를 때는 지금 답하지 못하는 질문 하나를 들고 다음 순서로 확인합니다.</p>
 <ol>
 <li>답이 한두 문서에 적혀 있으면 RAG로 충분합니다. 이미 RAG가 있다면 9장의 평가로 검색과 생성 가운데 어디서 틀리는지 먼저 찾습니다.</li>
-<li>답하려면 여러 문서의 경과를 모아 읽어야 하고 문서가 팀 단위 규모이면 LLM Wiki를 더합니다.</li>
+<li>답하려면 여러 문서의 경과를 모아 읽어야 하면 LLM Wiki를 더합니다. 원본이 100건 안팎이면 <code>index.md</code>만으로 페이지를 찾을 수 있습니다.</li>
 <li>같은 종류의 집계나 관계 질문이 반복되면 그 질문에 필요한 개체와 관계만 온톨로지로 정하고 지식 그래프를 만듭니다.</li>
 </ol>
-<p>셋은 서로를 대신하지 않고 함께 쓰입니다. 위키 페이지를 RAG의 검색 대상에 넣으면, 여러 문서를 모은 페이지가 청크 하나로 검색됩니다. 지식 그래프는 RAG가 답하기 어려운 질문만 맡기고, 그래프가 돌려준 문서 번호로 원문 청크를 찾아 답에 근거로 붙일 수 있습니다. <span class="term" tabindex="0" data-def="문서에서 LLM으로 지식 그래프를 뽑고, 서로 많이 이어진 개체 묶음마다 요약을 미리 만들어 두었다가 질문에 답할 때 쓰는 RAG 방식. Edge 외(2024)가 발표했다">GraphRAG</span>(Edge 외, 2024)는 두 방법을 하나로 묶은 예입니다. LLM으로 문서에서 개체와 관계를 뽑아 그래프를 만들고, 서로 많이 이어진 개체 묶음마다 요약을 미리 써 둡니다. 문서 전체를 묻는 질문에는 각 묶음의 요약으로 부분 답을 만든 뒤 하나로 합칩니다. 저자들은 이 방식이 전체를 요약하는 질문에서 일반 RAG보다 답이 포괄적이고 다양했다고 보고했습니다.</p>
+<p>셋은 서로를 대신하지 않고 함께 쓰입니다. 위키 페이지를 RAG의 검색 대상에 넣으면, 여러 문서를 모은 페이지가 청크 하나로 검색됩니다. 지식 그래프는 RAG가 답하기 어려운 질문만 맡기고, 그래프가 돌려준 문서 번호로 원문 청크를 찾아 답에 근거로 붙일 수 있습니다. <span class="term" tabindex="0" data-def="문서에서 LLM으로 지식 그래프를 뽑고, 서로 많이 이어진 개체 묶음마다 요약을 미리 만들어 두었다가 질문에 답할 때 쓰는 RAG 방식. Edge 외(2024)가 발표했다">GraphRAG</span>(Edge 외, 2024)는 두 방법을 하나로 묶은 예입니다. LLM으로 문서에서 개체와 관계를 뽑아 그래프를 만들고, 서로 많이 이어진 개체 묶음(커뮤니티, community)마다 요약을 미리 써 둡니다. 문서 전체를 묻는 질문에는 각 묶음의 요약으로 부분 답을 만든 뒤 하나로 합칩니다. 저자들은 이 방식이 전체를 요약하는 질문에서 일반 RAG보다 답이 포괄적이고 다양했다고 보고했습니다.</p>
 <h2 id="개념-확인-실습">개념 확인 실습</h2>
 <p>실습은 장 노트북의 빈칸을 채워 실행합니다. 코드를 실행하기 전에 결과를 먼저 예측해 적고, 실행한 뒤 예측과 다른 부분을 이 장의 원리로 설명해 봅니다. 실습 10-1은 API를 1번 호출하고, 실습 10-2는 API를 호출하지 않습니다.</p>
 <section class="box practice" id="실습-10-1">
@@ -748,7 +878,7 @@ span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 
 <span class="n">new_page</span> <span class="o">=</span> <span class="n">update_page</span><span class="p">(</span><span class="n">page</span><span class="p">,</span> <span class="s1">'MTG-20261116'</span><span class="p">)</span>
 <span class="n">current</span> <span class="o">=</span> <span class="n">new_page</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">'## 현재 기준'</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">'</span><span class="se">\n</span><span class="s1">## '</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>      <span class="c1"># "현재 기준" 절만 꺼냅니다</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">current</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'</span><span class="se">\n</span><span class="s1">14초가 적힘: </span><span class="si">{</span><span class="s2">"14초"</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">current</span><span class="si">}</span><span class="s1">, [검토 필요] </span><span class="si">{</span><span class="n">current</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s2">"[검토 필요]"</span><span class="p">)</span><span class="si">}</span><span class="s1">곳 (예측 </span><span class="si">{</span><span class="n">my_guess</span><span class="si">}</span><span class="s1">)'</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'</span><span class="se">\n</span><span class="s1">회의록 출처가 적힘: </span><span class="si">{</span><span class="s2">"MTG-20261116"</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">current</span><span class="si">}</span><span class="s1">, [검토 필요] </span><span class="si">{</span><span class="n">current</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s2">"[검토 필요]"</span><span class="p">)</span><span class="si">}</span><span class="s1">곳 (예측 </span><span class="si">{</span><span class="n">my_guess</span><span class="si">}</span><span class="s1">)'</span><span class="p">)</span>
 </code></pre></div>
 
 <details class="answer">
@@ -765,10 +895,40 @@ span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 
 <span class="n">new_page</span> <span class="o">=</span> <span class="n">update_page</span><span class="p">(</span><span class="n">page</span><span class="p">,</span> <span class="s1">'MTG-20261116'</span><span class="p">)</span>
 <span class="n">current</span> <span class="o">=</span> <span class="n">new_page</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">'## 현재 기준'</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">'</span><span class="se">\n</span><span class="s1">## '</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>      <span class="c1"># "현재 기준" 절만 꺼냅니다</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">current</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'</span><span class="se">\n</span><span class="s1">14초가 적힘: </span><span class="si">{</span><span class="s2">"14초"</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">current</span><span class="si">}</span><span class="s1">, [검토 필요] </span><span class="si">{</span><span class="n">current</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s2">"[검토 필요]"</span><span class="p">)</span><span class="si">}</span><span class="s1">곳 (예측 </span><span class="si">{</span><span class="n">my_guess</span><span class="si">}</span><span class="s1">)'</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'</span><span class="se">\n</span><span class="s1">회의록 출처가 적힘: </span><span class="si">{</span><span class="s2">"MTG-20261116"</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">current</span><span class="si">}</span><span class="s1">, [검토 필요] </span><span class="si">{</span><span class="n">current</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s2">"[검토 필요]"</span><span class="p">)</span><span class="si">}</span><span class="s1">곳 (예측 </span><span class="si">{</span><span class="n">my_guess</span><span class="si">}</span><span class="s1">)'</span><span class="p">)</span>
 </code></pre></div>
 
-<p>{{실습10-1해설}}</p>
+<div class="result">
+<div class="codehilite"><pre><span></span><code>**공정 조건 (SOP-MD-001 개정 4 기준)**
+- QX48 금형 온도 175±5℃, 트랜스퍼 압력 7.0MPa, 경화 시간 90초 [SOP-MD-001].
+- [검토 필요] 트랜스퍼 시간
+  - 현재 SOP 기준: 12초 [SOP-MD-001][QIR-2026-019].
+  - 2026-11-16 회의 결정: 11월 23일부터 14초로 변경, SOP-MD-001 개정 예정 [MTG-20261116].
+  - 14초 적용 전 SOP 개정 완료 여부와 개정 번호는 원본에서 확인할 수 없다 [MTG-20261116][SOP-MD-001].
+- 금형 온도가 설정값에서 5℃를 넘게 벗어나면 프레스가 경보를 내고 멈춘다. 경보 조치는 [[몰딩 프레스 운용 매뉴얼]](MAN-MP-001)을 따른다 [SOP-MD-001].
+- 후경화는 175℃에서 4시간이다 [SOP-MD-001].
+- 주의: 이 표준의 출력본은 최신 개정본이 아닐 수 있다 [SOP-MD-001].
+
+**컴파운드**
+- 2026년 9월 1일 입고분부터 QX48의 몰딩 컴파운드는 CMP-B이다 [NOTI-2026-017].
+- 보관과 해동 기준은 SOP-MD-002를 따른다 [NOTI-2026-017].
+- CMP-A와 CMP-B를 한 로트에 섞지 않는다 [NOTI-2026-017].
+
+**검사 기준**
+- 몰딩 후 스트립마다 미충전, 기포, 와이어 노출을 육안으로 확인한다 [SOP-MD-001].
+- 와이어 스윕 비율(와이어 길이 대비 휜 거리)은 5% 이하로 한다 [SOP-MD-001].
+
+**[검토 필요] 로트별 X선 검사 스트립 수**
+- SOP-MD-001 개정 4(2026-02-23): 로트마다 1스트립을 X선으로 촬영한다 [SOP-MD-001].
+- QIR-2026-019(2026-09-14): QX48은 로트마다 X선 검사를 3스트립으로 늘려 운용한다. 이는 트랜스퍼 시간 평가 결과가 나올 때까지의 조치이다 [QIR-2026-019].
+- 2026-11-16 회의에서는 X선 검사 스트립 수를 다루지 않았다 [MTG-20261116].
+- 두 원본의 값이 다르다. 출력본 SOP가 최신이 아닐 가능성도 있으므로, 현재 적용 값은 확인이 필요하다 [SOP-MD-001][QIR-2026-019].
+
+회의록 출처가 적힘: True, [검토 필요] 2곳 (예측 14초로 바뀌고, SOP-MD-001의 12초와 달라 [검토 필요]가 붙는다)
+</code></pre></div>
+
+</div>
+<p>교재의 실행에서 갱신한 페이지는 트랜스퍼 시간 항목에 작업 표준의 12초와 회의의 14초 결정을 출처와 함께 나란히 적고 [검토 필요]를 붙였습니다. SOP 개정이 끝났는지는 원본에서 확인할 수 없다고도 적었습니다. 회의 결정의 날짜가 작업 표준보다 늦지만, 모델은 규칙 3에 따라 한쪽으로 정하지 않고 값을 모두 적었습니다. 판정은 사람이 합니다. 담당자가 문서관리시스템에서 SOP-MD-001의 개정 여부를 확인하고, SOP-MD-001이 개정되었으면 14초를 현재 기준으로 적고 [검토 필요]를 지웁니다. 빌드한 페이지가 실행마다 다르므로 [검토 필요]의 개수도 실행마다 다를 수 있습니다.</p>
 </details>
 </section>
 <section class="box practice" id="실습-10-2">
@@ -810,7 +970,29 @@ span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'BG256 예측: </span><span class="si">{</span><span class="n">my_guess</span><span class="si">}</span><span class="s1">행'</span><span class="p">)</span>
 </code></pre></div>
 
-<p>{{실습10-2해설}}</p>
+<div class="result">
+<div class="codehilite"><pre><span></span><code>BG256: 5행
+   QIR-2025-044 → MAN-DS-001 → 웨이퍼가공팀
+   QIR-2025-044 → SOP-DC-001 → 웨이퍼가공팀
+   QIR-2026-016 → MAN-BA-001 → 조립기술팀
+   QIR-2026-016 → SOP-BA-001 → 조립기술팀
+   QIR-2026-017 → SOP-MS-001 → 품질보증팀
+QX48: 10행
+   QIR-2025-031 → SOP-MD-001 → 몰딩기술팀
+   QIR-2026-002 → MAN-TF-001 → 몰딩기술팀
+   QIR-2026-002 → SOP-TF-001 → 몰딩기술팀
+   QIR-2026-007 → SOP-MD-002 → 몰딩기술팀
+   QIR-2026-009 → SOP-ESD-001 → 품질보증팀
+   QIR-2026-011 → MAN-DB-001 → 조립기술팀
+   QIR-2026-014 → MAN-WB-001 → 조립기술팀
+   QIR-2026-014 → SOP-PL-001 → 조립기술팀
+   QIR-2026-015 → SOP-PT-001 → 테스트기술팀
+   QIR-2026-015 → SOP-PT-002 → 테스트기술팀
+BG256 예측: 3행
+</code></pre></div>
+
+</div>
+<p>보고서 수(3건)로 예측하면 틀립니다. BG256은 보고서 3건(QIR-2025-044, QIR-2026-016, QIR-2026-017)에서 5행이 나옵니다. 보고서 두 건이 각각 문서 두 개를 고쳤기 때문에 행 수가 보고서 수보다 많습니다. QX48의 보고서는 9건인데 결과에 나오는 보고서는 7건입니다. 개정 문서 트리플이 없는 보고서에서는 경로가 끊깁니다. QIR-2026-012는 재발 방지로 문서가 아니라 점검 입력 화면을 고쳤고, QIR-2026-019는 진행 중이라 "재발 방지" 절이 없습니다. 트랜스퍼 시간을 14초로 바꾸고 SOP-MD-001을 개정하기로 한 결정은 회의록(MTG-20261116)에 있고, 이 장의 그래프는 회의록에서 트리플을 뽑지 않았습니다. 그래프는 넣은 사실만 알므로, 이 관계를 답하려면 회의록에서도 트리플을 뽑거나 SOP가 개정된 뒤 보고서를 고쳐 다시 뽑아야 합니다.</p>
 </details>
 </section>
 <h2 id="자가점검">자가점검</h2>
@@ -851,7 +1033,7 @@ span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 
 </details>
 <h2 id="참고-문헌">참고 문헌</h2>
 <ul>
-<li>Karpathy, A. (2026). LLM Wiki. GitHub gist "llm-wiki.md"(2026-11 확인).</li>
+<li>Karpathy, A. LLM Wiki. GitHub gist "llm-wiki.md"(2026-11 확인).</li>
 <li>Edge, D. 외 (2024). From Local to Global: A GraphRAG Approach to Query-Focused Summarization. arXiv:2404.16130.</li>
 <li>Hogan, A. 외 (2021). Knowledge Graphs. ACM Computing Surveys 54(4). arXiv:2003.02320.</li>
 <li>W3C (2014). RDF 1.1 Concepts and Abstract Syntax(2026-11 확인).</li>
