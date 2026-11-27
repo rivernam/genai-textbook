@@ -1,0 +1,14 @@
+﻿doc_id,type,title,equip,date,version,file
+SOP-DIFF-001,SOP,확산로 보트 로딩·언로딩,DIFF 공통,2026-04-08,v1.0,SOP-DIFF-001.md
+SOP-DIFF-002,SOP,확산로 온도 프로파일 점검 (개정판),DIFF 공통,2026-06-15,v2.0,SOP-DIFF-002_v2.0.md
+SOP-DIFF-003,SOP,확산로 석영 튜브 세정,DIFF 공통,2026-02-20,v1.0,SOP-DIFF-003.md
+SOP-IMP-001,SOP,이온주입기 빔 셋업,IMP 공통,2026-03-03,v1.0,SOP-IMP-001.md
+SOP-IMP-002,SOP,이온주입기 이온 소스 교체,IMP 공통,2026-05-12,v1.0,SOP-IMP-002.md
+QIR-2026-0901,품질이슈,DIFF-02 산화막 두께 산포 증가,DIFF-02,2026-09-01,v1.0,QIR-2026-0901.md
+QIR-2026-0905,품질이슈,IMP-01 도즈 편차,IMP-01,2026-09-05,v1.0,QIR-2026-0905.md
+QIR-2026-0911,품질이슈,DIFF-04 파티클 증가,DIFF-04,2026-09-11,v1.0,QIR-2026-0911.md
+SPEC-041,공정스펙,RCP-IMP-220 관리 한계,IMP-01,2026-07-21,v1.0,SPEC-041.md
+SPEC-042,공정스펙,RCP-DIFF-415 관리 한계,DIFF-02,2026-06-30,v1.0,SPEC-042.md
+EHS-031,안전규정,확산·이온주입 구역 출입,-,2026-01-19,v1.0,EHS-031.md
+NOTI-041,공지,DIFF 라인 정기 PM 요일 변경,-,2026-09-14,v1.0,NOTI-041.md
+SOP-DIFF-002,SOP,확산로 온도 프로파일 점검 (구판),DIFF 공통,2025-03-10,v1.0,SOP-DIFF-002_v1.0.md

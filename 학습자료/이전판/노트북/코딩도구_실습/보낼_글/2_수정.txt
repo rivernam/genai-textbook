@@ -1,0 +1,13 @@
+send_batch.py 의 ask() 와 process_all() 을 아래 기준대로 고쳐 줘.
+함수 이름과 인자는 그대로 두고, check.py 와 checks.py, llm.py 는 고치지 마.
+
+1. llm.CallError 의 retryable 이 True 인 오류(429, 5xx, 연결 실패, 타임아웃)는
+   1초, 2초로 대기 시간을 늘리며 최대 tries 번까지 보낸다.
+   기다릴 때는 인자로 받은 sleep 을 쓴다. 끝까지 실패하면 예외를 그대로 다시 발생시킨다.
+2. 그 밖의 오류(400, 401, 404 등)는 재시도하지 않고 예외를 바로 다시 발생시킨다.
+3. 재시도 횟수는 ask() 한 곳에서만 정한다.
+4. process_all() 은 한 건이 실패해도 멈추지 않고, 실패한 건의 id 와 사유를 failed 에 넣는다.
+5. 응답이 잘렸거나(stop_reason 이 'max_tokens') 거절됐거나('refusal')
+   JSON 으로 읽을 수 없으면 성공으로 세지 않고 failed 에 넣는다.
+
+고친 뒤 무엇을 바꿨는지 기준 번호별로 알려 줘.

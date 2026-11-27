@@ -1,0 +1,81 @@
+﻿id,team,location,urgent,난이도
+R001,기타,,false,엣지
+R002,기타,,false,엣지
+R003,기타,,false,보통
+R004,설비,SPT-03,false,보통
+R005,시설,엘리베이터 2호기,false,보통
+R006,안전,,false,보통
+R007,기타,,false,엣지
+R008,안전,ETCH-02 옆,true,엣지
+R009,안전,후문,false,보통
+R010,설비,6호기,true,보통
+R011,기타,,false,보통
+R012,설비,IMP-02,true,보통
+R013,시설,사무동 1층 로비,false,보통
+R014,시설,,true,엣지
+R015,안전,CVD-03,true,엣지
+R016,설비,ANL-01,true,보통
+R017,시설,3층 남자 화장실,false,보통
+R018,시설,회의실 B,false,보통
+R019,시설,4층 창가,false,보통
+R020,시설,,false,보통
+R021,설비,CMP-02,true,보통
+R022,시설,클린룸,true,엣지
+R023,IT,,false,보통
+R024,설비,포토 2호기,false,보통
+R025,기타,,false,엣지
+R026,IT,클린룸 입구,false,보통
+R027,설비,,false,보통
+R028,시설,식당 앞,false,보통
+R029,시설,,false,보통
+R030,IT,2층 사무실,false,보통
+R031,설비,ETCH-01,false,보통
+R032,안전,,false,보통
+R033,시설,창고 C,false,보통
+R034,안전,세정실 앞,false,보통
+R035,IT,,false,보통
+R036,시설,B라인,true,엣지
+R037,설비,포토 1호기,true,보통
+R038,기타,,false,엣지
+R039,설비,ALN-02,false,보통
+R040,IT,,true,보통
+R041,IT,5층,false,보통
+R042,IT,,false,보통
+R043,안전,A동 3층 복도,false,보통
+R044,IT,,false,보통
+R045,설비,ETCH-03,true,보통
+R046,안전,,true,보통
+R047,IT,,false,보통
+R048,시설,2층 휴게실,false,보통
+R049,안전,약품 보관실,true,보통
+R050,시설,사무동 화장실,false,보통
+R051,설비,INS-04,false,보통
+R052,설비,CMP-01,true,보통
+R053,IT,,false,보통
+R054,안전,,false,보통
+R055,설비,7호기,true,보통
+R056,시설,클린룸 2구역,true,엣지
+R057,IT,,false,보통
+R058,IT,,false,보통
+R059,설비,CVD-04,false,보통
+R060,설비,,false,보통
+R061,시설,주차장,false,보통
+R062,안전,,false,보통
+R063,IT,3라인,true,엣지
+R064,설비,CVD-02,true,보통
+R065,기타,,false,보통
+R066,설비,,false,엣지
+R067,IT,,false,보통
+R068,기타,,false,보통
+R069,안전,,false,보통
+R070,IT,회의실 A,false,보통
+R071,설비,2호기,false,보통
+R072,설비,4호기,false,보통
+R073,설비,세정 장비 3호기,true,보통
+R074,시설,옥상 냉각탑,false,보통
+R075,안전,B동 가스 캐비닛,true,보통
+R076,설비,5호기,false,보통
+R077,안전,사무동 2층,false,엣지
+R078,IT,,false,보통
+R079,시설,A동 2층 복도,false,보통
+R080,기타,,false,엣지
