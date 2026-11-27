@@ -14,7 +14,7 @@ from transformers.utils import logging as transformers_logging
 transformers_logging.disable_progress_bar()
 torch.manual_seed(0)                              # LoRA 행렬의 초깃값을 실행할 때마다 같게 합니다
 tokenizer = AutoTokenizer.from_pretrained(MODEL)
-model = AutoModelForCausalLM.from_pretrained(MODEL, dtype=torch.float32)   # CPU는 bf16 계산이 느려 fp32로 올립니다
+model = AutoModelForCausalLM.from_pretrained(MODEL, dtype=torch.float32)   # CPU는 16비트(bf16) 계산이 느리므로 32비트(fp32)로 불러옵니다
 model.generation_config.update(do_sample=False, temperature=None, top_p=None, top_k=None)  # 언제나 1위 토큰을 고릅니다
 
 with open(f'{DATA}/알람.csv', encoding='utf-8') as file:
@@ -46,9 +46,9 @@ def make_batch(rows, max_length=128):
 def answer(model, alarm, system=SYSTEM):
     """알람 하나에 대한 모델의 답(최대 20토큰)"""
     model.eval()
-    inputs = tokenizer(chat_prompt(alarm, system), return_tensors='pt')
+    inputs = tokenizer(chat_prompt(alarm, system), return_tensors='pt').to(model.device)   # 모델이 GPU에 있으면 입력도 GPU로
     with torch.no_grad():
-        output = model.generate(**inputs, max_new_tokens=20)
+        output = model.generate(**inputs, max_new_tokens=20, do_sample=False)   # 언제나 1위 토큰을 고릅니다
     return tokenizer.decode(output[0][inputs['input_ids'].shape[1]:], skip_special_tokens=True).strip()
 
 
