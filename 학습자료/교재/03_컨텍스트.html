@@ -1,0 +1,874 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>3장 컨텍스트 | 생성형 AI 교재</title>
+<style>
+/* 복습 교재 화면. 외부 글꼴과 이미지를 쓰지 않는다. */
+:root {
+  --paper: #f6f8f8;        /* 본문 바탕 */
+  --sheet: #ffffff;        /* 상자 바탕 */
+  --ink: #16252b;          /* 본문 글자 */
+  --ink-soft: #55676e;     /* 보조 글자 */
+  --line: #d3dcde;         /* 선 */
+  --teal: #0b5a66;         /* 제목, 링크, 예제 */
+  --teal-wash: #e3eff0;
+  --amber: #8a5a00;        /* 주의, 실습 */
+  --amber-wash: #fbf1d8;
+  --code-bg: #eef2f3;
+  --body-font: "Pretendard", "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --code-font: "D2Coding", "Cascadia Mono", "Consolas", "Menlo", "Malgun Gothic", "Apple SD Gothic Neo", monospace;
+  --measure: 50rem;        /* 본문 한 줄 약 50자. 표와 코드가 좁아지지 않는 폭 */
+}
+/* "넓게 보기"를 켜면 본문 폭을 넓힌다. 표와 코드가 많은 절을 볼 때 쓴다 */
+:root[data-width="wide"] { --measure: 74rem; }
+:root[data-theme="dark"] {
+  --paper: #10191c;
+  --sheet: #17242a;
+  --ink: #dde7e9;
+  --ink-soft: #94a8ae;
+  --line: #2c3f46;
+  --teal: #6fc7d2;
+  --teal-wash: #1b3238;
+  --amber: #e6b656;
+  --amber-wash: #322a16;
+  --code-bg: #1c2b31;
+}
+
+* { box-sizing: border-box; }
+html { scroll-padding-top: 4.5rem; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--body-font);
+  font-size: 1.0625rem;
+  line-height: 1.8;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+a { color: var(--teal); text-underline-offset: 0.2em; }
+:focus-visible { outline: 3px solid var(--teal); outline-offset: 2px; }
+.skip { position: absolute; left: -999rem; }
+.skip:focus { left: 1rem; top: 1rem; z-index: 30; background: var(--sheet); padding: 0.5rem 1rem; }
+
+/* 위쪽 띠 */
+.top {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; align-items: center; gap: 1rem;
+  height: 3.5rem; padding: 0 1.25rem;
+  background: var(--sheet); border-bottom: 1px solid var(--line);
+}
+.top .site { font-weight: 700; white-space: nowrap; }
+.top .days { display: flex; gap: 0.25rem; margin-right: auto; overflow-x: auto; }
+.top .days a { padding: 0.25rem 0.7rem; border-radius: 999px; text-decoration: none; color: var(--ink-soft); white-space: nowrap; }
+.top .days a.here { background: var(--teal); color: var(--sheet); }
+.top button {
+  font: inherit; font-size: 0.9rem; color: var(--ink);
+  background: none; border: 1px solid var(--line); border-radius: 6px;
+  padding: 0.3rem 0.8rem; cursor: pointer; white-space: nowrap;
+}
+.top .menu { display: none; }
+
+/* 배치: 왼쪽 목차, 가운데 본문 */
+.layout { display: grid; grid-template-columns: 18rem minmax(0, 1fr); }
+.side {
+  position: sticky; top: 3.5rem; align-self: start;
+  height: calc(100vh - 3.5rem); overflow-y: auto;
+  padding: 1.25rem 1rem 3rem 1.25rem;
+  border-right: 1px solid var(--line);
+  font-size: 0.92rem; line-height: 1.5;
+}
+.search span { display: block; color: var(--ink-soft); margin-bottom: 0.3rem; }
+.search input {
+  width: 100%; font: inherit; color: var(--ink);
+  background: var(--sheet); border: 1px solid var(--line); border-radius: 6px; padding: 0.45rem 0.6rem;
+}
+.hits { margin-top: 0.75rem; }
+.hits p { color: var(--ink-soft); margin: 0.5rem 0; }
+.hits a { display: block; padding: 0.4rem 0; text-decoration: none; border-bottom: 1px solid var(--line); }
+.hits small { display: block; color: var(--ink-soft); }
+.toc ul { list-style: none; margin: 1rem 0 0; padding: 0; }
+.toc a { display: block; padding: 0.22rem 0.5rem; border-left: 3px solid transparent; color: var(--ink-soft); text-decoration: none; }
+.toc a:hover { color: var(--ink); }
+.toc a.now { border-left-color: var(--teal); color: var(--ink); font-weight: 600; }
+.toc .l1 a { margin-top: 0.9rem; color: var(--ink); font-weight: 700; }
+.toc .l3 a { padding-left: 1.4rem; font-size: 0.88rem; }
+
+main { min-width: 0; padding: 2.5rem clamp(1.25rem, 5vw, 4.5rem) 4rem; }
+/* 본문은 남는 공간의 가운데에 둔다. 넓은 화면에서 한쪽에만 여백이 몰리지 않는다 */
+.part { max-width: var(--measure); margin: 0 auto 5rem; }
+.part > * { max-width: 100%; }
+
+/* 제목. 원본 쪽수는 제목 줄 오른쪽에 작은 표로 붙는다 */
+h1, h2, h3 { line-height: 1.35; letter-spacing: -0.01em; }
+h1 { font-size: 2.15rem; margin: 0 0 1.5rem; padding-bottom: 1rem; border-bottom: 3px solid var(--teal); }
+h2 { font-size: 1.5rem; margin: 3.5rem 0 1rem; }
+h3 { font-size: 1.15rem; margin: 2.25rem 0 0.75rem; }
+.source {
+  display: inline-block; vertical-align: middle; margin-left: 0.5rem;
+  font-size: 0.72rem; font-weight: 500; letter-spacing: 0;
+  color: var(--ink-soft); border: 1px solid var(--line); border-radius: 4px; padding: 0.05rem 0.4rem;
+}
+.source.added { color: var(--amber); border-color: currentColor; }
+
+p { margin: 0 0 1.1rem; }
+ul, ol { padding-left: 1.4rem; margin: 0 0 1.1rem; }
+li { margin-bottom: 0.3rem; }
+strong { font-weight: 700; }
+
+/* 용어: 점선 밑줄, 올리거나 초점이 가면 정의가 뜬다 */
+.term { position: relative; border-bottom: 1.5px dotted var(--teal); cursor: help; }
+.term:hover::after, .term:focus::after {
+  content: attr(data-def);
+  position: absolute; left: 0; top: 1.9em; z-index: 10;
+  width: max-content; max-width: min(22rem, 80vw);
+  background: var(--ink); color: var(--paper);
+  font-size: 0.86rem; font-weight: 400; line-height: 1.55;
+  padding: 0.55rem 0.75rem; border-radius: 6px;
+}
+
+/* 코드 */
+code { font-family: var(--code-font); font-size: 0.9em; background: var(--code-bg); padding: 0.1em 0.35em; border-radius: 4px; }
+/* 표 안의 짧은 코드(함수 이름, 패키지 이름)는 낱말 중간에서 끊지 않는다 */
+td code, th code { white-space: nowrap; }
+td, th { overflow-wrap: break-word; }
+pre { margin: 0; padding: 0.9rem 1rem; overflow-x: auto; font-size: 0.88rem; line-height: 1.65; }
+pre code { background: none; padding: 0; font-size: inherit; }
+.codehilite, .part > pre { position: relative; background: var(--code-bg); border-radius: 8px; margin: 0 0 1.1rem; }
+.codehilite pre { background: none; }
+.copy {
+  position: absolute; top: 0.4rem; right: 0.4rem;
+  font: inherit; font-size: 0.75rem; color: var(--ink-soft);
+  background: var(--sheet); border: 1px solid var(--line); border-radius: 5px; padding: 0.1rem 0.5rem; cursor: pointer;
+}
+
+/* 표 */
+table { border-collapse: collapse; width: 100%; margin: 0 0 1.25rem; font-size: 0.95rem; line-height: 1.6; }
+th, td { text-align: left; vertical-align: top; padding: 0.5rem 0.7rem; border-bottom: 1px solid var(--line); }
+thead th { border-bottom: 2px solid var(--ink); font-weight: 700; }
+.glossary th { white-space: nowrap; font-weight: 600; }
+
+/* 예제와 실습 상자. 번호는 노트북 셀 번호와 같다 */
+.box { background: var(--sheet); border: 1px solid var(--line); border-radius: 10px; margin: 1.75rem 0; overflow: hidden; }
+.box > header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 0.75rem; padding: 0.7rem 1.1rem; border-bottom: 1px solid var(--line); }
+.box-no { font-weight: 700; color: var(--teal); white-space: nowrap; }
+.box-title { font-weight: 600; }
+.box-where { margin-left: auto; font-size: 0.8rem; color: var(--ink-soft); }
+.box.example > header { background: var(--teal-wash); }
+.box.practice > header { background: var(--amber-wash); }
+.box.practice .box-no { color: var(--amber); }
+.box > :not(header) { margin-left: 1.1rem; margin-right: 1.1rem; }
+.box > header + * { margin-top: 1rem; }
+
+/* 탭 */
+.tabs { margin: 0 0 1.1rem; }
+.tablist { display: flex; gap: 0.25rem; }
+.tablist button {
+  font: inherit; font-size: 0.85rem; color: var(--ink-soft);
+  background: none; border: 1px solid var(--line); border-bottom: none; border-radius: 6px 6px 0 0;
+  padding: 0.25rem 0.8rem; cursor: pointer;
+}
+.tablist button[aria-selected="true"] { background: var(--code-bg); color: var(--ink); font-weight: 600; }
+.tabs .tab .codehilite { border-top-left-radius: 0; margin-bottom: 0; }
+.tab[hidden] { display: none; }
+/* 스크립트가 꺼져 있으면 탭 이름을 붙여 차례로 보여 준다 */
+.tab:not(.ready)::before { content: attr(data-tab); display: block; font-size: 0.85rem; font-weight: 600; color: var(--ink-soft); margin-bottom: 0.3rem; }
+
+.result { margin: 0 0 1.1rem; border-left: 4px solid var(--teal); }
+.result::before { content: "실행 결과"; display: block; font-size: 0.8rem; font-weight: 600; color: var(--teal); padding: 0 0 0.25rem 0.8rem; }
+.result .codehilite, .result > pre { margin: 0; border-radius: 0 8px 8px 0; background: none; }
+.result pre { padding-top: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+details.more-result summary { cursor: pointer; font-size: 0.85rem; font-weight: 600; color: var(--teal); padding: 0.2rem 0 0.4rem 1rem; }
+
+/* 절 첫머리의 요점 */
+.gist { margin: 0 0 1.4rem; padding: 0.1rem 0 0.1rem 1rem; border-left: 4px solid var(--teal); font-weight: 600; }
+.gist p { margin: 0.4rem 0; }
+
+.callout { margin: 1.5rem 0; padding: 0.9rem 1.1rem 0.1rem; border-radius: 8px; }
+.callout::before { display: block; font-weight: 700; font-size: 0.9rem; margin-bottom: 0.3rem; }
+.callout.warn { background: var(--amber-wash); }
+.callout.warn::before { content: "주의"; color: var(--amber); }
+.callout.more { background: var(--teal-wash); }
+.callout.more::before { content: "보충"; color: var(--teal); }
+
+details.answer { margin: 0 0 1.25rem; border: 1px dashed var(--line); border-radius: 8px; padding: 0.6rem 1rem; }
+details.answer summary { cursor: pointer; font-weight: 600; color: var(--teal); }
+details.answer[open] summary { margin-bottom: 0.6rem; }
+
+.day { margin: 2rem 0; }
+.day h2 { margin: 0 0 0.5rem; }
+.foot { max-width: var(--measure); margin: 4rem auto 0; padding-top: 1rem; border-top: 1px solid var(--line); font-size: 0.85rem; color: var(--ink-soft); }
+svg { max-width: 100%; height: auto; }
+figure { margin: 1.5rem 0; }
+figcaption { font-size: 0.88rem; color: var(--ink-soft); margin-top: 0.4rem; }
+
+@media (max-width: 60rem) {
+  .layout { display: block; }
+  .top .width { display: none; }
+  .top .menu { display: block; }
+  .top .site { display: none; }
+  .side {
+    position: fixed; top: 3.5rem; left: 0; z-index: 15; width: min(20rem, 88vw);
+    background: var(--paper); transform: translateX(-100%);
+  }
+  .side.open { transform: none; box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.35); }
+  .box-where { margin-left: 0; width: 100%; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .side { transition: transform 0.18s ease; }
+}
+@media print {
+  .top, .side, .copy, .tablist { display: none !important; }
+  .layout { display: block; }
+  body { background: #fff; font-size: 10.5pt; }
+  .tab[hidden] { display: block; }
+  .tab::before { content: attr(data-tab) !important; display: block; font-weight: 600; }
+  details.answer:not([open]) > *:not(summary) { display: block; }
+  details.more-result:not([open]) > *:not(summary) { display: block; }
+  .box, .callout, .codehilite { break-inside: avoid; }
+}
+
+pre { line-height: 125%; }
+td.linenos .normal { color: #666666; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+span.linenos { color: #666666; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+td.linenos .special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+.codehilite .hll { background-color: #ffffcc }
+.codehilite { background: #f0f0f0; }
+.codehilite .c { color: #60A0B0; font-style: italic } /* Comment */
+.codehilite .err { border: 1px solid #F00 } /* Error */
+.codehilite .k { color: #007020; font-weight: bold } /* Keyword */
+.codehilite .o { color: #666 } /* Operator */
+.codehilite .ch { color: #60A0B0; font-style: italic } /* Comment.Hashbang */
+.codehilite .cm { color: #60A0B0; font-style: italic } /* Comment.Multiline */
+.codehilite .cp { color: #007020 } /* Comment.Preproc */
+.codehilite .cpf { color: #60A0B0; font-style: italic } /* Comment.PreprocFile */
+.codehilite .c1 { color: #60A0B0; font-style: italic } /* Comment.Single */
+.codehilite .cs { color: #60A0B0; background-color: #FFF0F0 } /* Comment.Special */
+.codehilite .gd { color: #A00000 } /* Generic.Deleted */
+.codehilite .ge { font-style: italic } /* Generic.Emph */
+.codehilite .ges { font-weight: bold; font-style: italic } /* Generic.EmphStrong */
+.codehilite .gr { color: #F00 } /* Generic.Error */
+.codehilite .gh { color: #000080; font-weight: bold } /* Generic.Heading */
+.codehilite .gi { color: #00A000 } /* Generic.Inserted */
+.codehilite .go { color: #888 } /* Generic.Output */
+.codehilite .gp { color: #C65D09; font-weight: bold } /* Generic.Prompt */
+.codehilite .gs { font-weight: bold } /* Generic.Strong */
+.codehilite .gu { color: #800080; font-weight: bold } /* Generic.Subheading */
+.codehilite .gt { color: #04D } /* Generic.Traceback */
+.codehilite .kc { color: #007020; font-weight: bold } /* Keyword.Constant */
+.codehilite .kd { color: #007020; font-weight: bold } /* Keyword.Declaration */
+.codehilite .kn { color: #007020; font-weight: bold } /* Keyword.Namespace */
+.codehilite .kp { color: #007020 } /* Keyword.Pseudo */
+.codehilite .kr { color: #007020; font-weight: bold } /* Keyword.Reserved */
+.codehilite .kt { color: #902000 } /* Keyword.Type */
+.codehilite .m { color: #40A070 } /* Literal.Number */
+.codehilite .s { color: #4070A0 } /* Literal.String */
+.codehilite .na { color: #4070A0 } /* Name.Attribute */
+.codehilite .nb { color: #007020 } /* Name.Builtin */
+.codehilite .nc { color: #0E84B5; font-weight: bold } /* Name.Class */
+.codehilite .no { color: #60ADD5 } /* Name.Constant */
+.codehilite .nd { color: #555; font-weight: bold } /* Name.Decorator */
+.codehilite .ni { color: #D55537; font-weight: bold } /* Name.Entity */
+.codehilite .ne { color: #007020 } /* Name.Exception */
+.codehilite .nf { color: #06287E } /* Name.Function */
+.codehilite .nl { color: #002070; font-weight: bold } /* Name.Label */
+.codehilite .nn { color: #0E84B5; font-weight: bold } /* Name.Namespace */
+.codehilite .nt { color: #062873; font-weight: bold } /* Name.Tag */
+.codehilite .nv { color: #BB60D5 } /* Name.Variable */
+.codehilite .ow { color: #007020; font-weight: bold } /* Operator.Word */
+.codehilite .w { color: #BBB } /* Text.Whitespace */
+.codehilite .mb { color: #40A070 } /* Literal.Number.Bin */
+.codehilite .mf { color: #40A070 } /* Literal.Number.Float */
+.codehilite .mh { color: #40A070 } /* Literal.Number.Hex */
+.codehilite .mi { color: #40A070 } /* Literal.Number.Integer */
+.codehilite .mo { color: #40A070 } /* Literal.Number.Oct */
+.codehilite .sa { color: #4070A0 } /* Literal.String.Affix */
+.codehilite .sb { color: #4070A0 } /* Literal.String.Backtick */
+.codehilite .sc { color: #4070A0 } /* Literal.String.Char */
+.codehilite .dl { color: #4070A0 } /* Literal.String.Delimiter */
+.codehilite .sd { color: #4070A0; font-style: italic } /* Literal.String.Doc */
+.codehilite .s2 { color: #4070A0 } /* Literal.String.Double */
+.codehilite .se { color: #4070A0; font-weight: bold } /* Literal.String.Escape */
+.codehilite .sh { color: #4070A0 } /* Literal.String.Heredoc */
+.codehilite .si { color: #70A0D0; font-style: italic } /* Literal.String.Interpol */
+.codehilite .sx { color: #C65D09 } /* Literal.String.Other */
+.codehilite .sr { color: #235388 } /* Literal.String.Regex */
+.codehilite .s1 { color: #4070A0 } /* Literal.String.Single */
+.codehilite .ss { color: #517918 } /* Literal.String.Symbol */
+.codehilite .bp { color: #007020 } /* Name.Builtin.Pseudo */
+.codehilite .fm { color: #06287E } /* Name.Function.Magic */
+.codehilite .vc { color: #BB60D5 } /* Name.Variable.Class */
+.codehilite .vg { color: #BB60D5 } /* Name.Variable.Global */
+.codehilite .vi { color: #BB60D5 } /* Name.Variable.Instance */
+.codehilite .vm { color: #BB60D5 } /* Name.Variable.Magic */
+.codehilite .il { color: #40A070 } /* Literal.Number.Integer.Long */
+pre { line-height: 125%; }
+td.linenos .normal { color: #D8DEE9; background-color: #242933; padding-left: 5px; padding-right: 5px; }
+span.linenos { color: #D8DEE9; background-color: #242933; padding-left: 5px; padding-right: 5px; }
+td.linenos .special { color: #242933; background-color: #D8DEE9; padding-left: 5px; padding-right: 5px; }
+span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 5px; padding-right: 5px; }
+:root[data-theme="dark"] .codehilite .hll { background-color: #3B4252 }
+:root[data-theme="dark"] .codehilite { background: #2E3440; color: #D8DEE9 }
+:root[data-theme="dark"] .codehilite .c { color: #616E87; font-style: italic } /* Comment */
+:root[data-theme="dark"] .codehilite .err { color: #BF616A } /* Error */
+:root[data-theme="dark"] .codehilite .esc { color: #D8DEE9 } /* Escape */
+:root[data-theme="dark"] .codehilite .g { color: #D8DEE9 } /* Generic */
+:root[data-theme="dark"] .codehilite .k { color: #81A1C1; font-weight: bold } /* Keyword */
+:root[data-theme="dark"] .codehilite .l { color: #D8DEE9 } /* Literal */
+:root[data-theme="dark"] .codehilite .n { color: #D8DEE9 } /* Name */
+:root[data-theme="dark"] .codehilite .o { color: #81A1C1; font-weight: bold } /* Operator */
+:root[data-theme="dark"] .codehilite .x { color: #D8DEE9 } /* Other */
+:root[data-theme="dark"] .codehilite .p { color: #ECEFF4 } /* Punctuation */
+:root[data-theme="dark"] .codehilite .ch { color: #616E87; font-style: italic } /* Comment.Hashbang */
+:root[data-theme="dark"] .codehilite .cm { color: #616E87; font-style: italic } /* Comment.Multiline */
+:root[data-theme="dark"] .codehilite .cp { color: #5E81AC; font-style: italic } /* Comment.Preproc */
+:root[data-theme="dark"] .codehilite .cpf { color: #616E87; font-style: italic } /* Comment.PreprocFile */
+:root[data-theme="dark"] .codehilite .c1 { color: #616E87; font-style: italic } /* Comment.Single */
+:root[data-theme="dark"] .codehilite .cs { color: #616E87; font-style: italic } /* Comment.Special */
+:root[data-theme="dark"] .codehilite .gd { color: #BF616A } /* Generic.Deleted */
+:root[data-theme="dark"] .codehilite .ge { color: #D8DEE9; font-style: italic } /* Generic.Emph */
+:root[data-theme="dark"] .codehilite .ges { color: #D8DEE9; font-weight: bold; font-style: italic } /* Generic.EmphStrong */
+:root[data-theme="dark"] .codehilite .gr { color: #BF616A } /* Generic.Error */
+:root[data-theme="dark"] .codehilite .gh { color: #88C0D0; font-weight: bold } /* Generic.Heading */
+:root[data-theme="dark"] .codehilite .gi { color: #A3BE8C } /* Generic.Inserted */
+:root[data-theme="dark"] .codehilite .go { color: #D8DEE9 } /* Generic.Output */
+:root[data-theme="dark"] .codehilite .gp { color: #616E88; font-weight: bold } /* Generic.Prompt */
+:root[data-theme="dark"] .codehilite .gs { color: #D8DEE9; font-weight: bold } /* Generic.Strong */
+:root[data-theme="dark"] .codehilite .gu { color: #88C0D0; font-weight: bold } /* Generic.Subheading */
+:root[data-theme="dark"] .codehilite .gt { color: #BF616A } /* Generic.Traceback */
+:root[data-theme="dark"] .codehilite .kc { color: #81A1C1; font-weight: bold } /* Keyword.Constant */
+:root[data-theme="dark"] .codehilite .kd { color: #81A1C1; font-weight: bold } /* Keyword.Declaration */
+:root[data-theme="dark"] .codehilite .kn { color: #81A1C1; font-weight: bold } /* Keyword.Namespace */
+:root[data-theme="dark"] .codehilite .kp { color: #81A1C1 } /* Keyword.Pseudo */
+:root[data-theme="dark"] .codehilite .kr { color: #81A1C1; font-weight: bold } /* Keyword.Reserved */
+:root[data-theme="dark"] .codehilite .kt { color: #81A1C1 } /* Keyword.Type */
+:root[data-theme="dark"] .codehilite .ld { color: #D8DEE9 } /* Literal.Date */
+:root[data-theme="dark"] .codehilite .m { color: #B48EAD } /* Literal.Number */
+:root[data-theme="dark"] .codehilite .s { color: #A3BE8C } /* Literal.String */
+:root[data-theme="dark"] .codehilite .na { color: #8FBCBB } /* Name.Attribute */
+:root[data-theme="dark"] .codehilite .nb { color: #81A1C1 } /* Name.Builtin */
+:root[data-theme="dark"] .codehilite .nc { color: #8FBCBB } /* Name.Class */
+:root[data-theme="dark"] .codehilite .no { color: #8FBCBB } /* Name.Constant */
+:root[data-theme="dark"] .codehilite .nd { color: #D08770 } /* Name.Decorator */
+:root[data-theme="dark"] .codehilite .ni { color: #D08770 } /* Name.Entity */
+:root[data-theme="dark"] .codehilite .ne { color: #BF616A } /* Name.Exception */
+:root[data-theme="dark"] .codehilite .nf { color: #88C0D0 } /* Name.Function */
+:root[data-theme="dark"] .codehilite .nl { color: #D8DEE9 } /* Name.Label */
+:root[data-theme="dark"] .codehilite .nn { color: #8FBCBB } /* Name.Namespace */
+:root[data-theme="dark"] .codehilite .nx { color: #D8DEE9 } /* Name.Other */
+:root[data-theme="dark"] .codehilite .py { color: #D8DEE9 } /* Name.Property */
+:root[data-theme="dark"] .codehilite .nt { color: #81A1C1 } /* Name.Tag */
+:root[data-theme="dark"] .codehilite .nv { color: #D8DEE9 } /* Name.Variable */
+:root[data-theme="dark"] .codehilite .ow { color: #81A1C1; font-weight: bold } /* Operator.Word */
+:root[data-theme="dark"] .codehilite .pm { color: #ECEFF4 } /* Punctuation.Marker */
+:root[data-theme="dark"] .codehilite .w { color: #D8DEE9 } /* Text.Whitespace */
+:root[data-theme="dark"] .codehilite .mb { color: #B48EAD } /* Literal.Number.Bin */
+:root[data-theme="dark"] .codehilite .mf { color: #B48EAD } /* Literal.Number.Float */
+:root[data-theme="dark"] .codehilite .mh { color: #B48EAD } /* Literal.Number.Hex */
+:root[data-theme="dark"] .codehilite .mi { color: #B48EAD } /* Literal.Number.Integer */
+:root[data-theme="dark"] .codehilite .mo { color: #B48EAD } /* Literal.Number.Oct */
+:root[data-theme="dark"] .codehilite .sa { color: #A3BE8C } /* Literal.String.Affix */
+:root[data-theme="dark"] .codehilite .sb { color: #A3BE8C } /* Literal.String.Backtick */
+:root[data-theme="dark"] .codehilite .sc { color: #A3BE8C } /* Literal.String.Char */
+:root[data-theme="dark"] .codehilite .dl { color: #A3BE8C } /* Literal.String.Delimiter */
+:root[data-theme="dark"] .codehilite .sd { color: #616E87 } /* Literal.String.Doc */
+:root[data-theme="dark"] .codehilite .s2 { color: #A3BE8C } /* Literal.String.Double */
+:root[data-theme="dark"] .codehilite .se { color: #EBCB8B } /* Literal.String.Escape */
+:root[data-theme="dark"] .codehilite .sh { color: #A3BE8C } /* Literal.String.Heredoc */
+:root[data-theme="dark"] .codehilite .si { color: #A3BE8C } /* Literal.String.Interpol */
+:root[data-theme="dark"] .codehilite .sx { color: #A3BE8C } /* Literal.String.Other */
+:root[data-theme="dark"] .codehilite .sr { color: #EBCB8B } /* Literal.String.Regex */
+:root[data-theme="dark"] .codehilite .s1 { color: #A3BE8C } /* Literal.String.Single */
+:root[data-theme="dark"] .codehilite .ss { color: #A3BE8C } /* Literal.String.Symbol */
+:root[data-theme="dark"] .codehilite .bp { color: #81A1C1 } /* Name.Builtin.Pseudo */
+:root[data-theme="dark"] .codehilite .fm { color: #88C0D0 } /* Name.Function.Magic */
+:root[data-theme="dark"] .codehilite .vc { color: #D8DEE9 } /* Name.Variable.Class */
+:root[data-theme="dark"] .codehilite .vg { color: #D8DEE9 } /* Name.Variable.Global */
+:root[data-theme="dark"] .codehilite .vi { color: #D8DEE9 } /* Name.Variable.Instance */
+:root[data-theme="dark"] .codehilite .vm { color: #D8DEE9 } /* Name.Variable.Magic */
+:root[data-theme="dark"] .codehilite .il { color: #B48EAD } /* Literal.Number.Integer.Long */
+</style>
+</head>
+<body>
+<a class="skip" href="#main">본문으로 건너뛰기</a>
+<header class="top">
+  <button class="menu" type="button" aria-controls="side" aria-expanded="false">목차</button>
+  <span class="site">생성형 AI 교재</span>
+  <nav class="days" aria-label="일자">
+<a href="index.html">차례</a>
+<a href="01_LLM은_어떻게_글을_만드는가.html">1장</a>
+<a href="02_모델은_어떻게_만들어지는가.html">2장</a>
+<a href="03_컨텍스트.html" class="here">3장</a>
+  </nav>
+  <button class="width" type="button">넓게 보기</button>
+  <button class="theme" type="button">어두운 화면</button>
+</header>
+<div class="layout">
+  <aside class="side" id="side">
+    <label class="search">
+      <span>이 쪽에서 찾기</span>
+      <input type="search" placeholder="예: 토큰, 재시도" autocomplete="off">
+    </label>
+    <div class="hits" hidden></div>
+    <nav class="toc" aria-label="목차">
+<ul>
+<li class="l1"><a href="#3장-컨텍스트">3장 컨텍스트</a></li>
+<li class="l2"><a href="#학습-목표">학습 목표</a></li>
+<li class="l2"><a href="#컨텍스트-윈도우">컨텍스트 윈도우</a></li>
+<li class="l2"><a href="#역할과-채팅-템플릿">역할과 채팅 템플릿</a></li>
+<li class="l2"><a href="#모델은-대화를-기억하지-않는다">모델은 대화를 기억하지 않는다</a></li>
+<li class="l2"><a href="#긴-문서">긴 문서</a></li>
+<li class="l2"><a href="#개념-확인-실습">개념 확인 실습</a></li>
+<li class="l2"><a href="#자가점검">자가점검</a></li>
+<li class="l2"><a href="#참고-문헌">참고 문헌</a></li>
+</ul>
+    </nav>
+  </aside>
+  <main id="main">
+<article class="part">
+<h1 id="3장-컨텍스트">3장 컨텍스트</h1>
+<p>강의 1일차 파트 1과 파트 2, 2일차 파트 1, 6일차 파트 1에 해당합니다.</p>
+<p>모델은 요청 하나를 받을 때마다 그 안에 든 글만 보고 응답합니다. 이 장은 그 "요청 하나에 든 글", 곧 컨텍스트가 무엇으로 채워지고 어디까지 들어가는지를 설명합니다. 대화가 이어지는 것처럼 보이는 이유, 대화가 길어질수록 비용이 늘어나는 이유도 이 장에서 설명합니다.</p>
+<h2 id="학습-목표">학습 목표</h2>
+<ol>
+<li>컨텍스트 윈도우가 무엇으로 채워지는지(시스템 프롬프트, 대화 이력, 넣은 문서, 질문, 출력) 설명하고, 상한을 넘으면 어떤 일이 생기는지 설명할 수 있습니다.</li>
+<li>시스템 프롬프트와 역할(system, user, assistant)이 채팅 템플릿을 거쳐 하나의 토큰 열이 되는 과정을 설명할 수 있습니다.</li>
+<li>모델이 대화를 기억하지 않는다(무상태)는 것과, 대화를 이어 가려면 이력 전체를 매번 다시 보내야 해서 입력 토큰이 쌓인다는 것을 계산으로 보일 수 있습니다.</li>
+<li>긴 문서를 한 번에 넣을 때와 나눠 넣을 때 각각 무엇을 얻고 잃는지 설명할 수 있습니다.</li>
+</ol>
+<p>예제 3-1과 실습 3-1은 1장의 토크나이저만 PC에서 씁니다. 예제 3-2와 3-3은 API(application programming interface)로 서비스 모델을 호출합니다. 모델의 응답, 토큰 수, 걸린 시간은 실행할 때마다 교재와 다를 수 있습니다.</p>
+<h2 id="컨텍스트-윈도우">컨텍스트 윈도우</h2>
+<div class="gist">
+<p>모델이 요청 하나에서 다룰 수 있는 토큰 수에는 상한이 있고, 입력과 출력이 이 상한을 나눠 씁니다. 입력에는 이번 질문뿐 아니라 시스템 프롬프트, 대화 이력, 넣은 문서가 모두 들어갑니다.</p>
+</div>
+<p><span class="term" tabindex="0" data-def="모델이 한 번의 요청에서 다룰 수 있는 토큰 수의 상한. 입력과 출력을 합쳐 센다">컨텍스트 윈도우</span>(context window)는 모델이 요청 한 번에 다룰 수 있는 토큰 수의 상한입니다. 모델은 다음 토큰을 정할 때마다 입력과 지금까지 생성한 토큰 전체를 다시 보므로(1장), 상한은 입력과 출력을 합친 길이에 걸립니다.</p>
+<figure>
+<svg viewBox="0 0 680 158" role="img" aria-label="컨텍스트 윈도우 하나를 시스템 프롬프트, 대화 이력, 넣은 문서, 이번 질문, 출력이 나눠 쓰는 막대 그림. 앞의 네 칸은 요청마다 모두 다시 보내는 입력이고, 마지막 칸은 생성할 출력입니다. 입력이 길수록 출력에 남는 토큰이 줄어듭니다.">
+<rect x="20" y="40" width="110" height="46" rx="0" fill="var(--sheet)" stroke="var(--line)"/><text x="75" y="68" text-anchor="middle" fill="var(--ink)" font-size="12">시스템 프롬프트</text><rect x="130" y="40" width="160" height="46" rx="0" fill="var(--sheet)" stroke="var(--line)"/><text x="210" y="68" text-anchor="middle" fill="var(--ink)" font-size="12">대화 이력</text><rect x="290" y="40" width="170" height="46" rx="0" fill="var(--sheet)" stroke="var(--line)"/><text x="375" y="68" text-anchor="middle" fill="var(--ink)" font-size="12">넣은 문서</text><rect x="460" y="40" width="70" height="46" rx="0" fill="var(--sheet)" stroke="var(--line)"/><text x="495" y="68" text-anchor="middle" fill="var(--ink)" font-size="12">이번 질문</text><rect x="530" y="40" width="100" height="46" rx="0" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="580" y="68" text-anchor="middle" fill="var(--ink)" font-size="12" font-weight="700">출력</text><rect x="20" y="40" width="610" height="46" fill="none" stroke="var(--amber)" stroke-width="2" stroke-dasharray="6 4"/><text x="20" y="30" fill="var(--amber)" font-size="12" font-weight="700">컨텍스트 윈도우(예: 100만 토큰)</text><line x1="20" y1="100" x2="530" y2="100" stroke="var(--ink-soft)"/><text x="275" y="118" text-anchor="middle" fill="var(--ink-soft)" font-size="12">입력: 요청마다 모두 다시 보냄</text><line x1="530" y1="100" x2="630" y2="100" stroke="var(--teal)"/><text x="580" y="118" text-anchor="middle" fill="var(--teal)" font-size="12">출력: 생성할 토큰</text><text x="325" y="146" text-anchor="middle" fill="var(--ink-soft)" font-size="12">입력이 길수록 출력에 남는 토큰이 줄어듭니다</text>
+</svg>
+<figcaption>입력 네 가지와 출력이 컨텍스트 윈도우 하나를 나눠 씁니다.</figcaption>
+</figure>
+
+<p>현행 Claude 모델의 컨텍스트 윈도우는 100만 토큰이고, 1장과 2장에서 PC로 실행한 Qwen2.5-0.5B-Instruct는 32,768토큰입니다. 입력만으로 윈도우를 넘으면 API가 요청을 오류(400, <code>prompt is too long</code>)로 거절합니다. 생성 중에 윈도우가 차면 응답이 끊기고, Claude 4.5 이후 모델은 종료 이유 <code>model_context_window_exceeded</code>를 돌려줍니다(<code>llm.py</code>는 <code>max_tokens</code>로 바꿔 줍니다). 채팅 서비스는 대화가 아주 길어지면 앞부분을 빼고 보내기도 하므로, 긴 대화의 앞부분은 응답에 반영되지 않을 수 있습니다(2026-11 확인).</p>
+<h2 id="역할과-채팅-템플릿">역할과 채팅 템플릿</h2>
+<div class="gist">
+<p>요청에 담은 시스템 프롬프트와 메시지들은 모델에 따로따로 전달되지 않습니다. 채팅 템플릿이 역할 표시 토큰으로 감싸 글 한 덩어리로 이어 붙이고, 모델은 그 끝에 이어질 토큰을 생성할 뿐입니다.</p>
+</div>
+<p>API로 요청할 때는 <span class="term" tabindex="0" data-def="대화의 한 마디. 누가 말했는지(역할)와 내용으로 이루어진다">메시지</span>(message)의 목록을 보냅니다. 메시지마다 누가 말했는지를 나타내는 <span class="term" tabindex="0" data-def="메시지를 말한 쪽. 사용자(user), 모델(assistant), 시스템(system)이 있다">역할</span>(role)이 붙습니다. user는 사용자, assistant는 모델이고, system은 대화 전체에 적용할 지시로 이 글을 <span class="term" tabindex="0" data-def="대화 전체에 적용할 모델의 입장(역할 지정), 규칙, 출력 형식을 적은 글">시스템 프롬프트</span>(system prompt)라고 합니다. OpenAI 호환 API는 system 역할의 메시지로, Anthropic API는 <code>system</code> 파라미터로 받습니다. 무엇을 적을지는 4장 "프롬프트 설계"에서 다룹니다.</p>
+<p>그런데 1장에서 본 모델의 입력은 토큰 ID의 나열 하나뿐입니다. 메시지 목록은 <span class="term" tabindex="0" data-def="메시지 목록을 역할 표시 토큰으로 감싸 모델이 학습한 형식의 글 한 덩어리로 바꾸는 규칙. 모델마다 다르다">채팅 템플릿</span>(chat template)이라는 규칙을 거쳐 글 한 덩어리가 됩니다. 채팅 템플릿은 메시지마다 역할을 나타내는 표시 토큰을 앞뒤에 붙이고, 마지막에 모델의 답 차례를 여는 표시를 붙입니다. 2장의 SFT(supervised fine-tuning)에서 모델은 바로 이 형식의 글로 학습했으므로, 답 차례가 열리면 답을 이어 씁니다.</p>
+<figure>
+<svg viewBox="0 0 680 208" role="img" aria-label="메시지 네 개(system, user, assistant, user)가 채팅 템플릿을 거쳐 im_start, im_end 표시가 붙은 글 한 덩어리(78토큰)가 되는 그림. 마지막 줄 im_start assistant가 모델의 답 차례를 엽니다.">
+<text x="10" y="18" fill="var(--ink)" font-size="12" font-weight="700">요청의 메시지 목록</text><rect x="10" y="28" width="210" height="24" rx="4" fill="var(--sheet)" stroke="var(--line)"/><text x="18" y="44" fill="var(--teal)" font-size="11" font-weight="700">system</text><text x="84" y="44" fill="var(--ink)" font-size="11">너는 후공정 문의에 답하는…</text><rect x="10" y="58" width="210" height="24" rx="4" fill="var(--sheet)" stroke="var(--line)"/><text x="18" y="74" fill="var(--teal)" font-size="11" font-weight="700">user</text><text x="84" y="74" fill="var(--ink)" font-size="11">다이싱이 무엇인가요?</text><rect x="10" y="88" width="210" height="24" rx="4" fill="var(--sheet)" stroke="var(--line)"/><text x="18" y="104" fill="var(--teal)" font-size="11" font-weight="700">assistant</text><text x="84" y="104" fill="var(--ink)" font-size="11">웨이퍼를 개별 칩으로 자르…</text><rect x="10" y="118" width="210" height="24" rx="4" fill="var(--sheet)" stroke="var(--line)"/><text x="18" y="134" fill="var(--teal)" font-size="11" font-weight="700">user</text><text x="84" y="134" fill="var(--ink)" font-size="11">그다음 공정은요?</text><line x1="226" y1="88" x2="258" y2="88" stroke="var(--teal)" stroke-width="2"/><polygon points="258,83 266,88 258,93" fill="var(--teal)"/><text x="246" y="108" text-anchor="middle" fill="var(--ink-soft)" font-size="11">채팅</text><text x="246" y="122" text-anchor="middle" fill="var(--ink-soft)" font-size="11">템플릿</text><text x="272" y="18" fill="var(--ink)" font-size="12" font-weight="700">모델이 받는 글 한 덩어리(78토큰)</text><rect x="272" y="26" width="398" height="152" rx="6" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="284" y="42" fill="var(--teal)" font-size="11" font-weight="700">&lt;|im_start|&gt;system</text><text x="284" y="58" fill="var(--ink)" font-size="11">너는 반도체 후공정 라인의 문의에 답하는 도우미다.&lt;|im_end|&gt;</text><text x="284" y="74" fill="var(--teal)" font-size="11" font-weight="700">&lt;|im_start|&gt;user</text><text x="284" y="90" fill="var(--ink)" font-size="11">다이싱이 무엇인가요?&lt;|im_end|&gt;</text><text x="284" y="106" fill="var(--teal)" font-size="11" font-weight="700">&lt;|im_start|&gt;assistant</text><text x="284" y="122" fill="var(--ink)" font-size="11">웨이퍼를 개별 칩으로 자르는…&lt;|im_end|&gt;</text><text x="284" y="138" fill="var(--teal)" font-size="11" font-weight="700">&lt;|im_start|&gt;user</text><text x="284" y="154" fill="var(--ink)" font-size="11">그다음 공정은요?&lt;|im_end|&gt;</text><text x="284" y="170" fill="var(--teal)" font-size="11" font-weight="700">&lt;|im_start|&gt;assistant</text><text x="340" y="196" text-anchor="middle" fill="var(--ink-soft)" font-size="12">마지막 줄이 모델의 답 차례를 엽니다. 모델은 마지막 줄 뒤부터 다음 토큰을 이어 씁니다</text>
+</svg>
+<figcaption>메시지마다 역할 이름과 표시 토큰이 붙어 하나의 글이 됩니다(예제 3-1의 토크나이저).</figcaption>
+</figure>
+
+<section class="box example" id="예제-3-1">
+<header><span class="box-no">예제 3-1</span><span class="box-title">채팅 템플릿 보기</span><span class="box-where">노트북 <code>03_컨텍스트.ipynb</code>의 <code>예제 3-1</code></span></header>
+<p>시스템 프롬프트, 질문, 이전 답, 새 질문으로 된 메시지 네 개를 1장의 토크나이저로 채팅 템플릿에 넣고, 만들어진 글과 그 토큰 수를 봅니다. 역할 이름 앞뒤에 어떤 표시 토큰이 붙는지, 마지막 줄이 무엇인지 봅니다.</p>
+<div class="codehilite"><pre><span></span><code><span class="n">messages</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">{</span><span class="s1">'role'</span><span class="p">:</span> <span class="s1">'system'</span><span class="p">,</span> <span class="s1">'content'</span><span class="p">:</span> <span class="s1">'너는 반도체 후공정 라인의 문의에 답하는 도우미다.'</span><span class="p">},</span>
+    <span class="p">{</span><span class="s1">'role'</span><span class="p">:</span> <span class="s1">'user'</span><span class="p">,</span> <span class="s1">'content'</span><span class="p">:</span> <span class="s1">'다이싱이 무엇인가요?'</span><span class="p">},</span>
+    <span class="p">{</span><span class="s1">'role'</span><span class="p">:</span> <span class="s1">'assistant'</span><span class="p">,</span> <span class="s1">'content'</span><span class="p">:</span> <span class="s1">'웨이퍼를 개별 칩으로 자르는 공정입니다.'</span><span class="p">},</span>
+    <span class="p">{</span><span class="s1">'role'</span><span class="p">:</span> <span class="s1">'user'</span><span class="p">,</span> <span class="s1">'content'</span><span class="p">:</span> <span class="s1">'그다음 공정은요?'</span><span class="p">},</span>
+<span class="p">]</span>
+<span class="c1"># add_generation_prompt=True: 마지막에 모델의 답 차례를 여는 표시를 붙입니다</span>
+<span class="n">text</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">apply_chat_template</span><span class="p">(</span><span class="n">messages</span><span class="p">,</span> <span class="n">tokenize</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">add_generation_prompt</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'메시지 </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">messages</span><span class="p">)</span><span class="si">}</span><span class="s1">개 → 글 한 덩어리, </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">text</span><span class="p">))</span><span class="si">}</span><span class="s1">토큰'</span><span class="p">)</span>
+</code></pre></div>
+
+<div class="result">
+<div class="codehilite"><pre><span></span><code>&lt;|im_start|&gt;system
+너는 반도체 후공정 라인의 문의에 답하는 도우미다.&lt;|im_end|&gt;
+&lt;|im_start|&gt;user
+다이싱이 무엇인가요?&lt;|im_end|&gt;
+&lt;|im_start|&gt;assistant
+웨이퍼를 개별 칩으로 자르는 공정입니다.&lt;|im_end|&gt;
+&lt;|im_start|&gt;user
+그다음 공정은요?&lt;|im_end|&gt;
+&lt;|im_start|&gt;assistant
+
+메시지 4개 → 글 한 덩어리, 78토큰
+</code></pre></div>
+
+</div>
+</section>
+<p>시스템 프롬프트도 별도 입력이 아니라 이 글의 맨 앞부분입니다. 모델이 시스템 프롬프트를 잘 따르는 것은 SFT와 RLHF(reinforcement learning from human feedback)에서 system 표시 토큰 안의 지시를 따르도록 학습했기 때문입니다. 표시 토큰의 형태는 모델마다 다르고, 서비스 모델의 템플릿은 공개되지 않은 경우가 많습니다. 그래도 API에 보낸 메시지가 한 덩어리의 글로 바뀌어 모델에 들어간다는 점은 같습니다.</p>
+<h2 id="모델은-대화를-기억하지-않는다">모델은 대화를 기억하지 않는다</h2>
+<div class="gist">
+<p>모델과 이 교재가 쓰는 API(Anthropic Messages, OpenAI 호환 Chat Completions)는 이전 요청을 기억하지 않습니다. 대화를 이어 가려면 앞의 질문과 답을 매번 다시 보내야 하므로, 대화가 길어질수록 요청 하나의 입력 토큰과 전체 비용이 함께 늘어납니다.</p>
+</div>
+<p>모델은 요청에 든 글만 보고 응답하며, 요청이 끝나면 그 내용을 다음 요청으로 이어 주지 않습니다. 이처럼 이전 요청을 기억하지 않는 성질을 <span class="term" tabindex="0" data-def="서버가 이전 요청의 내용을 기억하지 않는 성질. 필요한 정보는 요청마다 모두 보내야 한다">무상태</span>(stateless)라고 합니다. 채팅 화면에서 대화가 이어지는 것처럼 보이는 것은, 화면 쪽 프로그램이 지금까지 주고받은 메시지인 <span class="term" tabindex="0" data-def="지금까지 주고받은 메시지의 목록. 대화를 이어 가려면 요청마다 다시 보낸다">대화 이력</span>(conversation history)을 요청마다 함께 보내기 때문입니다. API를 직접 쓸 때는 이 일을 우리 코드가 합니다.</p>
+<figure>
+<svg viewBox="0 0 680 168" role="img" aria-label="1번째 요청은 시스템과 질문 1, 2번째 요청은 시스템, 질문 1, 답 1, 질문 2, 3번째 요청은 시스템, 질문 1, 답 1, 질문 2, 답 2, 질문 3을 보내는 계단 그림. 새 질문만 주황색이고 나머지는 매번 다시 보내는 이력입니다.">
+<text x="10" y="35" fill="var(--ink)" font-size="12" font-weight="700">1번째 요청</text><rect x="100" y="14" width="70" height="30" rx="4" fill="var(--sheet)" stroke="var(--line)"/><text x="135" y="34" text-anchor="middle" fill="var(--ink)" font-size="12">시스템</text><rect x="174" y="14" width="70" height="30" rx="4" fill="var(--amber-wash)" stroke="var(--amber)"/><text x="209" y="34" text-anchor="middle" fill="var(--ink)" font-size="12">질문 1</text><line x1="252" y1="29" x2="274" y2="29" stroke="var(--teal)" stroke-width="2"/><polygon points="274,24 282,29 274,34" fill="var(--teal)"/><text x="288" y="34" fill="var(--teal)" font-size="12" font-weight="700">답 1</text><text x="10" y="79" fill="var(--ink)" font-size="12" font-weight="700">2번째 요청</text><rect x="100" y="58" width="70" height="30" rx="4" fill="var(--sheet)" stroke="var(--line)"/><text x="135" y="78" text-anchor="middle" fill="var(--ink)" font-size="12">시스템</text><rect x="174" y="58" width="70" height="30" rx="4" fill="var(--sheet)" stroke="var(--line)"/><text x="209" y="78" text-anchor="middle" fill="var(--ink)" font-size="12">질문 1</text><rect x="248" y="58" width="70" height="30" rx="4" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="283" y="78" text-anchor="middle" fill="var(--ink)" font-size="12">답 1</text><rect x="322" y="58" width="70" height="30" rx="4" fill="var(--amber-wash)" stroke="var(--amber)"/><text x="357" y="78" text-anchor="middle" fill="var(--ink)" font-size="12">질문 2</text><line x1="400" y1="73" x2="422" y2="73" stroke="var(--teal)" stroke-width="2"/><polygon points="422,68 430,73 422,78" fill="var(--teal)"/><text x="436" y="78" fill="var(--teal)" font-size="12" font-weight="700">답 2</text><text x="10" y="123" fill="var(--ink)" font-size="12" font-weight="700">3번째 요청</text><rect x="100" y="102" width="70" height="30" rx="4" fill="var(--sheet)" stroke="var(--line)"/><text x="135" y="122" text-anchor="middle" fill="var(--ink)" font-size="12">시스템</text><rect x="174" y="102" width="70" height="30" rx="4" fill="var(--sheet)" stroke="var(--line)"/><text x="209" y="122" text-anchor="middle" fill="var(--ink)" font-size="12">질문 1</text><rect x="248" y="102" width="70" height="30" rx="4" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="283" y="122" text-anchor="middle" fill="var(--ink)" font-size="12">답 1</text><rect x="322" y="102" width="70" height="30" rx="4" fill="var(--sheet)" stroke="var(--line)"/><text x="357" y="122" text-anchor="middle" fill="var(--ink)" font-size="12">질문 2</text><rect x="396" y="102" width="70" height="30" rx="4" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="431" y="122" text-anchor="middle" fill="var(--ink)" font-size="12">답 2</text><rect x="470" y="102" width="70" height="30" rx="4" fill="var(--amber-wash)" stroke="var(--amber)"/><text x="505" y="122" text-anchor="middle" fill="var(--ink)" font-size="12">질문 3</text><line x1="548" y1="117" x2="570" y2="117" stroke="var(--teal)" stroke-width="2"/><polygon points="570,112 578,117 570,122" fill="var(--teal)"/><text x="584" y="122" fill="var(--teal)" font-size="12" font-weight="700">답 3</text><text x="340" y="156" text-anchor="middle" fill="var(--ink-soft)" font-size="12">주황색은 새로 보낸 질문, 나머지는 매번 다시 보내는 이력입니다</text>
+</svg>
+<figcaption>대화를 이어 가려면 요청마다 이력 전체를 다시 보냅니다.</figcaption>
+</figure>
+
+<section class="box example" id="예제-3-2">
+<header><span class="box-no">예제 3-2</span><span class="box-title">기억하지 않는 모델</span><span class="box-where">노트북 <code>03_컨텍스트.ipynb</code>의 <code>예제 3-2</code></span></header>
+<p>이름을 알려 준 뒤, 이력 없이 새 요청으로 이름을 물어봅니다. 이어서 이력을 함께 보내며 두 번 묻고, 요청마다 입력 토큰이 어떻게 늘어나는지 봅니다. <code>llm.ask()</code>는 공통 호출 함수 <code>llm.py</code>의 함수로, <code>history</code>에 이력을 주면 이력 뒤에 질문을 붙여 보냅니다(5장 "LLM API"). 이 셀은 API를 4번 호출합니다.</p>
+<div class="codehilite"><pre><span></span><code><span class="n">intro</span> <span class="o">=</span> <span class="s1">'제 이름은 김후공입니다. 기억해 주세요.'</span>
+<span class="n">first</span> <span class="o">=</span> <span class="n">llm</span><span class="o">.</span><span class="n">ask</span><span class="p">(</span><span class="n">intro</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s1">'소형'</span><span class="p">,</span> <span class="n">max_tokens</span><span class="o">=</span><span class="mi">500</span><span class="p">)</span>
+<span class="n">alone</span> <span class="o">=</span> <span class="n">llm</span><span class="o">.</span><span class="n">ask</span><span class="p">(</span><span class="s1">'제 이름이 뭐였죠?'</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s1">'소형'</span><span class="p">,</span> <span class="n">max_tokens</span><span class="o">=</span><span class="mi">500</span><span class="p">)</span>   <span class="c1"># 이력 없이 새 요청</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'[이력 없이] 입력 토큰 </span><span class="si">{</span><span class="n">alone</span><span class="o">.</span><span class="n">input_tokens</span><span class="si">}</span><span class="s1">개: </span><span class="si">{</span><span class="n">alone</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="si">}</span><span class="se">\n</span><span class="s1">'</span><span class="p">)</span>
+
+<span class="n">history</span> <span class="o">=</span> <span class="p">[{</span><span class="s1">'role'</span><span class="p">:</span> <span class="s1">'user'</span><span class="p">,</span> <span class="s1">'content'</span><span class="p">:</span> <span class="n">intro</span><span class="p">},</span> <span class="p">{</span><span class="s1">'role'</span><span class="p">:</span> <span class="s1">'assistant'</span><span class="p">,</span> <span class="s1">'content'</span><span class="p">:</span> <span class="n">first</span><span class="o">.</span><span class="n">text</span><span class="p">}]</span>
+<span class="k">for</span> <span class="n">question</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">'제 이름이 뭐였죠?'</span><span class="p">,</span> <span class="s1">'제가 처음에 한 말을 그대로 적어 주세요.'</span><span class="p">]:</span>
+    <span class="n">reply</span> <span class="o">=</span> <span class="n">llm</span><span class="o">.</span><span class="n">ask</span><span class="p">(</span><span class="n">question</span><span class="p">,</span> <span class="n">history</span><span class="o">=</span><span class="n">history</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s1">'소형'</span><span class="p">,</span> <span class="n">max_tokens</span><span class="o">=</span><span class="mi">500</span><span class="p">)</span>   <span class="c1"># 이력을 함께 보냄</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'[이력 </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">history</span><span class="p">)</span><span class="si">}</span><span class="s1">개와 함께] 입력 토큰 </span><span class="si">{</span><span class="n">reply</span><span class="o">.</span><span class="n">input_tokens</span><span class="si">}</span><span class="s1">개: </span><span class="si">{</span><span class="n">reply</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="si">}</span><span class="se">\n</span><span class="s1">'</span><span class="p">)</span>
+    <span class="n">history</span> <span class="o">+=</span> <span class="p">[{</span><span class="s1">'role'</span><span class="p">:</span> <span class="s1">'user'</span><span class="p">,</span> <span class="s1">'content'</span><span class="p">:</span> <span class="n">question</span><span class="p">},</span> <span class="p">{</span><span class="s1">'role'</span><span class="p">:</span> <span class="s1">'assistant'</span><span class="p">,</span> <span class="s1">'content'</span><span class="p">:</span> <span class="n">reply</span><span class="o">.</span><span class="n">text</span><span class="p">}]</span>
+</code></pre></div>
+
+<div class="result">
+<div class="codehilite"><pre><span></span><code>[이력 없이] 입력 토큰 21개: 죄송하지만 저는 대화 간에 기억을 유지하지 못해서, 이전 대화에서 이름을 알려드렸는지 알 수 없습니다. 제가 특정 이름을 가지고 있는 것도 아니고요. 다만 저는 Claude라는 AI 어시스턴트입니다.
+
+혹시 제가 이름을 기억하길 원하셨던 거라면, 지금 알려주시면 이 대화 안에서는 그 이름을 기준으로 이야기할 수 있어요. 아니면 찾으시는 다른 정보가 있을까요?
+
+[이력 2개와 함께] 입력 토큰 203개: 안내해 주신 대로 김후공 님이시죠. 이 대화 안에서 기억하고 있습니다.
+
+[이력 4개와 함께] 입력 토큰 270개: 처음에 하신 말씀은 다음과 같습니다.
+
+"제 이름은 김후공입니다. 기억해 주세요."
+</code></pre></div>
+
+</div>
+</section>
+<p>이력 없이 보낸 요청의 입력은 질문 하나뿐인 21토큰이었고, 모델은 이름을 알 수 없다고 답했습니다. 이력을 함께 보내자 이름을 답했고, 처음 한 말도 그대로 적었습니다. 그 대신 입력은 203토큰, 다음 요청에서 270토큰으로 늘었습니다. 모델이 기억한다고 답하더라도, 실제로는 이번 요청에 이력이 들어 있었을 뿐입니다.</p>
+<p>질문 200토큰, 답 300토큰인 대화라면 20번째 요청 하나의 입력만 9,700토큰(앞 19쌍 × 500 + 질문 200)이고, 20번까지의 합은 실습 3-2에서 계산합니다. 같은 앞부분을 반복해서 보내는 비용은 프롬프트 캐싱으로 줄일 수 있고(5장), 이력이 너무 길면 오래된 부분을 빼거나 요약해서 보냅니다(실습 3-1).</p>
+<h2 id="긴-문서">긴 문서</h2>
+<div class="gist">
+<p>긴 문서는 한 번에 넣을 수도, 나눠 넣을 수도, 필요한 부분만 찾아 넣을 수도 있습니다. 한 번에 넣으면 비용이 크고 중간 내용을 놓칠 수 있으며, 나눠 넣으면 모델이 구간마다 따로 판단합니다.</p>
+</div>
+<p>윈도우가 100만 토큰이라도 긴 문서를 그대로 넣는 것이 늘 좋지는 않습니다. 입력 토큰만큼 요금과 시간이 들고, Liu 외(2023)는 여러 모델이 긴 입력의 처음과 끝에 있는 정보는 잘 쓰지만 중간에 있는 정보는 덜 쓴다고 보고했습니다(lost in the middle). 이 실험의 모델은 GPT-3.5-Turbo, Claude 1.3 같은 2023년 모델이어서, 현행 모델에서도 같은지는 과제마다 확인해야 합니다.</p>
+<figure>
+<svg viewBox="0 0 680 172" role="img" aria-label="긴 문서를 다루는 세 방식. 한 번에 넣기는 전체를 근거로 판단하지만 입력 토큰과 비용이 크고 중간을 놓칠 수 있습니다. 분할 처리는 윈도우 안에서 처리할 수 있지만 구간마다 따로 판단하고 합친 뒤 원문과 대조해야 합니다. 찾아서 넣기는 짧고 저렴하지만 검색이 놓치면 답도 놓치며, 문서가 많을 때 씁니다(8장).">
+<rect x="10" y="10" width="210" height="150" rx="8" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="115" y="32" text-anchor="middle" fill="var(--ink)" font-size="13" font-weight="700">한 번에 넣기</text><text x="115" y="54" text-anchor="middle" fill="var(--ink)" font-size="12">문서 전체</text><text x="115" y="72" text-anchor="middle" fill="var(--ink-soft)" font-size="11">모델 1회</text><circle cx="26" cy="96" r="2" fill="var(--ink-soft)"/><text x="34" y="100" fill="var(--ink)" font-size="12">전체를 근거로 판단</text><circle cx="26" cy="118" r="2" fill="var(--ink-soft)"/><text x="34" y="122" fill="var(--ink)" font-size="12">입력 토큰과 비용이 큼</text><circle cx="26" cy="140" r="2" fill="var(--ink-soft)"/><text x="34" y="144" fill="var(--ink)" font-size="12">중간을 놓칠 수 있음</text><rect x="232" y="10" width="210" height="150" rx="8" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="337" y="32" text-anchor="middle" fill="var(--ink)" font-size="13" font-weight="700">분할 처리</text><text x="337" y="54" text-anchor="middle" fill="var(--ink)" font-size="12">구간 1 | 구간 2 | 구간 3</text><text x="337" y="72" text-anchor="middle" fill="var(--ink-soft)" font-size="11">구간마다 1회 + 합치기</text><circle cx="248" cy="96" r="2" fill="var(--ink-soft)"/><text x="256" y="100" fill="var(--ink)" font-size="12">윈도우 안에서 처리</text><circle cx="248" cy="118" r="2" fill="var(--ink-soft)"/><text x="256" y="122" fill="var(--ink)" font-size="12">구간마다 따로 판단함</text><circle cx="248" cy="140" r="2" fill="var(--ink-soft)"/><text x="256" y="144" fill="var(--ink)" font-size="12">합친 뒤 원문과 대조</text><rect x="454" y="10" width="210" height="150" rx="8" fill="var(--sheet)" stroke="var(--line)"/><text x="559" y="32" text-anchor="middle" fill="var(--ink)" font-size="13" font-weight="700">찾아서 넣기(8장)</text><text x="559" y="54" text-anchor="middle" fill="var(--ink)" font-size="12">관련 부분만 검색</text><text x="559" y="72" text-anchor="middle" fill="var(--ink-soft)" font-size="11">모델 1회</text><circle cx="470" cy="96" r="2" fill="var(--ink-soft)"/><text x="478" y="100" fill="var(--ink)" font-size="12">짧고 저렴함</text><circle cx="470" cy="118" r="2" fill="var(--ink-soft)"/><text x="478" y="122" fill="var(--ink)" font-size="12">검색이 놓치면 답도 놓침</text><circle cx="470" cy="140" r="2" fill="var(--ink-soft)"/><text x="478" y="144" fill="var(--ink)" font-size="12">문서가 많을 때 씀</text>
+</svg>
+<figcaption>긴 문서는 한 번에, 나눠서, 찾아서 넣을 수 있습니다.</figcaption>
+</figure>
+
+<p><span class="term" tabindex="0" data-def="긴 문서를 구간으로 잘라 같은 지시로 하나씩 처리한 뒤 결과를 합치는 방법">분할 처리</span>(map-reduce)는 문서를 구간으로 나눠 같은 지시로 하나씩 처리한 뒤 결과를 합칩니다. 모델이 구간마다 따로 판단해 구간 사이의 기준이 어긋날 수 있으므로, 기준을 지시에 분명히 적고 합친 결과를 원문과 대조합니다.</p>
+<section class="box example" id="예제-3-3">
+<header><span class="box-no">예제 3-3</span><span class="box-title">긴 문서의 중간</span><span class="box-where">노트북 <code>03_컨텍스트.ipynb</code>의 <code>예제 3-3</code></span></header>
+<p>코드로 만든 가상 교대 일지 600줄의 앞(5%), 중간(50%), 끝(95%)에 부품 교체 기록 한 줄을 넣고, 매번 같은 질문을 보냅니다. 위치마다 기록을 찾는지, 입력 토큰이 얼마인지 봅니다. 이 셀은 API를 3번 호출합니다.</p>
+<div class="codehilite"><pre><span></span><code><span class="n">equipment</span> <span class="o">=</span> <span class="p">[</span><span class="s1">'1호기 다이 본더'</span><span class="p">,</span> <span class="s1">'2호기 와이어 본더'</span><span class="p">,</span> <span class="s1">'4호기 몰딩기'</span><span class="p">,</span> <span class="s1">'5호기 테스트 핸들러'</span><span class="p">,</span> <span class="s1">'6호기 마킹기'</span><span class="p">]</span>
+<span class="n">lines</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">n</span><span class="w"> </span><span class="o">//</span><span class="w"> </span><span class="mi">3</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s1">일 </span><span class="si">{</span><span class="s2">"ABC"</span><span class="p">[</span><span class="n">n</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="mi">3</span><span class="p">]</span><span class="si">}</span><span class="s1">조: </span><span class="si">{</span><span class="n">equipment</span><span class="p">[</span><span class="n">n</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="mi">5</span><span class="p">]</span><span class="si">}</span><span class="s1"> 정상 가동, 생산 </span><span class="si">{</span><span class="mi">400</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="mi">37</span><span class="si">}</span><span class="s1">로트, 특이 사항 없음.'</span>
+         <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">600</span><span class="p">)]</span>
+<span class="n">fact</span> <span class="o">=</span> <span class="s1">'3호기 와이어 본더의 캐필러리를 교체함. 사유는 본딩 강도 저하.'</span>
+<span class="n">question</span> <span class="o">=</span> <span class="s1">'캐필러리를 교체한 설비와 그 사유를 한 문장으로 답해 주세요.'</span>
+<span class="k">for</span> <span class="n">position</span> <span class="ow">in</span> <span class="p">[</span><span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">]:</span>                                <span class="c1"># 일지의 앞, 중간, 끝</span>
+    <span class="n">log</span> <span class="o">=</span> <span class="n">lines</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">log</span><span class="p">)</span> <span class="o">*</span> <span class="n">position</span><span class="p">),</span> <span class="n">fact</span><span class="p">)</span>
+    <span class="n">prompt</span> <span class="o">=</span> <span class="s1">'다음은 교대 일지입니다.</span><span class="se">\n\n</span><span class="s1">'</span> <span class="o">+</span> <span class="s1">'</span><span class="se">\n</span><span class="s1">'</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">log</span><span class="p">)</span> <span class="o">+</span> <span class="s1">'</span><span class="se">\n\n</span><span class="s1">'</span> <span class="o">+</span> <span class="n">question</span>
+    <span class="n">reply</span> <span class="o">=</span> <span class="n">llm</span><span class="o">.</span><span class="n">ask</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s1">'소형'</span><span class="p">,</span> <span class="n">max_tokens</span><span class="o">=</span><span class="mi">1000</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'위치 </span><span class="si">{</span><span class="n">position</span><span class="si">:</span><span class="s1">.0%</span><span class="si">}</span><span class="s1">: 입력 토큰 </span><span class="si">{</span><span class="n">reply</span><span class="o">.</span><span class="n">input_tokens</span><span class="si">:</span><span class="s1">,</span><span class="si">}</span><span class="s1">개, </span><span class="si">{</span><span class="n">reply</span><span class="o">.</span><span class="n">seconds</span><span class="si">:</span><span class="s1">.1f</span><span class="si">}</span><span class="s1">초 → </span><span class="si">{</span><span class="n">reply</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
+</code></pre></div>
+
+<div class="result">
+<div class="codehilite"><pre><span></span><code>위치 5%: 입력 토큰 25,656개, 1.9초 → 3호기 와이어 본더의 캐필러리를 교체했으며, 교체 사유는 본딩 강도 저하입니다.
+위치 50%: 입력 토큰 25,656개, 1.2초 → 3호기 와이어 본더의 캐필러리를 교체했으며, 사유는 본딩 강도 저하입니다.
+위치 95%: 입력 토큰 25,656개, 1.1초 → 3호기 와이어 본더의 캐필러리를 교체했으며, 사유는 본딩 강도 저하였습니다.
+</code></pre></div>
+
+</div>
+</section>
+<p>교재의 실행에서 소형 모델은 세 위치 모두에서 기록을 찾았습니다. "캐필러리"가 일지의 한 줄에만 나오는 쉬운 과제여서, 이 결과만으로 중간을 놓치는 현상이 없다고 할 수는 없습니다. 그래도 질문 한 줄을 묻기 위해 요청마다 약 2만 6천 토큰, 세 번에 약 7만 7천 토큰을 보냈습니다.</p>
+<h2 id="개념-확인-실습">개념 확인 실습</h2>
+<p>실습은 장 노트북의 빈칸을 채워 실행합니다. 코드를 실행하기 전에 결과를 먼저 예측해 적고, 실행한 뒤 예측과 다른 부분을 이 장의 원리로 설명해 봅니다. 두 실습 모두 API를 호출하지 않습니다.</p>
+<section class="box practice" id="실습-3-1">
+<header><span class="box-no">실습 3-1</span><span class="box-title">이력 줄이기</span><span class="box-where">노트북 <code>03_컨텍스트.ipynb</code>의 <code>실습 3-1</code></span></header>
+<p>시스템 메시지와 마지막 질문은 남기고, 가장 오래된 질문과 답부터 한 쌍씩 빼서 채팅 템플릿 기준 토큰 수를 <code>token_limit</code> 이하로 줄이는 <code>trim_history()</code>를 작성합니다. <code>token_limit=120</code>이면 몇 쌍이 남을지 먼저 <code>my_guess</code>에 적습니다. 결과를 보고, 오래된 대화를 뺄 때 모델이 무엇을 잃는지 한 문장으로 설명하면 끝납니다.</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">count</span><span class="p">(</span><span class="n">messages</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""메시지 목록을 채팅 템플릿으로 바꾼 글의 토큰 수"""</span>
+    <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">apply_chat_template</span><span class="p">(</span><span class="n">messages</span><span class="p">,</span> <span class="n">tokenize</span><span class="o">=</span><span class="kc">False</span><span class="p">)))</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">trim_history</span><span class="p">(</span><span class="n">messages</span><span class="p">,</span> <span class="n">token_limit</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""시스템 메시지와 마지막 질문은 남기고, 가장 오래된 질문과 답부터 한 쌍씩 빼서 token_limit 이하로 줄입니다"""</span>
+    <span class="k">return</span> <span class="n">messages</span>  <span class="c1"># TODO</span>
+
+
+<span class="n">history</span> <span class="o">=</span> <span class="p">[{</span><span class="s1">'role'</span><span class="p">:</span> <span class="s1">'system'</span><span class="p">,</span> <span class="s1">'content'</span><span class="p">:</span> <span class="s1">'너는 후공정 라인의 문의에 답하는 도우미다.'</span><span class="p">}]</span>
+<span class="k">for</span> <span class="n">question</span><span class="p">,</span> <span class="n">answer</span> <span class="ow">in</span> <span class="p">[(</span><span class="s1">'다이싱이 무엇인가요?'</span><span class="p">,</span> <span class="s1">'웨이퍼를 개별 칩으로 자르는 공정입니다.'</span><span class="p">),</span>
+                         <span class="p">(</span><span class="s1">'다이 어태치는요?'</span><span class="p">,</span> <span class="s1">'자른 칩을 기판이나 리드 프레임에 붙이는 공정입니다.'</span><span class="p">),</span>
+                         <span class="p">(</span><span class="s1">'와이어 본딩은요?'</span><span class="p">,</span> <span class="s1">'칩의 패드와 리드를 가는 금속선으로 잇는 공정입니다.'</span><span class="p">),</span>
+                         <span class="p">(</span><span class="s1">'몰딩은요?'</span><span class="p">,</span> <span class="s1">'칩과 와이어를 수지로 감싸 보호하는 공정입니다.'</span><span class="p">)]:</span>
+    <span class="n">history</span> <span class="o">+=</span> <span class="p">[{</span><span class="s1">'role'</span><span class="p">:</span> <span class="s1">'user'</span><span class="p">,</span> <span class="s1">'content'</span><span class="p">:</span> <span class="n">question</span><span class="p">},</span> <span class="p">{</span><span class="s1">'role'</span><span class="p">:</span> <span class="s1">'assistant'</span><span class="p">,</span> <span class="s1">'content'</span><span class="p">:</span> <span class="n">answer</span><span class="p">}]</span>
+<span class="n">history</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s1">'role'</span><span class="p">:</span> <span class="s1">'user'</span><span class="p">,</span> <span class="s1">'content'</span><span class="p">:</span> <span class="s1">'마킹은 언제 하나요?'</span><span class="p">})</span>
+
+<span class="n">my_guess</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># TODO: token_limit=120이면 질문과 답이 몇 쌍 남을지 먼저 적습니다</span>
+<span class="n">trimmed</span> <span class="o">=</span> <span class="n">trim_history</span><span class="p">(</span><span class="n">history</span><span class="p">,</span> <span class="mi">120</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">count</span><span class="p">(</span><span class="n">history</span><span class="p">)</span><span class="si">}</span><span class="s1">토큰 → </span><span class="si">{</span><span class="n">count</span><span class="p">(</span><span class="n">trimmed</span><span class="p">)</span><span class="si">}</span><span class="s1">토큰, 남은 쌍 </span><span class="si">{</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">trimmed</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="o">//</span><span class="w"> </span><span class="mi">2</span><span class="si">}</span><span class="s1">개 (예측 </span><span class="si">{</span><span class="n">my_guess</span><span class="si">}</span><span class="s1">)'</span><span class="p">)</span>
+</code></pre></div>
+
+<details class="answer">
+<summary>풀이 보기</summary>
+<p><code>count()</code>가 상한 아래로 내려갈 때까지 맨 앞의 두 메시지(가장 오래된 질문과 답)를 뺍니다.</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">count</span><span class="p">(</span><span class="n">messages</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""메시지 목록을 채팅 템플릿으로 바꾼 글의 토큰 수"""</span>
+    <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">apply_chat_template</span><span class="p">(</span><span class="n">messages</span><span class="p">,</span> <span class="n">tokenize</span><span class="o">=</span><span class="kc">False</span><span class="p">)))</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">trim_history</span><span class="p">(</span><span class="n">messages</span><span class="p">,</span> <span class="n">token_limit</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""시스템 메시지와 마지막 질문은 남기고, 가장 오래된 질문과 답부터 한 쌍씩 빼서 token_limit 이하로 줄입니다"""</span>
+    <span class="n">system</span><span class="p">,</span> <span class="n">rest</span> <span class="o">=</span> <span class="n">messages</span><span class="p">[:</span><span class="mi">1</span><span class="p">],</span> <span class="n">messages</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+    <span class="k">while</span> <span class="n">count</span><span class="p">(</span><span class="n">system</span> <span class="o">+</span> <span class="n">rest</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">token_limit</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">rest</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">rest</span> <span class="o">=</span> <span class="n">rest</span><span class="p">[</span><span class="mi">2</span><span class="p">:]</span>  <span class="c1"># 가장 오래된 질문과 답 한 쌍을 뺍니다</span>
+    <span class="k">return</span> <span class="n">system</span> <span class="o">+</span> <span class="n">rest</span>
+
+
+<span class="n">history</span> <span class="o">=</span> <span class="p">[{</span><span class="s1">'role'</span><span class="p">:</span> <span class="s1">'system'</span><span class="p">,</span> <span class="s1">'content'</span><span class="p">:</span> <span class="s1">'너는 후공정 라인의 문의에 답하는 도우미다.'</span><span class="p">}]</span>
+<span class="k">for</span> <span class="n">question</span><span class="p">,</span> <span class="n">answer</span> <span class="ow">in</span> <span class="p">[(</span><span class="s1">'다이싱이 무엇인가요?'</span><span class="p">,</span> <span class="s1">'웨이퍼를 개별 칩으로 자르는 공정입니다.'</span><span class="p">),</span>
+                         <span class="p">(</span><span class="s1">'다이 어태치는요?'</span><span class="p">,</span> <span class="s1">'자른 칩을 기판이나 리드 프레임에 붙이는 공정입니다.'</span><span class="p">),</span>
+                         <span class="p">(</span><span class="s1">'와이어 본딩은요?'</span><span class="p">,</span> <span class="s1">'칩의 패드와 리드를 가는 금속선으로 잇는 공정입니다.'</span><span class="p">),</span>
+                         <span class="p">(</span><span class="s1">'몰딩은요?'</span><span class="p">,</span> <span class="s1">'칩과 와이어를 수지로 감싸 보호하는 공정입니다.'</span><span class="p">)]:</span>
+    <span class="n">history</span> <span class="o">+=</span> <span class="p">[{</span><span class="s1">'role'</span><span class="p">:</span> <span class="s1">'user'</span><span class="p">,</span> <span class="s1">'content'</span><span class="p">:</span> <span class="n">question</span><span class="p">},</span> <span class="p">{</span><span class="s1">'role'</span><span class="p">:</span> <span class="s1">'assistant'</span><span class="p">,</span> <span class="s1">'content'</span><span class="p">:</span> <span class="n">answer</span><span class="p">}]</span>
+<span class="n">history</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s1">'role'</span><span class="p">:</span> <span class="s1">'user'</span><span class="p">,</span> <span class="s1">'content'</span><span class="p">:</span> <span class="s1">'마킹은 언제 하나요?'</span><span class="p">})</span>
+
+<span class="n">my_guess</span> <span class="o">=</span> <span class="mi">2</span>
+<span class="n">trimmed</span> <span class="o">=</span> <span class="n">trim_history</span><span class="p">(</span><span class="n">history</span><span class="p">,</span> <span class="mi">120</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">count</span><span class="p">(</span><span class="n">history</span><span class="p">)</span><span class="si">}</span><span class="s1">토큰 → </span><span class="si">{</span><span class="n">count</span><span class="p">(</span><span class="n">trimmed</span><span class="p">)</span><span class="si">}</span><span class="s1">토큰, 남은 쌍 </span><span class="si">{</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">trimmed</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="o">//</span><span class="w"> </span><span class="mi">2</span><span class="si">}</span><span class="s1">개 (예측 </span><span class="si">{</span><span class="n">my_guess</span><span class="si">}</span><span class="s1">)'</span><span class="p">)</span>
+</code></pre></div>
+
+<div class="result">
+<div class="codehilite"><pre><span></span><code>185토큰 → 111토큰, 남은 쌍 2개 (예측 2)
+</code></pre></div>
+
+</div>
+<p>185토큰이던 이력이 111토큰이 되고, 최근 두 쌍(와이어 본딩, 몰딩)만 남습니다. 모델은 빠진 대화(다이싱, 다이 어태치)를 이제 알 수 없습니다. 무상태이므로 보내지 않은 내용은 모델에게 없는 내용입니다. 빼는 대신 오래된 대화를 짧게 요약해 넣는 방법도 있습니다.</p>
+</details>
+</section>
+<section class="box practice" id="실습-3-2">
+<header><span class="box-no">실습 3-2</span><span class="box-title">누적 입력 토큰 계산</span><span class="box-where">노트북 <code>03_컨텍스트.ipynb</code>의 <code>실습 3-2</code></span></header>
+<p>질문 200토큰, 답 300토큰인 대화를 20번 이어 갈 때, 20번의 요청에서 보낸 입력 토큰의 합을 <code>total_input_tokens()</code>로 계산합니다. 시스템 프롬프트는 없다고 가정합니다. 이력을 모두 보낼 때와 최근 3쌍만 보낼 때의 합을 먼저 <code>my_guess</code>에 어림해 적고, 실행 결과가 예측과 다르면 그 이유를 한 문장으로 설명하면 끝납니다.</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">total_input_tokens</span><span class="p">(</span><span class="n">turns</span><span class="p">,</span> <span class="n">question_tokens</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="n">answer_tokens</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">keep_last</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""요청마다 보낸 입력 토큰(이력 + 새 질문)을 모두 더합니다. keep_last가 있으면 이력을 최근 keep_last쌍만 보냅니다"""</span>
+    <span class="k">return</span> <span class="mi">0</span>  <span class="c1"># TODO</span>
+
+
+<span class="n">my_guess</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'전체 이력'</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span> <span class="s1">'최근 3쌍만'</span><span class="p">:</span> <span class="kc">None</span><span class="p">}</span>  <span class="c1"># TODO: 20번의 요청 동안 보낸 입력 토큰의 합을 어림해 적습니다</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'전체 이력: </span><span class="si">{</span><span class="n">total_input_tokens</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span><span class="si">:</span><span class="s1">,</span><span class="si">}</span><span class="s1">토큰 (예측 </span><span class="si">{</span><span class="n">my_guess</span><span class="p">[</span><span class="s2">"전체 이력"</span><span class="p">]</span><span class="si">}</span><span class="s1">)'</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'최근 3쌍만: </span><span class="si">{</span><span class="n">total_input_tokens</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span><span class="w"> </span><span class="n">keep_last</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span><span class="si">:</span><span class="s1">,</span><span class="si">}</span><span class="s1">토큰 (예측 </span><span class="si">{</span><span class="n">my_guess</span><span class="p">[</span><span class="s2">"최근 3쌍만"</span><span class="p">]</span><span class="si">}</span><span class="s1">)'</span><span class="p">)</span>
+</code></pre></div>
+
+<details class="answer">
+<summary>풀이 보기</summary>
+<p>n번째 요청의 입력은 앞 대화 쌍(최대 <code>keep_last</code>쌍)에 500토큰씩, 새 질문 200토큰을 더한 값입니다.</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">total_input_tokens</span><span class="p">(</span><span class="n">turns</span><span class="p">,</span> <span class="n">question_tokens</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="n">answer_tokens</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">keep_last</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""요청마다 보낸 입력 토큰(이력 + 새 질문)을 모두 더합니다. keep_last가 있으면 이력을 최근 keep_last쌍만 보냅니다"""</span>
+    <span class="n">total</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">turn</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">turns</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+        <span class="n">pairs</span> <span class="o">=</span> <span class="n">turn</span> <span class="o">-</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">keep_last</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">min</span><span class="p">(</span><span class="n">turn</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">keep_last</span><span class="p">)</span>  <span class="c1"># 이번 요청에 함께 보내는 앞 대화 쌍</span>
+        <span class="n">total</span> <span class="o">+=</span> <span class="n">pairs</span> <span class="o">*</span> <span class="p">(</span><span class="n">question_tokens</span> <span class="o">+</span> <span class="n">answer_tokens</span><span class="p">)</span> <span class="o">+</span> <span class="n">question_tokens</span>
+    <span class="k">return</span> <span class="n">total</span>
+
+
+<span class="n">my_guess</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'전체 이력'</span><span class="p">:</span> <span class="mi">50000</span><span class="p">,</span> <span class="s1">'최근 3쌍만'</span><span class="p">:</span> <span class="mi">30000</span><span class="p">}</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'전체 이력: </span><span class="si">{</span><span class="n">total_input_tokens</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span><span class="si">:</span><span class="s1">,</span><span class="si">}</span><span class="s1">토큰 (예측 </span><span class="si">{</span><span class="n">my_guess</span><span class="p">[</span><span class="s2">"전체 이력"</span><span class="p">]</span><span class="si">}</span><span class="s1">)'</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'최근 3쌍만: </span><span class="si">{</span><span class="n">total_input_tokens</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span><span class="w"> </span><span class="n">keep_last</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span><span class="si">:</span><span class="s1">,</span><span class="si">}</span><span class="s1">토큰 (예측 </span><span class="si">{</span><span class="n">my_guess</span><span class="p">[</span><span class="s2">"최근 3쌍만"</span><span class="p">]</span><span class="si">}</span><span class="s1">)'</span><span class="p">)</span>
+</code></pre></div>
+
+<div class="result">
+<div class="codehilite"><pre><span></span><code>전체 이력: 99,000토큰 (예측 50000)
+최근 3쌍만: 31,000토큰 (예측 30000)
+</code></pre></div>
+
+</div>
+<p>전체 이력을 보내면 99,000토큰으로, 질문과 답만 더한 대화 전체(20 × 500 = 10,000토큰)의 약 10배입니다. 앞 대화가 요청마다 다시 들어가 요청 수의 제곱에 가깝게 늘어나기 때문입니다. 최근 3쌍만 보내면 31,000토큰으로 줄지만, 그만큼 오래된 대화는 모델이 모릅니다.</p>
+</details>
+</section>
+<h2 id="자가점검">자가점검</h2>
+<p><strong>1.</strong> 컨텍스트 윈도우가 20만 토큰인 모델에 18만 토큰짜리 문서와 질문을 넣고 <code>max_tokens</code>를 3만으로 정했습니다. 어떤 일이 생길 수 있습니까?</p>
+<details class="answer">
+<summary>정답 보기</summary>
+<p>입력과 출력이 같은 윈도우를 나눠 쓰므로 출력에 남은 토큰은 약 2만입니다. Claude 4.5 이후 모델은 요청을 받고 응답이 약 2만 토큰에 이르면 <code>model_context_window_exceeded</code>로 끊고, 그 이전 모델은 요청을 오류로 거절합니다. 문서를 줄이거나 나누거나 필요한 부분만 찾아 넣습니다.</p>
+</details>
+<p><strong>2.</strong> 채팅 화면에서는 모델이 앞의 대화를 기억하는 것처럼 보입니다. 실제로는 어떻게 이루어지는 일입니까?</p>
+<details class="answer">
+<summary>정답 보기</summary>
+<p>모델과 서버는 이전 요청을 기억하지 않습니다(무상태). 화면 쪽 프로그램이 지금까지의 대화 이력을 요청마다 함께 보내므로, 모델은 매번 대화 전체를 처음 읽고 이어서 답합니다.</p>
+</details>
+<p><strong>3.</strong> 대화가 길어질수록 같은 길이의 질문을 보내도 요금이 늘어나는 이유를 설명해 보세요.</p>
+<details class="answer">
+<summary>정답 보기</summary>
+<p>이력 전체가 요청마다 입력으로 다시 들어가므로, 질문 길이가 같아도 요청 하나의 입력 토큰은 앞 대화만큼 늘어납니다. 입력 토큰에도 요금이 붙으므로 요청마다 요금이 커지고, 대화 전체의 누적 요금은 요청 수의 제곱에 가깝게 늘어납니다.</p>
+</details>
+<p><strong>4.</strong> 시스템 프롬프트는 모델에 어떤 형태로 전달됩니까? 모델이 시스템 프롬프트의 지시를 따르는 이유는 무엇입니까?</p>
+<details class="answer">
+<summary>정답 보기</summary>
+<p>채팅 템플릿이 시스템 프롬프트를 system 표시 토큰으로 감싸 글의 맨 앞에 두고, 뒤에 user와 assistant 메시지를 이어 붙여 글 한 덩어리를 만듭니다. 모델은 SFT와 RLHF에서 이 형식의 글로 학습하며 system 표시 토큰 안의 지시를 따르도록 배웠기 때문에 그 지시를 따릅니다.</p>
+</details>
+<p><strong>5.</strong> 400쪽짜리 안전 매뉴얼에서 특정 설비의 점검 주기를 찾으려 합니다. 한 번에 넣기, 분할 처리, 필요한 부분만 찾아 넣기의 장단점을 비교해 보세요.</p>
+<details class="answer">
+<summary>정답 보기</summary>
+<p>한 번에 넣으면 문서 전체를 근거로 판단하지만 입력 토큰이 많아 비용과 시간이 크고, 중간 내용을 놓칠 수 있습니다. 분할 처리는 윈도우 문제를 풀지만 구간마다 따로 판단하므로 결과를 합쳐 검산해야 합니다. 필요한 부분만 찾아 넣으면 짧고 저렴하지만, 검색이 해당 부분을 찾지 못하면 답도 틀립니다. 특정 사실 하나를 찾는 질문이라면 찾아 넣는 방법이 알맞습니다(8장).</p>
+</details>
+<h2 id="참고-문헌">참고 문헌</h2>
+<ul>
+<li>Liu, N. F. 외 (2023). Lost in the Middle: How Language Models Use Long Contexts. arXiv:2307.03172.</li>
+<li>Anthropic. Claude API 문서: 컨텍스트 윈도우, 종료 이유(2026-11 확인).</li>
+</ul>
+</article>
+    <footer class="foot">GenAI Intensive 강의(삼성전자 DS 부문 교육)의 주제를 바탕으로 새로 쓴 교재입니다.</footer>
+  </main>
+</div>
+<script>
+// 교재 화면 동작: 화면 밝기, 목차, 탭, 코드 복사, 찾기.
+(function () {
+  var root = document.documentElement;
+
+  // 화면 밝기. 기억해 둔 값이 없으면 기기 설정을 따른다.
+  var themeButton = document.querySelector('.theme');
+  function stored() { try { return localStorage.getItem('theme'); } catch (e) { return null; } }
+  function setTheme(name) {
+    root.setAttribute('data-theme', name);
+    themeButton.textContent = name === 'dark' ? '밝은 화면' : '어두운 화면';
+  }
+  setTheme(stored() || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+  themeButton.addEventListener('click', function () {
+    var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+    try { localStorage.setItem('theme', next); } catch (e) { /* 저장하지 못해도 화면은 바뀐다 */ }
+  });
+
+  // 본문 폭. 기본은 읽기 편한 폭, "넓게 보기"는 표와 코드를 넓게 본다.
+  var widthButton = document.querySelector('.width');
+  function setWidth(name) {
+    root.setAttribute('data-width', name);
+    widthButton.textContent = name === 'wide' ? '기본 폭으로' : '넓게 보기';
+  }
+  var savedWidth = null;
+  try { savedWidth = localStorage.getItem('width'); } catch (e) { /* 무시 */ }
+  setWidth(savedWidth === 'wide' ? 'wide' : 'normal');
+  widthButton.addEventListener('click', function () {
+    var next = root.getAttribute('data-width') === 'wide' ? 'normal' : 'wide';
+    setWidth(next);
+    try { localStorage.setItem('width', next); } catch (e) { /* 저장하지 못해도 화면은 바뀐다 */ }
+  });
+
+  // 좁은 화면의 목차 열고 닫기
+  var side = document.getElementById('side');
+  var menu = document.querySelector('.menu');
+  menu.addEventListener('click', function () {
+    var open = side.classList.toggle('open');
+    menu.setAttribute('aria-expanded', open);
+  });
+  side.addEventListener('click', function (event) {
+    if (event.target.closest('a')) { side.classList.remove('open'); menu.setAttribute('aria-expanded', false); }
+  });
+
+  // 이어진 탭을 한 묶음으로 만든다
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('.tab'));
+  tabs.forEach(function (tab) {
+    if (tab.classList.contains('ready')) return;
+    var group = [tab];
+    var next = tab.nextElementSibling;
+    while (next && next.classList.contains('tab')) { group.push(next); next = next.nextElementSibling; }
+    var wrap = document.createElement('div');
+    wrap.className = 'tabs';
+    var list = document.createElement('div');
+    list.className = 'tablist';
+    list.setAttribute('role', 'tablist');
+    tab.parentNode.insertBefore(wrap, tab);
+    wrap.appendChild(list);
+    group.forEach(function (panel, index) {
+      panel.classList.add('ready');
+      var button = document.createElement('button');
+      button.type = 'button';
+      button.setAttribute('role', 'tab');
+      button.textContent = panel.getAttribute('data-tab');
+      button.addEventListener('click', function () { choose(panel.getAttribute('data-tab')); });
+      list.appendChild(button);
+      wrap.appendChild(panel);
+      panel.hidden = index !== 0;
+      button.setAttribute('aria-selected', index === 0);
+    });
+  });
+  // 탭 하나를 고르면 같은 이름의 탭이 쪽 전체에서 함께 바뀐다
+  function choose(name) {
+    document.querySelectorAll('.tabs').forEach(function (wrap) {
+      var panels = wrap.querySelectorAll(':scope > .tab');
+      var has = Array.prototype.some.call(panels, function (p) { return p.getAttribute('data-tab') === name; });
+      if (!has) return;
+      panels.forEach(function (p) { p.hidden = p.getAttribute('data-tab') !== name; });
+      wrap.querySelectorAll('.tablist button').forEach(function (b) {
+        b.setAttribute('aria-selected', b.textContent === name);
+      });
+    });
+    try { localStorage.setItem('tab', name); } catch (e) { /* 무시 */ }
+  }
+  try { var savedTab = localStorage.getItem('tab'); if (savedTab) choose(savedTab); } catch (e) { /* 무시 */ }
+
+  // 코드 복사 단추
+  document.querySelectorAll('.codehilite').forEach(function (block) {
+    if (block.closest('.result') || !navigator.clipboard) return;
+    var button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'copy';
+    button.textContent = '복사';
+    button.addEventListener('click', function () {
+      navigator.clipboard.writeText(block.querySelector('pre').innerText).then(function () {
+        button.textContent = '복사했습니다';
+        setTimeout(function () { button.textContent = '복사'; }, 1500);
+      });
+    });
+    block.appendChild(button);
+  });
+
+  // 지금 읽는 절을 목차에 표시한다
+  var links = {};
+  document.querySelectorAll('.toc a').forEach(function (a) { links[decodeURIComponent(a.hash.slice(1))] = a; });
+  var headings = Array.prototype.slice.call(document.querySelectorAll('main h1[id], main h2[id], main h3[id]'));
+  function mark() {
+    var current = headings[0];
+    headings.forEach(function (h) { if (h.getBoundingClientRect().top < 120) current = h; });
+    Object.keys(links).forEach(function (id) { links[id].classList.remove('now'); });
+    if (current && links[current.id]) links[current.id].classList.add('now');
+  }
+  window.addEventListener('scroll', mark, { passive: true });
+  mark();
+
+  // 이 쪽에서 찾기: 절 단위로 찾아 목차 자리에 보여 준다
+  var input = document.querySelector('.search input');
+  var hits = document.querySelector('.hits');
+  var toc = document.querySelector('.toc');
+  var sections = headings.map(function (h) {
+    var text = '';
+    var node = h.nextElementSibling;
+    while (node && !/^H[123]$/.test(node.tagName)) { text += ' ' + node.textContent; node = node.nextElementSibling; }
+    return { id: h.id, title: h.childNodes[0].textContent.trim(), text: (h.textContent + text).toLowerCase(), raw: text };
+  });
+  input.addEventListener('input', function () {
+    var query = input.value.trim().toLowerCase();
+    if (!query) { hits.hidden = true; toc.hidden = false; return; }
+    var found = sections.filter(function (s) { return s.text.indexOf(query) !== -1; });
+    hits.textContent = '';
+    var summary = document.createElement('p');
+    summary.textContent = found.length ? '찾은 절 ' + found.length + '개' : '찾는 내용이 없습니다. 다른 낱말로 찾아 보세요.';
+    hits.appendChild(summary);
+    found.forEach(function (s) {
+      var a = document.createElement('a');
+      a.href = '#' + s.id;
+      a.textContent = s.title;
+      var at = s.raw.toLowerCase().indexOf(query);
+      if (at !== -1) {
+        var small = document.createElement('small');
+        small.textContent = '…' + s.raw.slice(Math.max(0, at - 20), at + 40).replace(/\s+/g, ' ') + '…';
+        a.appendChild(small);
+      }
+      hits.appendChild(a);
+    });
+    hits.hidden = false;
+    toc.hidden = true;
+  });
+})();
+
+</script>
+</body>
+</html>

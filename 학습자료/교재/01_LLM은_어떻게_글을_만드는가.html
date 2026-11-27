@@ -401,6 +401,7 @@ span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 
 <a href="index.html">차례</a>
 <a href="01_LLM은_어떻게_글을_만드는가.html" class="here">1장</a>
 <a href="02_모델은_어떻게_만들어지는가.html">2장</a>
+<a href="03_컨텍스트.html">3장</a>
   </nav>
   <button class="width" type="button">넓게 보기</button>
   <button class="theme" type="button">어두운 화면</button>
@@ -450,7 +451,7 @@ span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 
 <li>모델이 어휘 전체에 대한 logit을 내고 softmax로 확률 분포를 만드는 과정을 설명할 수 있습니다.</li>
 <li>같은 질문에 응답이 매번 다른 이유를 샘플링으로 설명하고, temperature와 top-p가 확률 분포를 어떻게 바꾸는지 계산으로 보일 수 있습니다.</li>
 </ol>
-<p>예제 1-1~1-3은 PC에서 공개 소형 LLM인 Qwen2.5-0.5B-Instruct(파라미터 약 5억 개)를 실행합니다. 서비스 모델은 토큰마다의 확률을 돌려주지 않으므로, 확률을 직접 보려면 PC에서 실행하는 모델이 필요합니다. 예제 1-4만 API(application programming interface)로 서비스 모델을 호출합니다. 생성한 문장과 소수점 아래 숫자는 PC, 라이브러리 버전, 실행할 때마다 교재와 다를 수 있습니다.</p>
+<p>예제 1-1~1-3은 PC에서 공개 LLM인 Qwen2.5-0.5B-Instruct(파라미터 약 5억 개)를 실행합니다. 서비스 모델은 토큰마다의 확률을 돌려주지 않으므로, 확률을 직접 보려면 PC에서 실행하는 모델이 필요합니다. 예제 1-4만 API(application programming interface)로 서비스 모델을 호출합니다. 생성한 문장과 소수점 아래 숫자는 PC, 라이브러리 버전, 실행할 때마다 교재와 다를 수 있습니다.</p>
 <h2 id="LLM이-응답을-만드는-과정">LLM이 응답을 만드는 과정</h2>
 <div class="gist">
 <p>LLM은 입력 끝에 올 토큰 하나를 확률로 고르고, 그 토큰을 붙여 다시 다음 토큰을 고르는 일을 되풀이해 응답을 만듭니다. 이 반복 어디에도 사실을 찾아보는 단계는 없습니다.</p>
