@@ -402,8 +402,10 @@ span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 
 <a href="01_LLM은_어떻게_글을_만드는가.html">1장</a>
 <a href="02_모델은_어떻게_만들어지는가.html">2장</a>
 <a href="03_컨텍스트.html">3장</a>
+<a href="04_프롬프트_설계.html">4장</a>
 <a href="05_LLM_API.html" class="here">5장</a>
 <a href="06_구조화_출력.html">6장</a>
+<a href="15_보안과_거버넌스.html">15장</a>
   </nav>
   <button class="width" type="button">넓게 보기</button>
   <button class="theme" type="button">어두운 화면</button>
@@ -582,9 +584,9 @@ span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 
 
 <div class="result">
 <div class="codehilite"><pre><span></span><code>effort=low: 블록 ['thinking', 'text'], 종료 이유 end_turn
-  입력 103토큰, 출력 70토큰(그중 thinking 66) → 68904
+  입력 103토큰, 출력 73토큰(그중 thinking 69) → 68904
 effort=high: 블록 ['thinking', 'text'], 종료 이유 end_turn
-  입력 103토큰, 출력 163토큰(그중 thinking 159) → 68904
+  입력 103토큰, 출력 126토큰(그중 thinking 122) → 68904
 </code></pre></div>
 
 </div>
@@ -633,9 +635,9 @@ effort=high: 블록 ['thinking', 'text'], 종료 이유 end_turn
 </code></pre></div>
 
 <div class="result">
-<div class="codehilite"><pre><span></span><code>소형: 정확도 93%, 입력 912→912토큰, 출력 1,475토큰, 6.7초, 0.0008달러
-기본: 정확도 93%, 입력 912→912토큰, 출력 1,348토큰, 10.3초, 0.0153달러
-대형: 정확도 93%, 입력 912→912토큰, 출력 870토큰, 8.5초, 0.0210달러
+<div class="codehilite"><pre><span></span><code>소형: 정확도 100%, 입력 914→914토큰, 출력 1,487토큰, 7.4초, 0.0008달러
+기본: 정확도 100%, 입력 914→914토큰, 출력 858토큰, 6.5초, 0.0104달러
+대형: 정확도 100%, 입력 914→914토큰, 출력 878토큰, 8.1초, 0.0212달러
 </code></pre></div>
 
 </div>
@@ -658,7 +660,7 @@ effort=high: 블록 ['thinking', 'text'], 종료 이유 end_turn
 <h3 id="기다리면-풀리는-오류">기다리면 풀리는 오류</h3>
 <p><span class="term" tabindex="0" data-def="일정 시간 동안 보낼 수 있는 요청 수나 토큰 수의 상한. 넘으면 429 오류가 난다">레이트 리밋</span>(rate limit)은 일정 시간에 보낼 수 있는 요청 수와 토큰 수의 상한입니다. Anthropic API는 모델마다 분당 요청 수, 분당 입력 토큰 수, 분당 출력 토큰 수의 상한을 두고, 어느 하나라도 넘으면 429 오류가 납니다. 상한은 한 번에 초기화되지 않고 시간이 지나는 만큼 조금씩 채워지므로, 잠시 기다리면 다시 보낼 수 있습니다. 응답에 <code>retry-after</code> 헤더가 있으면 그 초만큼 기다립니다. 같은 429라도 월 사용 한도에 닿은 경우에는 다음 달까지 풀리지 않고 <code>retry-after</code> 헤더도 없습니다(2026-11 확인).</p>
 <p><span class="term" tabindex="0" data-def="응답 대기 시간의 상한. 넘으면 요청을 포기하고 오류로 처리한다">타임아웃</span>(timeout)은 응답 대기 시간의 상한입니다. 상한 안에 응답이 오지 않으면 SDK가 요청을 포기하고 예외를 발생시킵니다. 출력이 길거나 thinking이 길면 응답이 늦으므로, 타임아웃은 측정한 응답 시간보다 넉넉하게 둡니다. 타임아웃으로 포기한 요청도 서버에서는 이미 처리되어 요금이 붙었을 수 있습니다.</p>
-<p>이런 오류는 같은 요청을 다시 보내는 <span class="term" tabindex="0" data-def="실패한 요청을 같은 내용으로 다시 보내는 것">재시도</span>(retry)로 풀립니다. 재시도할 때는 대기 시간을 1초, 2초, 4초처럼 늘려 가는 <span class="term" tabindex="0" data-def="재시도할 때마다 대기 시간을 늘려 가는 방식">백오프</span>(backoff)를 씁니다. 레이트 리밋에 걸린 요청 여러 개가 같은 간격으로 다시 보내면 같은 순간에 다시 몰리므로, 대기 시간에 작은 무작위 값인 <span class="term" tabindex="0" data-def="재시도 대기 시간에 더하는 작은 무작위 값. 여러 요청이 같은 시각에 다시 몰리는 것을 막는다">지터</span>(jitter)를 더합니다.</p>
+<p>이런 오류는 같은 요청을 다시 보내는 <span class="term" tabindex="0" data-def="실패한 요청을 같은 내용으로 다시 보내는 것">재시도</span>(retry)로 풀립니다. 재시도할 때는 대기 시간을 1초, 2초, 4초처럼 늘려 가는 <span class="term" tabindex="0" data-def="재시도할 때마다 대기 시간을 늘려 가는 방식">백오프</span>(backoff)를 씁니다. 레이트 리밋에 걸린 요청 여러 개가 같은 간격으로 다시 보내면 같은 순간에 다시 겹치므로, 대기 시간에 작은 무작위 값인 <span class="term" tabindex="0" data-def="재시도 대기 시간에 더하는 작은 무작위 값. 여러 요청이 같은 시각에 다시 몰리는 것을 막는다">지터</span>(jitter)를 더합니다.</p>
 <figure>
 <svg viewBox="0 0 680 128" role="img" aria-label="재시도 시간 순서. 1번째 시도가 429로 실패하면 1초와 지터만큼 기다리고, 2번째 시도가 다시 429로 실패하면 2초와 지터만큼 기다린 뒤, 3번째 시도에서 응답을 받습니다. 3번째도 실패하면 실패 목록에 남깁니다.">
 <line x1="20" y1="60" x2="660" y2="60" stroke="var(--line)" stroke-width="2"/><rect x="20" y="40" width="80" height="40" rx="4" fill="var(--amber-wash)" stroke="var(--amber)"/><text x="60" y="58" text-anchor="middle" fill="var(--ink)" font-size="12">1번째</text><text x="60" y="73" text-anchor="middle" fill="var(--amber)" font-size="11">429</text><text x="160" y="52" text-anchor="middle" fill="var(--ink-soft)" font-size="12">1초 + 지터</text><rect x="220" y="40" width="80" height="40" rx="4" fill="var(--amber-wash)" stroke="var(--amber)"/><text x="260" y="58" text-anchor="middle" fill="var(--ink)" font-size="12">2번째</text><text x="260" y="73" text-anchor="middle" fill="var(--amber)" font-size="11">429</text><text x="410" y="52" text-anchor="middle" fill="var(--ink-soft)" font-size="12">2초 + 지터</text><rect x="520" y="40" width="80" height="40" rx="4" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="560" y="58" text-anchor="middle" fill="var(--ink)" font-size="12">3번째</text><text x="560" y="73" text-anchor="middle" fill="var(--teal)" font-size="11">응답</text><text x="340" y="112" text-anchor="middle" fill="var(--ink-soft)" font-size="12">3번째도 실패하면 더 보내지 않고 실패 목록에 남깁니다</text>
@@ -883,24 +885,25 @@ effort=high: 블록 ['thinking', 'text'], 종료 이유 end_turn
 잘린 응답: 확인 필요
 
 [완료] 와이어 본딩 작업 표준 최신본은 어디에 있나요?
-  → 와이어 본딩 작업 표준의 최신본 위치는 제가 알 수 없습니다. 사내 문서 시스템에 접근할 수 없어서, 실제 문서 경로나 버전을 추측해서 말씀드리면 잘못된 문서를 쓰실 수 있습니다.
+  → 와이어 본딩 작업 표준의 최신본이 어디에 있는지는 제가 확인할 수 없습니다. 사내 문서 시스템이나 파일 서버에 접근할 수 없고, 문서 위치나 버전 정보도 가지고 있지 않습니다.
+
+
 
 [완료] 몰딩 컴파운드 보관 조건이 적힌 문서를 찾고 있습니다.
-  → 사내 문서나 파일에는 접근할 수 없어서, 해당 문서를 직접 찾아 드리거나 내용을 확인해 드릴 수는 없습니다. 아래 위치에서 찾아보시는 것을 권장합니다.
+  → 사내 문서에는 접근할 수 없어서 해당 문서를 직접 찾아 확인해 드릴 수는 없습니다. 대신 문서를 찾는 방향은 안내해 드릴 수 있습니다.
 
-- **공급사 제품 데이터
+**일반적으로 몰딩 컴파운드(EMC)는 다
 
 [완료] 신규 제품 QFN-48의 검사 기준서를 공유해 주세요.
-  → 죄송하지만 저는 사내 문서 저장소나 문서 관리 시스템에 접근할 수 없어서, QFN-48 검사 기준서를 직접 보여드릴 수 없습니다. 기준서 내용을 임의로 만들어 드리면 실제 라인에서
+  → 죄송하지만 저는 사내 문서 저장소나 문서 관리 시스템에 접근할 수 없어서, QFN-48 검사 기준서 원문을 보여드릴 수 없습니다. 제가 기준서 내용을 임의로 만들어 드리면 실제 라
 
 [완료] 3월 품질 회의 회의록을 받을 수 있을까요?
-  → 죄송하지만 저는 사내 문서 시스템이나 회의록 저장소에 접근할 수 없어서 3월 품질 회의 회의록을 직접 찾아 드릴 수는 없습니다. 내용을 지어내서 안내드리는 것도 하지 않겠습니다.
-
+  → 죄송하지만 저는 사내 문서나 회의록에 접근할 수 없어서 3월 품질 회의 회의록을 제공해 드릴 수 없습니다. 제가 가진 정보에는 해당 회의의 내용이 없어서, 내용을 임의로 짐작해서 
 
 [완료] 교대 인수인계 양식 파일이 어디 있는지 알려 주세요.
-  → 죄송하지만 저는 사내 파일 서버나 문서 저장소에 접근할 수 없어서, 교대 인수인계 양식 파일이 정확히 어디에 있는지 알 수 없습니다. 추측으로 경로를 말씀드리면 잘못된 안내가 될 
+  → 죄송하지만 저는 사내 파일 서버나 문서 저장소에 접근할 수 없어서, 교대 인수인계 양식 파일의 정확한 위치는 알려드릴 수 없습니다. 추측으로 경로를 말씀드리면 잘못된 정보가 될 수
 
-요금 합계 0.00145달러, 실패 목록 []
+요금 합계 0.00153달러, 실패 목록 []
 </code></pre></div>
 
 </div>
