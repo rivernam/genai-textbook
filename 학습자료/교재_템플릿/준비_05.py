@@ -7,7 +7,7 @@ with open(f'{DATA}/문의.csv', encoding='utf-8') as file:
     inquiries = list(csv.DictReader(file))        # 문의 60건. 열: 번호, 문의, 라벨, 긴급, 비고
 LABELS = ['설비 이상', '품질', '안전', '문서와 데이터 요청']
 
-# 100만 토큰당 단가(달러). Anthropic API의 기본 모델, 프롬프트 10만 토큰 이하 기준(2026-11 확인)
+# 100만 토큰당 단가(달러). `llm.py`가 쓰는 Anthropic 모델, 프롬프트 10만 토큰 이하 기준(2026-11 확인)
 # 사내 API를 쓰면 사내 안내의 단가로 바꿉니다
 PRICES = {'소형': {'input': 0.10, 'output': 0.50, 'cache_write': 0.125, 'cache_read': 0.01},
           '기본': {'input': 2.00, 'output': 10.00, 'cache_write': 2.50, 'cache_read': 0.10},
