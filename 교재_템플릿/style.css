@@ -1,0 +1,224 @@
+/* 복습 교재 화면. 외부 글꼴과 이미지를 쓰지 않는다. */
+:root {
+  --paper: #f6f8f8;        /* 본문 바탕 */
+  --sheet: #ffffff;        /* 상자 바탕 */
+  --ink: #16252b;          /* 본문 글자 */
+  --ink-soft: #55676e;     /* 보조 글자 */
+  --line: #d3dcde;         /* 선 */
+  --teal: #0b5a66;         /* 제목, 링크, 예제 */
+  --teal-wash: #e3eff0;
+  --amber: #8a5a00;        /* 주의, 실습 */
+  --amber-wash: #fbf1d8;
+  --code-bg: #eef2f3;
+  --body-font: "Pretendard", "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --code-font: "D2Coding", "Cascadia Mono", "Consolas", "Menlo", "Malgun Gothic", "Apple SD Gothic Neo", monospace;
+  --measure: 50rem;        /* 본문 한 줄 약 50자. 표와 코드가 좁아지지 않는 폭 */
+}
+/* "넓게 보기"를 켜면 본문 폭을 넓힌다. 표와 코드가 많은 절을 볼 때 쓴다 */
+:root[data-width="wide"] { --measure: 74rem; }
+:root[data-theme="dark"] {
+  --paper: #10191c;
+  --sheet: #17242a;
+  --ink: #dde7e9;
+  --ink-soft: #94a8ae;
+  --line: #2c3f46;
+  --teal: #6fc7d2;
+  --teal-wash: #1b3238;
+  --amber: #e6b656;
+  --amber-wash: #322a16;
+  --code-bg: #1c2b31;
+}
+
+* { box-sizing: border-box; }
+html { scroll-padding-top: 4.5rem; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--body-font);
+  font-size: 1.0625rem;
+  line-height: 1.8;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+a { color: var(--teal); text-underline-offset: 0.2em; }
+:focus-visible { outline: 3px solid var(--teal); outline-offset: 2px; }
+.skip { position: absolute; left: -999rem; }
+.skip:focus { left: 1rem; top: 1rem; z-index: 30; background: var(--sheet); padding: 0.5rem 1rem; }
+
+/* 위쪽 띠 */
+.top {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; align-items: center; gap: 1rem;
+  height: 3.5rem; padding: 0 1.25rem;
+  background: var(--sheet); border-bottom: 1px solid var(--line);
+}
+.top .site { font-weight: 700; white-space: nowrap; }
+.top .days { display: flex; gap: 0.25rem; margin-right: auto; overflow-x: auto; }
+.top .days a { padding: 0.25rem 0.7rem; border-radius: 999px; text-decoration: none; color: var(--ink-soft); white-space: nowrap; }
+.top .days a.here { background: var(--teal); color: var(--sheet); }
+.top button {
+  font: inherit; font-size: 0.9rem; color: var(--ink);
+  background: none; border: 1px solid var(--line); border-radius: 6px;
+  padding: 0.3rem 0.8rem; cursor: pointer; white-space: nowrap;
+}
+.top .menu { display: none; }
+
+/* 배치: 왼쪽 목차, 가운데 본문 */
+.layout { display: grid; grid-template-columns: 18rem minmax(0, 1fr); }
+.side {
+  position: sticky; top: 3.5rem; align-self: start;
+  height: calc(100vh - 3.5rem); overflow-y: auto;
+  padding: 1.25rem 1rem 3rem 1.25rem;
+  border-right: 1px solid var(--line);
+  font-size: 0.92rem; line-height: 1.5;
+}
+.search span { display: block; color: var(--ink-soft); margin-bottom: 0.3rem; }
+.search input {
+  width: 100%; font: inherit; color: var(--ink);
+  background: var(--sheet); border: 1px solid var(--line); border-radius: 6px; padding: 0.45rem 0.6rem;
+}
+.hits { margin-top: 0.75rem; }
+.hits p { color: var(--ink-soft); margin: 0.5rem 0; }
+.hits a { display: block; padding: 0.4rem 0; text-decoration: none; border-bottom: 1px solid var(--line); }
+.hits small { display: block; color: var(--ink-soft); }
+.toc ul { list-style: none; margin: 1rem 0 0; padding: 0; }
+.toc a { display: block; padding: 0.22rem 0.5rem; border-left: 3px solid transparent; color: var(--ink-soft); text-decoration: none; }
+.toc a:hover { color: var(--ink); }
+.toc a.now { border-left-color: var(--teal); color: var(--ink); font-weight: 600; }
+.toc .l1 a { margin-top: 0.9rem; color: var(--ink); font-weight: 700; }
+.toc .l3 a { padding-left: 1.4rem; font-size: 0.88rem; }
+
+main { min-width: 0; padding: 2.5rem clamp(1.25rem, 5vw, 4.5rem) 4rem; }
+/* 본문은 남는 공간의 가운데에 둔다. 넓은 화면에서 한쪽에만 여백이 몰리지 않는다 */
+.part { max-width: var(--measure); margin: 0 auto 5rem; }
+.part > * { max-width: 100%; }
+
+/* 제목. 원본 쪽수는 제목 줄 오른쪽에 작은 표로 붙는다 */
+h1, h2, h3 { line-height: 1.35; letter-spacing: -0.01em; }
+h1 { font-size: 2.15rem; margin: 0 0 1.5rem; padding-bottom: 1rem; border-bottom: 3px solid var(--teal); }
+h2 { font-size: 1.5rem; margin: 3.5rem 0 1rem; }
+h3 { font-size: 1.15rem; margin: 2.25rem 0 0.75rem; }
+.source {
+  display: inline-block; vertical-align: middle; margin-left: 0.5rem;
+  font-size: 0.72rem; font-weight: 500; letter-spacing: 0;
+  color: var(--ink-soft); border: 1px solid var(--line); border-radius: 4px; padding: 0.05rem 0.4rem;
+}
+.source.added { color: var(--amber); border-color: currentColor; }
+
+p { margin: 0 0 1.1rem; }
+ul, ol { padding-left: 1.4rem; margin: 0 0 1.1rem; }
+li { margin-bottom: 0.3rem; }
+strong { font-weight: 700; }
+
+/* 용어: 점선 밑줄, 올리거나 초점이 가면 정의가 뜬다 */
+.term { position: relative; border-bottom: 1.5px dotted var(--teal); cursor: help; }
+.term:hover::after, .term:focus::after {
+  content: attr(data-def);
+  position: absolute; left: 0; top: 1.9em; z-index: 10;
+  width: max-content; max-width: min(22rem, 80vw);
+  background: var(--ink); color: var(--paper);
+  font-size: 0.86rem; font-weight: 400; line-height: 1.55;
+  padding: 0.55rem 0.75rem; border-radius: 6px;
+}
+
+/* 코드 */
+code { font-family: var(--code-font); font-size: 0.9em; background: var(--code-bg); padding: 0.1em 0.35em; border-radius: 4px; }
+/* 표 안의 짧은 코드(함수 이름, 패키지 이름)는 낱말 중간에서 끊지 않는다 */
+td code, th code { white-space: nowrap; }
+td, th { overflow-wrap: break-word; }
+pre { margin: 0; padding: 0.9rem 1rem; overflow-x: auto; font-size: 0.88rem; line-height: 1.65; }
+pre code { background: none; padding: 0; font-size: inherit; }
+.codehilite, .part > pre { position: relative; background: var(--code-bg); border-radius: 8px; margin: 0 0 1.1rem; }
+.codehilite pre { background: none; }
+.copy {
+  position: absolute; top: 0.4rem; right: 0.4rem;
+  font: inherit; font-size: 0.75rem; color: var(--ink-soft);
+  background: var(--sheet); border: 1px solid var(--line); border-radius: 5px; padding: 0.1rem 0.5rem; cursor: pointer;
+}
+
+/* 표 */
+table { border-collapse: collapse; width: 100%; margin: 0 0 1.25rem; font-size: 0.95rem; line-height: 1.6; }
+th, td { text-align: left; vertical-align: top; padding: 0.5rem 0.7rem; border-bottom: 1px solid var(--line); }
+thead th { border-bottom: 2px solid var(--ink); font-weight: 700; }
+.glossary th { white-space: nowrap; font-weight: 600; }
+
+/* 예제와 실습 상자. 번호는 노트북 셀 번호와 같다 */
+.box { background: var(--sheet); border: 1px solid var(--line); border-radius: 10px; margin: 1.75rem 0; overflow: hidden; }
+.box > header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 0.75rem; padding: 0.7rem 1.1rem; border-bottom: 1px solid var(--line); }
+.box-no { font-weight: 700; color: var(--teal); white-space: nowrap; }
+.box-title { font-weight: 600; }
+.box-where { margin-left: auto; font-size: 0.8rem; color: var(--ink-soft); }
+.box.example > header { background: var(--teal-wash); }
+.box.practice > header { background: var(--amber-wash); }
+.box.practice .box-no { color: var(--amber); }
+.box > :not(header) { margin-left: 1.1rem; margin-right: 1.1rem; }
+.box > header + * { margin-top: 1rem; }
+
+/* 탭 */
+.tabs { margin: 0 0 1.1rem; }
+.tablist { display: flex; gap: 0.25rem; }
+.tablist button {
+  font: inherit; font-size: 0.85rem; color: var(--ink-soft);
+  background: none; border: 1px solid var(--line); border-bottom: none; border-radius: 6px 6px 0 0;
+  padding: 0.25rem 0.8rem; cursor: pointer;
+}
+.tablist button[aria-selected="true"] { background: var(--code-bg); color: var(--ink); font-weight: 600; }
+.tabs .tab .codehilite { border-top-left-radius: 0; margin-bottom: 0; }
+.tab[hidden] { display: none; }
+/* 스크립트가 꺼져 있으면 탭 이름을 붙여 차례로 보여 준다 */
+.tab:not(.ready)::before { content: attr(data-tab); display: block; font-size: 0.85rem; font-weight: 600; color: var(--ink-soft); margin-bottom: 0.3rem; }
+
+.result { margin: 0 0 1.1rem; border-left: 4px solid var(--teal); }
+.result::before { content: "실행 결과"; display: block; font-size: 0.8rem; font-weight: 600; color: var(--teal); padding: 0 0 0.25rem 0.8rem; }
+.result .codehilite, .result > pre { margin: 0; border-radius: 0 8px 8px 0; background: none; }
+.result pre { padding-top: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+details.more-result summary { cursor: pointer; font-size: 0.85rem; font-weight: 600; color: var(--teal); padding: 0.2rem 0 0.4rem 1rem; }
+
+/* 절 첫머리의 요점 */
+.gist { margin: 0 0 1.4rem; padding: 0.1rem 0 0.1rem 1rem; border-left: 4px solid var(--teal); font-weight: 600; }
+.gist p { margin: 0.4rem 0; }
+
+.callout { margin: 1.5rem 0; padding: 0.9rem 1.1rem 0.1rem; border-radius: 8px; }
+.callout::before { display: block; font-weight: 700; font-size: 0.9rem; margin-bottom: 0.3rem; }
+.callout.warn { background: var(--amber-wash); }
+.callout.warn::before { content: "주의"; color: var(--amber); }
+.callout.more { background: var(--teal-wash); }
+.callout.more::before { content: "보충"; color: var(--teal); }
+
+details.answer { margin: 0 0 1.25rem; border: 1px dashed var(--line); border-radius: 8px; padding: 0.6rem 1rem; }
+details.answer summary { cursor: pointer; font-weight: 600; color: var(--teal); }
+details.answer[open] summary { margin-bottom: 0.6rem; }
+
+.day { margin: 2rem 0; }
+.day h2 { margin: 0 0 0.5rem; }
+.foot { max-width: var(--measure); margin: 4rem auto 0; padding-top: 1rem; border-top: 1px solid var(--line); font-size: 0.85rem; color: var(--ink-soft); }
+svg { max-width: 100%; height: auto; }
+figure { margin: 1.5rem 0; }
+figcaption { font-size: 0.88rem; color: var(--ink-soft); margin-top: 0.4rem; }
+
+@media (max-width: 60rem) {
+  .layout { display: block; }
+  .top .width { display: none; }
+  .top .menu { display: block; }
+  .top .site { display: none; }
+  .side {
+    position: fixed; top: 3.5rem; left: 0; z-index: 15; width: min(20rem, 88vw);
+    background: var(--paper); transform: translateX(-100%);
+  }
+  .side.open { transform: none; box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.35); }
+  .box-where { margin-left: 0; width: 100%; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .side { transition: transform 0.18s ease; }
+}
+@media print {
+  .top, .side, .copy, .tablist { display: none !important; }
+  .layout { display: block; }
+  body { background: #fff; font-size: 10.5pt; }
+  .tab[hidden] { display: block; }
+  .tab::before { content: attr(data-tab) !important; display: block; font-weight: 600; }
+  details.answer:not([open]) > *:not(summary) { display: block; }
+  details.more-result:not([open]) > *:not(summary) { display: block; }
+  .box, .callout, .codehilite { break-inside: avoid; }
+}

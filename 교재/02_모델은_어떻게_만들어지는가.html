@@ -1,0 +1,1033 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>2장 모델은 어떻게 만들어지는가 | 생성형 AI 교재</title>
+<style>
+/* 복습 교재 화면. 외부 글꼴과 이미지를 쓰지 않는다. */
+:root {
+  --paper: #f6f8f8;        /* 본문 바탕 */
+  --sheet: #ffffff;        /* 상자 바탕 */
+  --ink: #16252b;          /* 본문 글자 */
+  --ink-soft: #55676e;     /* 보조 글자 */
+  --line: #d3dcde;         /* 선 */
+  --teal: #0b5a66;         /* 제목, 링크, 예제 */
+  --teal-wash: #e3eff0;
+  --amber: #8a5a00;        /* 주의, 실습 */
+  --amber-wash: #fbf1d8;
+  --code-bg: #eef2f3;
+  --body-font: "Pretendard", "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --code-font: "D2Coding", "Cascadia Mono", "Consolas", "Menlo", "Malgun Gothic", "Apple SD Gothic Neo", monospace;
+  --measure: 50rem;        /* 본문 한 줄 약 50자. 표와 코드가 좁아지지 않는 폭 */
+}
+/* "넓게 보기"를 켜면 본문 폭을 넓힌다. 표와 코드가 많은 절을 볼 때 쓴다 */
+:root[data-width="wide"] { --measure: 74rem; }
+:root[data-theme="dark"] {
+  --paper: #10191c;
+  --sheet: #17242a;
+  --ink: #dde7e9;
+  --ink-soft: #94a8ae;
+  --line: #2c3f46;
+  --teal: #6fc7d2;
+  --teal-wash: #1b3238;
+  --amber: #e6b656;
+  --amber-wash: #322a16;
+  --code-bg: #1c2b31;
+}
+
+* { box-sizing: border-box; }
+html { scroll-padding-top: 4.5rem; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--body-font);
+  font-size: 1.0625rem;
+  line-height: 1.8;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+a { color: var(--teal); text-underline-offset: 0.2em; }
+:focus-visible { outline: 3px solid var(--teal); outline-offset: 2px; }
+.skip { position: absolute; left: -999rem; }
+.skip:focus { left: 1rem; top: 1rem; z-index: 30; background: var(--sheet); padding: 0.5rem 1rem; }
+
+/* 위쪽 띠 */
+.top {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; align-items: center; gap: 1rem;
+  height: 3.5rem; padding: 0 1.25rem;
+  background: var(--sheet); border-bottom: 1px solid var(--line);
+}
+.top .site { font-weight: 700; white-space: nowrap; }
+.top .days { display: flex; gap: 0.25rem; margin-right: auto; overflow-x: auto; }
+.top .days a { padding: 0.25rem 0.7rem; border-radius: 999px; text-decoration: none; color: var(--ink-soft); white-space: nowrap; }
+.top .days a.here { background: var(--teal); color: var(--sheet); }
+.top button {
+  font: inherit; font-size: 0.9rem; color: var(--ink);
+  background: none; border: 1px solid var(--line); border-radius: 6px;
+  padding: 0.3rem 0.8rem; cursor: pointer; white-space: nowrap;
+}
+.top .menu { display: none; }
+
+/* 배치: 왼쪽 목차, 가운데 본문 */
+.layout { display: grid; grid-template-columns: 18rem minmax(0, 1fr); }
+.side {
+  position: sticky; top: 3.5rem; align-self: start;
+  height: calc(100vh - 3.5rem); overflow-y: auto;
+  padding: 1.25rem 1rem 3rem 1.25rem;
+  border-right: 1px solid var(--line);
+  font-size: 0.92rem; line-height: 1.5;
+}
+.search span { display: block; color: var(--ink-soft); margin-bottom: 0.3rem; }
+.search input {
+  width: 100%; font: inherit; color: var(--ink);
+  background: var(--sheet); border: 1px solid var(--line); border-radius: 6px; padding: 0.45rem 0.6rem;
+}
+.hits { margin-top: 0.75rem; }
+.hits p { color: var(--ink-soft); margin: 0.5rem 0; }
+.hits a { display: block; padding: 0.4rem 0; text-decoration: none; border-bottom: 1px solid var(--line); }
+.hits small { display: block; color: var(--ink-soft); }
+.toc ul { list-style: none; margin: 1rem 0 0; padding: 0; }
+.toc a { display: block; padding: 0.22rem 0.5rem; border-left: 3px solid transparent; color: var(--ink-soft); text-decoration: none; }
+.toc a:hover { color: var(--ink); }
+.toc a.now { border-left-color: var(--teal); color: var(--ink); font-weight: 600; }
+.toc .l1 a { margin-top: 0.9rem; color: var(--ink); font-weight: 700; }
+.toc .l3 a { padding-left: 1.4rem; font-size: 0.88rem; }
+
+main { min-width: 0; padding: 2.5rem clamp(1.25rem, 5vw, 4.5rem) 4rem; }
+/* 본문은 남는 공간의 가운데에 둔다. 넓은 화면에서 한쪽에만 여백이 몰리지 않는다 */
+.part { max-width: var(--measure); margin: 0 auto 5rem; }
+.part > * { max-width: 100%; }
+
+/* 제목. 원본 쪽수는 제목 줄 오른쪽에 작은 표로 붙는다 */
+h1, h2, h3 { line-height: 1.35; letter-spacing: -0.01em; }
+h1 { font-size: 2.15rem; margin: 0 0 1.5rem; padding-bottom: 1rem; border-bottom: 3px solid var(--teal); }
+h2 { font-size: 1.5rem; margin: 3.5rem 0 1rem; }
+h3 { font-size: 1.15rem; margin: 2.25rem 0 0.75rem; }
+.source {
+  display: inline-block; vertical-align: middle; margin-left: 0.5rem;
+  font-size: 0.72rem; font-weight: 500; letter-spacing: 0;
+  color: var(--ink-soft); border: 1px solid var(--line); border-radius: 4px; padding: 0.05rem 0.4rem;
+}
+.source.added { color: var(--amber); border-color: currentColor; }
+
+p { margin: 0 0 1.1rem; }
+ul, ol { padding-left: 1.4rem; margin: 0 0 1.1rem; }
+li { margin-bottom: 0.3rem; }
+strong { font-weight: 700; }
+
+/* 용어: 점선 밑줄, 올리거나 초점이 가면 정의가 뜬다 */
+.term { position: relative; border-bottom: 1.5px dotted var(--teal); cursor: help; }
+.term:hover::after, .term:focus::after {
+  content: attr(data-def);
+  position: absolute; left: 0; top: 1.9em; z-index: 10;
+  width: max-content; max-width: min(22rem, 80vw);
+  background: var(--ink); color: var(--paper);
+  font-size: 0.86rem; font-weight: 400; line-height: 1.55;
+  padding: 0.55rem 0.75rem; border-radius: 6px;
+}
+
+/* 코드 */
+code { font-family: var(--code-font); font-size: 0.9em; background: var(--code-bg); padding: 0.1em 0.35em; border-radius: 4px; }
+/* 표 안의 짧은 코드(함수 이름, 패키지 이름)는 낱말 중간에서 끊지 않는다 */
+td code, th code { white-space: nowrap; }
+td, th { overflow-wrap: break-word; }
+pre { margin: 0; padding: 0.9rem 1rem; overflow-x: auto; font-size: 0.88rem; line-height: 1.65; }
+pre code { background: none; padding: 0; font-size: inherit; }
+.codehilite, .part > pre { position: relative; background: var(--code-bg); border-radius: 8px; margin: 0 0 1.1rem; }
+.codehilite pre { background: none; }
+.copy {
+  position: absolute; top: 0.4rem; right: 0.4rem;
+  font: inherit; font-size: 0.75rem; color: var(--ink-soft);
+  background: var(--sheet); border: 1px solid var(--line); border-radius: 5px; padding: 0.1rem 0.5rem; cursor: pointer;
+}
+
+/* 표 */
+table { border-collapse: collapse; width: 100%; margin: 0 0 1.25rem; font-size: 0.95rem; line-height: 1.6; }
+th, td { text-align: left; vertical-align: top; padding: 0.5rem 0.7rem; border-bottom: 1px solid var(--line); }
+thead th { border-bottom: 2px solid var(--ink); font-weight: 700; }
+.glossary th { white-space: nowrap; font-weight: 600; }
+
+/* 예제와 실습 상자. 번호는 노트북 셀 번호와 같다 */
+.box { background: var(--sheet); border: 1px solid var(--line); border-radius: 10px; margin: 1.75rem 0; overflow: hidden; }
+.box > header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 0.75rem; padding: 0.7rem 1.1rem; border-bottom: 1px solid var(--line); }
+.box-no { font-weight: 700; color: var(--teal); white-space: nowrap; }
+.box-title { font-weight: 600; }
+.box-where { margin-left: auto; font-size: 0.8rem; color: var(--ink-soft); }
+.box.example > header { background: var(--teal-wash); }
+.box.practice > header { background: var(--amber-wash); }
+.box.practice .box-no { color: var(--amber); }
+.box > :not(header) { margin-left: 1.1rem; margin-right: 1.1rem; }
+.box > header + * { margin-top: 1rem; }
+
+/* 탭 */
+.tabs { margin: 0 0 1.1rem; }
+.tablist { display: flex; gap: 0.25rem; }
+.tablist button {
+  font: inherit; font-size: 0.85rem; color: var(--ink-soft);
+  background: none; border: 1px solid var(--line); border-bottom: none; border-radius: 6px 6px 0 0;
+  padding: 0.25rem 0.8rem; cursor: pointer;
+}
+.tablist button[aria-selected="true"] { background: var(--code-bg); color: var(--ink); font-weight: 600; }
+.tabs .tab .codehilite { border-top-left-radius: 0; margin-bottom: 0; }
+.tab[hidden] { display: none; }
+/* 스크립트가 꺼져 있으면 탭 이름을 붙여 차례로 보여 준다 */
+.tab:not(.ready)::before { content: attr(data-tab); display: block; font-size: 0.85rem; font-weight: 600; color: var(--ink-soft); margin-bottom: 0.3rem; }
+
+.result { margin: 0 0 1.1rem; border-left: 4px solid var(--teal); }
+.result::before { content: "실행 결과"; display: block; font-size: 0.8rem; font-weight: 600; color: var(--teal); padding: 0 0 0.25rem 0.8rem; }
+.result .codehilite, .result > pre { margin: 0; border-radius: 0 8px 8px 0; background: none; }
+.result pre { padding-top: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+details.more-result summary { cursor: pointer; font-size: 0.85rem; font-weight: 600; color: var(--teal); padding: 0.2rem 0 0.4rem 1rem; }
+
+/* 절 첫머리의 요점 */
+.gist { margin: 0 0 1.4rem; padding: 0.1rem 0 0.1rem 1rem; border-left: 4px solid var(--teal); font-weight: 600; }
+.gist p { margin: 0.4rem 0; }
+
+.callout { margin: 1.5rem 0; padding: 0.9rem 1.1rem 0.1rem; border-radius: 8px; }
+.callout::before { display: block; font-weight: 700; font-size: 0.9rem; margin-bottom: 0.3rem; }
+.callout.warn { background: var(--amber-wash); }
+.callout.warn::before { content: "주의"; color: var(--amber); }
+.callout.more { background: var(--teal-wash); }
+.callout.more::before { content: "보충"; color: var(--teal); }
+
+details.answer { margin: 0 0 1.25rem; border: 1px dashed var(--line); border-radius: 8px; padding: 0.6rem 1rem; }
+details.answer summary { cursor: pointer; font-weight: 600; color: var(--teal); }
+details.answer[open] summary { margin-bottom: 0.6rem; }
+
+.day { margin: 2rem 0; }
+.day h2 { margin: 0 0 0.5rem; }
+.foot { max-width: var(--measure); margin: 4rem auto 0; padding-top: 1rem; border-top: 1px solid var(--line); font-size: 0.85rem; color: var(--ink-soft); }
+svg { max-width: 100%; height: auto; }
+figure { margin: 1.5rem 0; }
+figcaption { font-size: 0.88rem; color: var(--ink-soft); margin-top: 0.4rem; }
+
+@media (max-width: 60rem) {
+  .layout { display: block; }
+  .top .width { display: none; }
+  .top .menu { display: block; }
+  .top .site { display: none; }
+  .side {
+    position: fixed; top: 3.5rem; left: 0; z-index: 15; width: min(20rem, 88vw);
+    background: var(--paper); transform: translateX(-100%);
+  }
+  .side.open { transform: none; box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.35); }
+  .box-where { margin-left: 0; width: 100%; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .side { transition: transform 0.18s ease; }
+}
+@media print {
+  .top, .side, .copy, .tablist { display: none !important; }
+  .layout { display: block; }
+  body { background: #fff; font-size: 10.5pt; }
+  .tab[hidden] { display: block; }
+  .tab::before { content: attr(data-tab) !important; display: block; font-weight: 600; }
+  details.answer:not([open]) > *:not(summary) { display: block; }
+  details.more-result:not([open]) > *:not(summary) { display: block; }
+  .box, .callout, .codehilite { break-inside: avoid; }
+}
+
+pre { line-height: 125%; }
+td.linenos .normal { color: #666666; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+span.linenos { color: #666666; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+td.linenos .special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+.codehilite .hll { background-color: #ffffcc }
+.codehilite { background: #f0f0f0; }
+.codehilite .c { color: #60A0B0; font-style: italic } /* Comment */
+.codehilite .err { border: 1px solid #F00 } /* Error */
+.codehilite .k { color: #007020; font-weight: bold } /* Keyword */
+.codehilite .o { color: #666 } /* Operator */
+.codehilite .ch { color: #60A0B0; font-style: italic } /* Comment.Hashbang */
+.codehilite .cm { color: #60A0B0; font-style: italic } /* Comment.Multiline */
+.codehilite .cp { color: #007020 } /* Comment.Preproc */
+.codehilite .cpf { color: #60A0B0; font-style: italic } /* Comment.PreprocFile */
+.codehilite .c1 { color: #60A0B0; font-style: italic } /* Comment.Single */
+.codehilite .cs { color: #60A0B0; background-color: #FFF0F0 } /* Comment.Special */
+.codehilite .gd { color: #A00000 } /* Generic.Deleted */
+.codehilite .ge { font-style: italic } /* Generic.Emph */
+.codehilite .ges { font-weight: bold; font-style: italic } /* Generic.EmphStrong */
+.codehilite .gr { color: #F00 } /* Generic.Error */
+.codehilite .gh { color: #000080; font-weight: bold } /* Generic.Heading */
+.codehilite .gi { color: #00A000 } /* Generic.Inserted */
+.codehilite .go { color: #888 } /* Generic.Output */
+.codehilite .gp { color: #C65D09; font-weight: bold } /* Generic.Prompt */
+.codehilite .gs { font-weight: bold } /* Generic.Strong */
+.codehilite .gu { color: #800080; font-weight: bold } /* Generic.Subheading */
+.codehilite .gt { color: #04D } /* Generic.Traceback */
+.codehilite .kc { color: #007020; font-weight: bold } /* Keyword.Constant */
+.codehilite .kd { color: #007020; font-weight: bold } /* Keyword.Declaration */
+.codehilite .kn { color: #007020; font-weight: bold } /* Keyword.Namespace */
+.codehilite .kp { color: #007020 } /* Keyword.Pseudo */
+.codehilite .kr { color: #007020; font-weight: bold } /* Keyword.Reserved */
+.codehilite .kt { color: #902000 } /* Keyword.Type */
+.codehilite .m { color: #40A070 } /* Literal.Number */
+.codehilite .s { color: #4070A0 } /* Literal.String */
+.codehilite .na { color: #4070A0 } /* Name.Attribute */
+.codehilite .nb { color: #007020 } /* Name.Builtin */
+.codehilite .nc { color: #0E84B5; font-weight: bold } /* Name.Class */
+.codehilite .no { color: #60ADD5 } /* Name.Constant */
+.codehilite .nd { color: #555; font-weight: bold } /* Name.Decorator */
+.codehilite .ni { color: #D55537; font-weight: bold } /* Name.Entity */
+.codehilite .ne { color: #007020 } /* Name.Exception */
+.codehilite .nf { color: #06287E } /* Name.Function */
+.codehilite .nl { color: #002070; font-weight: bold } /* Name.Label */
+.codehilite .nn { color: #0E84B5; font-weight: bold } /* Name.Namespace */
+.codehilite .nt { color: #062873; font-weight: bold } /* Name.Tag */
+.codehilite .nv { color: #BB60D5 } /* Name.Variable */
+.codehilite .ow { color: #007020; font-weight: bold } /* Operator.Word */
+.codehilite .w { color: #BBB } /* Text.Whitespace */
+.codehilite .mb { color: #40A070 } /* Literal.Number.Bin */
+.codehilite .mf { color: #40A070 } /* Literal.Number.Float */
+.codehilite .mh { color: #40A070 } /* Literal.Number.Hex */
+.codehilite .mi { color: #40A070 } /* Literal.Number.Integer */
+.codehilite .mo { color: #40A070 } /* Literal.Number.Oct */
+.codehilite .sa { color: #4070A0 } /* Literal.String.Affix */
+.codehilite .sb { color: #4070A0 } /* Literal.String.Backtick */
+.codehilite .sc { color: #4070A0 } /* Literal.String.Char */
+.codehilite .dl { color: #4070A0 } /* Literal.String.Delimiter */
+.codehilite .sd { color: #4070A0; font-style: italic } /* Literal.String.Doc */
+.codehilite .s2 { color: #4070A0 } /* Literal.String.Double */
+.codehilite .se { color: #4070A0; font-weight: bold } /* Literal.String.Escape */
+.codehilite .sh { color: #4070A0 } /* Literal.String.Heredoc */
+.codehilite .si { color: #70A0D0; font-style: italic } /* Literal.String.Interpol */
+.codehilite .sx { color: #C65D09 } /* Literal.String.Other */
+.codehilite .sr { color: #235388 } /* Literal.String.Regex */
+.codehilite .s1 { color: #4070A0 } /* Literal.String.Single */
+.codehilite .ss { color: #517918 } /* Literal.String.Symbol */
+.codehilite .bp { color: #007020 } /* Name.Builtin.Pseudo */
+.codehilite .fm { color: #06287E } /* Name.Function.Magic */
+.codehilite .vc { color: #BB60D5 } /* Name.Variable.Class */
+.codehilite .vg { color: #BB60D5 } /* Name.Variable.Global */
+.codehilite .vi { color: #BB60D5 } /* Name.Variable.Instance */
+.codehilite .vm { color: #BB60D5 } /* Name.Variable.Magic */
+.codehilite .il { color: #40A070 } /* Literal.Number.Integer.Long */
+pre { line-height: 125%; }
+td.linenos .normal { color: #D8DEE9; background-color: #242933; padding-left: 5px; padding-right: 5px; }
+span.linenos { color: #D8DEE9; background-color: #242933; padding-left: 5px; padding-right: 5px; }
+td.linenos .special { color: #242933; background-color: #D8DEE9; padding-left: 5px; padding-right: 5px; }
+span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 5px; padding-right: 5px; }
+:root[data-theme="dark"] .codehilite .hll { background-color: #3B4252 }
+:root[data-theme="dark"] .codehilite { background: #2E3440; color: #D8DEE9 }
+:root[data-theme="dark"] .codehilite .c { color: #616E87; font-style: italic } /* Comment */
+:root[data-theme="dark"] .codehilite .err { color: #BF616A } /* Error */
+:root[data-theme="dark"] .codehilite .esc { color: #D8DEE9 } /* Escape */
+:root[data-theme="dark"] .codehilite .g { color: #D8DEE9 } /* Generic */
+:root[data-theme="dark"] .codehilite .k { color: #81A1C1; font-weight: bold } /* Keyword */
+:root[data-theme="dark"] .codehilite .l { color: #D8DEE9 } /* Literal */
+:root[data-theme="dark"] .codehilite .n { color: #D8DEE9 } /* Name */
+:root[data-theme="dark"] .codehilite .o { color: #81A1C1; font-weight: bold } /* Operator */
+:root[data-theme="dark"] .codehilite .x { color: #D8DEE9 } /* Other */
+:root[data-theme="dark"] .codehilite .p { color: #ECEFF4 } /* Punctuation */
+:root[data-theme="dark"] .codehilite .ch { color: #616E87; font-style: italic } /* Comment.Hashbang */
+:root[data-theme="dark"] .codehilite .cm { color: #616E87; font-style: italic } /* Comment.Multiline */
+:root[data-theme="dark"] .codehilite .cp { color: #5E81AC; font-style: italic } /* Comment.Preproc */
+:root[data-theme="dark"] .codehilite .cpf { color: #616E87; font-style: italic } /* Comment.PreprocFile */
+:root[data-theme="dark"] .codehilite .c1 { color: #616E87; font-style: italic } /* Comment.Single */
+:root[data-theme="dark"] .codehilite .cs { color: #616E87; font-style: italic } /* Comment.Special */
+:root[data-theme="dark"] .codehilite .gd { color: #BF616A } /* Generic.Deleted */
+:root[data-theme="dark"] .codehilite .ge { color: #D8DEE9; font-style: italic } /* Generic.Emph */
+:root[data-theme="dark"] .codehilite .ges { color: #D8DEE9; font-weight: bold; font-style: italic } /* Generic.EmphStrong */
+:root[data-theme="dark"] .codehilite .gr { color: #BF616A } /* Generic.Error */
+:root[data-theme="dark"] .codehilite .gh { color: #88C0D0; font-weight: bold } /* Generic.Heading */
+:root[data-theme="dark"] .codehilite .gi { color: #A3BE8C } /* Generic.Inserted */
+:root[data-theme="dark"] .codehilite .go { color: #D8DEE9 } /* Generic.Output */
+:root[data-theme="dark"] .codehilite .gp { color: #616E88; font-weight: bold } /* Generic.Prompt */
+:root[data-theme="dark"] .codehilite .gs { color: #D8DEE9; font-weight: bold } /* Generic.Strong */
+:root[data-theme="dark"] .codehilite .gu { color: #88C0D0; font-weight: bold } /* Generic.Subheading */
+:root[data-theme="dark"] .codehilite .gt { color: #BF616A } /* Generic.Traceback */
+:root[data-theme="dark"] .codehilite .kc { color: #81A1C1; font-weight: bold } /* Keyword.Constant */
+:root[data-theme="dark"] .codehilite .kd { color: #81A1C1; font-weight: bold } /* Keyword.Declaration */
+:root[data-theme="dark"] .codehilite .kn { color: #81A1C1; font-weight: bold } /* Keyword.Namespace */
+:root[data-theme="dark"] .codehilite .kp { color: #81A1C1 } /* Keyword.Pseudo */
+:root[data-theme="dark"] .codehilite .kr { color: #81A1C1; font-weight: bold } /* Keyword.Reserved */
+:root[data-theme="dark"] .codehilite .kt { color: #81A1C1 } /* Keyword.Type */
+:root[data-theme="dark"] .codehilite .ld { color: #D8DEE9 } /* Literal.Date */
+:root[data-theme="dark"] .codehilite .m { color: #B48EAD } /* Literal.Number */
+:root[data-theme="dark"] .codehilite .s { color: #A3BE8C } /* Literal.String */
+:root[data-theme="dark"] .codehilite .na { color: #8FBCBB } /* Name.Attribute */
+:root[data-theme="dark"] .codehilite .nb { color: #81A1C1 } /* Name.Builtin */
+:root[data-theme="dark"] .codehilite .nc { color: #8FBCBB } /* Name.Class */
+:root[data-theme="dark"] .codehilite .no { color: #8FBCBB } /* Name.Constant */
+:root[data-theme="dark"] .codehilite .nd { color: #D08770 } /* Name.Decorator */
+:root[data-theme="dark"] .codehilite .ni { color: #D08770 } /* Name.Entity */
+:root[data-theme="dark"] .codehilite .ne { color: #BF616A } /* Name.Exception */
+:root[data-theme="dark"] .codehilite .nf { color: #88C0D0 } /* Name.Function */
+:root[data-theme="dark"] .codehilite .nl { color: #D8DEE9 } /* Name.Label */
+:root[data-theme="dark"] .codehilite .nn { color: #8FBCBB } /* Name.Namespace */
+:root[data-theme="dark"] .codehilite .nx { color: #D8DEE9 } /* Name.Other */
+:root[data-theme="dark"] .codehilite .py { color: #D8DEE9 } /* Name.Property */
+:root[data-theme="dark"] .codehilite .nt { color: #81A1C1 } /* Name.Tag */
+:root[data-theme="dark"] .codehilite .nv { color: #D8DEE9 } /* Name.Variable */
+:root[data-theme="dark"] .codehilite .ow { color: #81A1C1; font-weight: bold } /* Operator.Word */
+:root[data-theme="dark"] .codehilite .pm { color: #ECEFF4 } /* Punctuation.Marker */
+:root[data-theme="dark"] .codehilite .w { color: #D8DEE9 } /* Text.Whitespace */
+:root[data-theme="dark"] .codehilite .mb { color: #B48EAD } /* Literal.Number.Bin */
+:root[data-theme="dark"] .codehilite .mf { color: #B48EAD } /* Literal.Number.Float */
+:root[data-theme="dark"] .codehilite .mh { color: #B48EAD } /* Literal.Number.Hex */
+:root[data-theme="dark"] .codehilite .mi { color: #B48EAD } /* Literal.Number.Integer */
+:root[data-theme="dark"] .codehilite .mo { color: #B48EAD } /* Literal.Number.Oct */
+:root[data-theme="dark"] .codehilite .sa { color: #A3BE8C } /* Literal.String.Affix */
+:root[data-theme="dark"] .codehilite .sb { color: #A3BE8C } /* Literal.String.Backtick */
+:root[data-theme="dark"] .codehilite .sc { color: #A3BE8C } /* Literal.String.Char */
+:root[data-theme="dark"] .codehilite .dl { color: #A3BE8C } /* Literal.String.Delimiter */
+:root[data-theme="dark"] .codehilite .sd { color: #616E87 } /* Literal.String.Doc */
+:root[data-theme="dark"] .codehilite .s2 { color: #A3BE8C } /* Literal.String.Double */
+:root[data-theme="dark"] .codehilite .se { color: #EBCB8B } /* Literal.String.Escape */
+:root[data-theme="dark"] .codehilite .sh { color: #A3BE8C } /* Literal.String.Heredoc */
+:root[data-theme="dark"] .codehilite .si { color: #A3BE8C } /* Literal.String.Interpol */
+:root[data-theme="dark"] .codehilite .sx { color: #A3BE8C } /* Literal.String.Other */
+:root[data-theme="dark"] .codehilite .sr { color: #EBCB8B } /* Literal.String.Regex */
+:root[data-theme="dark"] .codehilite .s1 { color: #A3BE8C } /* Literal.String.Single */
+:root[data-theme="dark"] .codehilite .ss { color: #A3BE8C } /* Literal.String.Symbol */
+:root[data-theme="dark"] .codehilite .bp { color: #81A1C1 } /* Name.Builtin.Pseudo */
+:root[data-theme="dark"] .codehilite .fm { color: #88C0D0 } /* Name.Function.Magic */
+:root[data-theme="dark"] .codehilite .vc { color: #D8DEE9 } /* Name.Variable.Class */
+:root[data-theme="dark"] .codehilite .vg { color: #D8DEE9 } /* Name.Variable.Global */
+:root[data-theme="dark"] .codehilite .vi { color: #D8DEE9 } /* Name.Variable.Instance */
+:root[data-theme="dark"] .codehilite .vm { color: #D8DEE9 } /* Name.Variable.Magic */
+:root[data-theme="dark"] .codehilite .il { color: #B48EAD } /* Literal.Number.Integer.Long */
+</style>
+</head>
+<body>
+<a class="skip" href="#main">본문으로 건너뛰기</a>
+<header class="top">
+  <button class="menu" type="button" aria-controls="side" aria-expanded="false">목차</button>
+  <span class="site">생성형 AI 교재</span>
+  <nav class="days" aria-label="일자">
+<a href="index.html">차례</a>
+<a href="01_LLM은_어떻게_글을_만드는가.html">1장</a>
+<a href="02_모델은_어떻게_만들어지는가.html" class="here">2장</a>
+  </nav>
+  <button class="width" type="button">넓게 보기</button>
+  <button class="theme" type="button">어두운 화면</button>
+</header>
+<div class="layout">
+  <aside class="side" id="side">
+    <label class="search">
+      <span>이 쪽에서 찾기</span>
+      <input type="search" placeholder="예: 토큰, 재시도" autocomplete="off">
+    </label>
+    <div class="hits" hidden></div>
+    <nav class="toc" aria-label="목차">
+<ul>
+<li class="l1"><a href="#2장-모델은-어떻게-만들어지는가">2장 모델은 어떻게 만들어지는가</a></li>
+<li class="l2"><a href="#학습-목표">학습 목표</a></li>
+<li class="l2"><a href="#모델을-만드는-단계">모델을 만드는 단계</a></li>
+<li class="l2"><a href="#사전-학습-글을-이어-쓰는-법">사전 학습: 글을 이어 쓰는 법</a></li>
+<li class="l3"><a href="#처음부터-만드는-과정">처음부터 만드는 과정</a></li>
+<li class="l3"><a href="#베이스-모델">베이스 모델</a></li>
+<li class="l2"><a href="#질문에-답하는-법-SFT">질문에 답하는 법: SFT</a></li>
+<li class="l2"><a href="#사람이-고른-답-쪽으로-RLHF와-DPO">사람이 고른 답 쪽으로: RLHF와 DPO</a></li>
+<li class="l2"><a href="#지식-기준일">지식 기준일</a></li>
+<li class="l2"><a href="#환각이-생기는-이유">환각이 생기는 이유</a></li>
+<li class="l2"><a href="#thinking-모델">thinking 모델</a></li>
+<li class="l2"><a href="#개념-확인-실습">개념 확인 실습</a></li>
+<li class="l2"><a href="#자가점검">자가점검</a></li>
+<li class="l2"><a href="#참고-문헌">참고 문헌</a></li>
+</ul>
+    </nav>
+  </aside>
+  <main id="main">
+<article class="part">
+<h1 id="2장-모델은-어떻게-만들어지는가">2장 모델은 어떻게 만들어지는가</h1>
+<p>강의 1일차 파트 1, 6일차 파트 1에 해당합니다.</p>
+<p>이 장은 1장의 모델이 어떻게 만들어지는지를 설명합니다. 학습 방식을 알면 모델이 왜 기준일 뒤의 일을 모르는지, 왜 틀린 내용을 그럴듯하게 쓰는지, 왜 짧은 답에도 요금이 많이 드는지를 설명할 수 있습니다.</p>
+<h2 id="학습-목표">학습 목표</h2>
+<ol>
+<li>사전 학습이 대량의 글에서 다음 토큰 예측을 학습한다는 것을 손실로 설명하고, 사전 학습만 한 모델(베이스 모델)이 질문에 답하지 않고 글을 이어 쓰는 이유를 설명할 수 있습니다.</li>
+<li>SFT(supervised fine-tuning), RLHF(reinforcement learning from human feedback), DPO(direct preference optimization)가 각각 어떤 데이터로 모델의 무엇을 바꾸는지 설명할 수 있습니다.</li>
+<li>모델에 지식 기준일이 생기는 이유와, 학습 목표가 사실이 아니라 그럴듯한 다음 토큰이어서 환각이 생기는 이유를 설명할 수 있습니다.</li>
+<li>thinking 모델이 답하기 전에 토큰을 더 생성하는 이유와, 그 토큰이 시간과 요금에 어떻게 나타나는지 설명할 수 있습니다.</li>
+</ol>
+<p>예제 2-1~2-3은 PC에서 실행합니다. 예제 2-1은 아주 작은 모델을 직접 학습시키고, 2-2와 2-3은 학습 단계만 다른 공개 모델 두 개를 씁니다. 사전 학습만 마친 Qwen2.5-0.5B와, 같은 모델에 학습을 더한 Qwen2.5-0.5B-Instruct(1장의 모델, "질문에 답하는 법: SFT" 절에서 설명)입니다. 예제 2-4만 API(application programming interface)로 서비스 모델을 호출합니다. 생성한 문장, 손실의 소수점 아래 숫자, 토큰 수는 PC, 라이브러리 버전, 실행할 때마다 교재와 다를 수 있습니다.</p>
+<h2 id="모델을-만드는-단계">모델을 만드는 단계</h2>
+<div class="gist">
+<p>모델은 글을 이어 쓰는 사전 학습에서 시작해, 질문에 답하는 형식을 익히는 SFT, 사람이 고른 답 쪽으로 다듬는 RLHF나 DPO를 거칩니다. thinking 모델은 정답을 확인할 수 있는 문제로 한 번 더 학습합니다.</p>
+</div>
+<figure>
+<svg viewBox="0 0 680 262" role="img" aria-label="모델을 만드는 네 단계. 사전 학습은 웹 문서, 책, 코드 18조 토큰으로 다음 토큰 예측을 해 글을 이어 쓰는 베이스 모델을 만듭니다. SFT는 질문과 모범 답의 쌍 100만 건이 넘는 데이터로 답 부분의 다음 토큰 예측을 해 질문에 답하는 instruct 모델을 만듭니다. RLHF 또는 DPO는 한 질문의 두 답 가운데 사람이 고른 나은 쪽 데이터(DPO 15만 쌍 등)로 나은 답의 확률을 높여 말투, 거절, 모르면 모른다고 하기를 다듬습니다. thinking 학습은 수학, 코드처럼 정답을 확인할 수 있는 문제에서 정답을 낸 응답에 보상을 주어 답 전에 길게 생각하는 thinking 모델을 만듭니다.">
+<rect x="52" y="10" width="145" height="240" rx="8" fill="var(--sheet)" stroke="var(--line)"/><text x="124.5" y="30" text-anchor="middle" fill="var(--ink)" font-size="14" font-weight="700">사전 학습</text><text x="124.5" y="52" text-anchor="middle" fill="var(--ink)" font-size="12">웹 문서, 책, 코드</text><rect x="60" y="80" width="129" height="46" rx="4" fill="var(--sheet)" stroke="var(--line)"/><text x="124.5" y="99" text-anchor="middle" fill="var(--ink-soft)" font-size="11">"…웨이퍼를 개별</text><text x="124.5" y="116" text-anchor="middle" fill="var(--ink-soft)" font-size="11">칩으로 자르는…"</text><text x="124.5" y="148" text-anchor="middle" fill="var(--ink-soft)" font-size="12">18조 토큰</text><text x="124.5" y="182" text-anchor="middle" fill="var(--ink)" font-size="12" font-weight="700">다음 토큰 예측</text><line x1="64" y1="198" x2="185" y2="198" stroke="var(--line)"/><text x="124.5" y="218" text-anchor="middle" fill="var(--ink)" font-size="12">글을 이어 쓰는</text><text x="124.5" y="236" text-anchor="middle" fill="var(--ink)" font-size="12" font-weight="700">베이스 모델</text><line x1="197" y1="130" x2="201" y2="130" stroke="var(--teal)" stroke-width="2"/><polygon points="201,125 209,130 201,135" fill="var(--teal)"/><rect x="209" y="10" width="145" height="240" rx="8" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="281.5" y="30" text-anchor="middle" fill="var(--ink)" font-size="14" font-weight="700">SFT</text><text x="281.5" y="52" text-anchor="middle" fill="var(--ink)" font-size="12">질문과 모범 답의 쌍</text><rect x="217" y="80" width="129" height="46" rx="4" fill="var(--sheet)" stroke="var(--line)"/><text x="281.5" y="99" text-anchor="middle" fill="var(--ink-soft)" font-size="11">질문: 다이싱이란?</text><text x="281.5" y="116" text-anchor="middle" fill="var(--ink-soft)" font-size="11">답: 웨이퍼를 자르는…</text><text x="281.5" y="148" text-anchor="middle" fill="var(--ink-soft)" font-size="12">100만 건 넘게</text><text x="281.5" y="182" text-anchor="middle" fill="var(--ink)" font-size="12" font-weight="700">답 부분의 다음 토큰 예측</text><line x1="221" y1="198" x2="342" y2="198" stroke="var(--line)"/><text x="281.5" y="218" text-anchor="middle" fill="var(--ink)" font-size="12">질문에 답하는</text><text x="281.5" y="236" text-anchor="middle" fill="var(--ink)" font-size="12" font-weight="700">instruct 모델</text><line x1="354" y1="130" x2="358" y2="130" stroke="var(--teal)" stroke-width="2"/><polygon points="358,125 366,130 358,135" fill="var(--teal)"/><rect x="366" y="10" width="145" height="240" rx="8" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="438.5" y="30" text-anchor="middle" fill="var(--ink)" font-size="14" font-weight="700">RLHF 또는 DPO</text><text x="438.5" y="52" text-anchor="middle" fill="var(--ink)" font-size="12">한 질문의 두 답과</text><text x="438.5" y="68" text-anchor="middle" fill="var(--ink)" font-size="12">사람이 고른 나은 쪽</text><rect x="374" y="80" width="129" height="46" rx="4" fill="var(--sheet)" stroke="var(--line)"/><text x="438.5" y="99" text-anchor="middle" fill="var(--ink-soft)" font-size="11">답 A가 답 B보다</text><text x="438.5" y="116" text-anchor="middle" fill="var(--ink-soft)" font-size="11">낫다</text><text x="438.5" y="148" text-anchor="middle" fill="var(--ink-soft)" font-size="12">DPO 15만 쌍 등</text><text x="438.5" y="182" text-anchor="middle" fill="var(--ink)" font-size="12" font-weight="700">나은 답의 확률을 높임</text><line x1="378" y1="198" x2="499" y2="198" stroke="var(--line)"/><text x="438.5" y="218" text-anchor="middle" fill="var(--ink)" font-size="12">말투, 거절, 모르면</text><text x="438.5" y="236" text-anchor="middle" fill="var(--ink)" font-size="12" font-weight="700">모른다고 하기</text><line x1="511" y1="130" x2="515" y2="130" stroke="var(--teal)" stroke-width="2"/><polygon points="515,125 523,130 515,135" fill="var(--teal)"/><rect x="523" y="10" width="145" height="240" rx="8" fill="var(--amber-wash)" stroke="var(--amber)"/><text x="595.5" y="30" text-anchor="middle" fill="var(--ink)" font-size="14" font-weight="700">thinking 학습</text><text x="595.5" y="52" text-anchor="middle" fill="var(--ink)" font-size="12">정답을 확인할 수</text><text x="595.5" y="68" text-anchor="middle" fill="var(--ink)" font-size="12">있는 문제</text><rect x="531" y="80" width="129" height="46" rx="4" fill="var(--sheet)" stroke="var(--line)"/><text x="595.5" y="99" text-anchor="middle" fill="var(--ink-soft)" font-size="11">수학 문제의 답,</text><text x="595.5" y="116" text-anchor="middle" fill="var(--ink-soft)" font-size="11">코드의 테스트 통과</text><text x="595.5" y="148" text-anchor="middle" fill="var(--ink-soft)" font-size="12"></text><text x="595.5" y="182" text-anchor="middle" fill="var(--ink)" font-size="12" font-weight="700">정답을 낸 응답에 보상</text><line x1="535" y1="198" x2="656" y2="198" stroke="var(--line)"/><text x="595.5" y="218" text-anchor="middle" fill="var(--ink)" font-size="12">답 전에 길게 생각하는</text><text x="595.5" y="236" text-anchor="middle" fill="var(--ink)" font-size="12" font-weight="700">thinking 모델</text><text x="46" y="60" text-anchor="end" fill="var(--ink-soft)" font-size="11">데이터</text><text x="46" y="108" text-anchor="end" fill="var(--ink-soft)" font-size="11">예</text><text x="46" y="152" text-anchor="end" fill="var(--ink-soft)" font-size="11">규모</text><text x="46" y="186" text-anchor="end" fill="var(--ink-soft)" font-size="11">학습</text><text x="46" y="228" text-anchor="end" fill="var(--ink-soft)" font-size="11">결과</text>
+</svg>
+<figcaption>모델을 만드는 단계. 규모는 예제의 모델(Qwen2.5)의 기술 보고서에 적힌 값입니다. Qwen2.5는 thinking 학습을 하지 않은 모델이고, 마지막 단계는 DeepSeek-R1 같은 thinking 모델의 방식입니다.</figcaption>
+</figure>
+
+<p>네 단계 모두 학습은 같은 일입니다. 모델의 결과를 정답이나 점수와 비교해 파라미터(1장)를 조금씩 고칩니다. 단계마다 다른 것은 무엇을 정답이나 점수로 삼는지입니다. 고치는 방법(경사 하강법)은 11장에서 다룹니다.</p>
+<h2 id="사전-학습-글을-이어-쓰는-법">사전 학습: 글을 이어 쓰는 법</h2>
+<div class="gist">
+<p>사전 학습은 수조 토큰의 글에서 위치마다 실제 다음 토큰의 확률을 높이도록 모델을 고칩니다. 이렇게 만든 베이스 모델은 질문을 받아도 답하지 않고, 그 질문이 실린 글이 이어질 법한 방향으로 씁니다.</p>
+</div>
+<p><span class="term" tabindex="0" data-def="대량의 글에서 다음 토큰 예측을 학습시키는 첫 단계">사전 학습</span>(pre-training)은 대량의 글에서 <span class="term" tabindex="0" data-def="지금까지의 토큰을 보고 다음에 올 토큰의 확률을 계산하는 것. LLM이 글을 생성하는 방식이다">다음 토큰 예측</span>을 학습하는 첫 단계입니다. 정답은 글에 실제로 이어진 토큰이므로 사람이 정답을 만들 필요가 없고, 그래서 데이터를 아주 많이 쓸 수 있습니다. 예제의 모델은 18조 토큰으로 사전 학습했습니다(Qwen Team, 2024).</p>
+<p>얼마나 잘 맞혔는지는 <span class="term" tabindex="0" data-def="모델의 예측이 정답에서 얼마나 먼지를 나타내는 값. 언어 모델에서는 위치마다 실제 다음 토큰에 준 확률 p로 -log p를 구해 평균한다. 학습은 이 값을 줄이는 방향으로 파라미터를 고친다">손실</span>(loss)로 나타냅니다. 위치마다 실제 다음 토큰에 준 확률 p로 -log p(자연로그)를 구해 평균한 값이고, 학계에서는 cross-entropy loss라고 부릅니다. 로그를 쓰면 크게 틀린 위치의 손실이 급격히 커지고(아래 그림), 문장 전체의 확률(위치별 확률의 곱)을 위치별 값의 합으로 다룰 수 있습니다.</p>
+<figure>
+<svg viewBox="0 0 680 194" role="img" aria-label="실제 다음 토큰에 준 확률 p와 손실 -log p의 관계 곡선. p가 0.9이면 0.11, 0.5이면 0.69, 0.05이면 3.00, 0.001이면 6.91로, p가 0에 가까울수록 손실이 급격히 커집니다.">
+<line x1="60" y1="160" x2="630" y2="160" stroke="var(--line)"/><line x1="60" y1="16" x2="60" y2="160" stroke="var(--line)"/><path d="M60.6 21.8 L61.1 35.7 L61.7 43.8 L62.8 54.0 L62.8 54.0 L64.5 63.4 L65.6 67.9 L68.4 76.0 L71.2 81.8 L74.0 86.2 L76.8 89.9 L79.6 93.0 L82.4 95.6 L85.2 98.0 L88.0 100.1 L90.8 102.0 L93.6 103.7 L96.4 105.3 L99.2 106.8 L102.0 108.2 L104.8 109.5 L107.6 110.7 L110.4 111.8 L113.2 112.9 L116.0 113.9 L118.8 114.9 L121.6 115.9 L124.4 116.7 L127.2 117.6 L130.0 118.4 L132.8 119.2 L135.6 120.0 L138.4 120.7 L141.2 121.4 L144.0 122.1 L146.8 122.7 L149.6 123.3 L152.4 124.0 L155.2 124.6 L158.0 125.1 L160.8 125.7 L163.6 126.3 L166.4 126.8 L169.2 127.3 L172.0 127.8 L174.8 128.3 L177.6 128.8 L180.4 129.3 L183.2 129.7 L186.0 130.2 L188.8 130.6 L191.6 131.0 L194.4 131.5 L197.2 131.9 L200.0 132.3 L202.8 132.7 L205.6 133.1 L208.4 133.4 L211.2 133.8 L214.0 134.2 L216.8 134.5 L219.6 134.9 L222.4 135.2 L225.2 135.6 L228.0 135.9 L230.8 136.3 L233.6 136.6 L236.4 136.9 L239.2 137.2 L242.0 137.5 L244.8 137.8 L247.6 138.1 L250.4 138.4 L253.2 138.7 L256.0 139.0 L258.8 139.3 L261.6 139.6 L264.4 139.8 L267.2 140.1 L270.0 140.4 L272.8 140.6 L275.6 140.9 L278.4 141.2 L281.2 141.4 L284.0 141.7 L286.8 141.9 L289.6 142.2 L292.4 142.4 L295.2 142.6 L298.0 142.9 L300.8 143.1 L303.6 143.4 L306.4 143.6 L309.2 143.8 L312.0 144.0 L314.8 144.3 L317.6 144.5 L320.4 144.7 L323.2 144.9 L326.0 145.1 L328.8 145.3 L331.6 145.5 L334.4 145.7 L337.2 145.9 L340.0 146.1 L342.8 146.3 L345.6 146.5 L348.4 146.7 L351.2 146.9 L354.0 147.1 L356.8 147.3 L359.6 147.5 L362.4 147.7 L365.2 147.9 L368.0 148.0 L370.8 148.2 L373.6 148.4 L376.4 148.6 L379.2 148.8 L382.0 148.9 L384.8 149.1 L387.6 149.3 L390.4 149.4 L393.2 149.6 L396.0 149.8 L398.8 149.9 L401.6 150.1 L404.4 150.3 L407.2 150.4 L410.0 150.6 L412.8 150.8 L415.6 150.9 L418.4 151.1 L421.2 151.2 L424.0 151.4 L426.8 151.5 L429.6 151.7 L432.4 151.8 L435.2 152.0 L438.0 152.1 L440.8 152.3 L443.6 152.4 L446.4 152.6 L449.2 152.7 L452.0 152.9 L454.8 153.0 L457.6 153.2 L460.4 153.3 L463.2 153.4 L466.0 153.6 L468.8 153.7 L471.6 153.8 L474.4 154.0 L477.2 154.1 L480.0 154.2 L482.8 154.4 L485.6 154.5 L488.4 154.6 L491.2 154.8 L494.0 154.9 L496.8 155.0 L499.6 155.2 L502.4 155.3 L505.2 155.4 L508.0 155.5 L510.8 155.7 L513.6 155.8 L516.4 155.9 L519.2 156.0 L522.0 156.2 L524.8 156.3 L527.6 156.4 L530.4 156.5 L533.2 156.6 L536.0 156.7 L538.8 156.9 L541.6 157.0 L544.4 157.1 L547.2 157.2 L550.0 157.3 L552.8 157.4 L555.6 157.6 L558.4 157.7 L561.2 157.8 L564.0 157.9 L566.8 158.0 L569.6 158.1 L572.4 158.2 L575.2 158.3 L578.0 158.4 L580.8 158.5 L583.6 158.7 L586.4 158.8 L589.2 158.9 L592.0 159.0 L594.8 159.1 L597.6 159.2 L600.4 159.3 L603.2 159.4 L606.0 159.5 L608.8 159.6 L611.6 159.7 L614.4 159.8 L617.2 159.9 L620.0 160.0 " fill="none" stroke="var(--teal)" stroke-width="2"/><circle cx="564" cy="157.8" r="4" fill="var(--amber)"/><text x="550" y="149.8" text-anchor="end" fill="var(--ink)" font-size="12" font-weight="700">p=0.9 → 0.11</text><circle cx="340" cy="146.2" r="4" fill="var(--amber)"/><text x="348" y="138.2" fill="var(--ink)" font-size="12" font-weight="700">p=0.5 → 0.69</text><circle cx="88" cy="100" r="4" fill="var(--amber)"/><text x="98" y="104" fill="var(--ink)" font-size="12" font-weight="700">p=0.05 → 3.00</text><circle cx="60.56" cy="21.80000000000001" r="4" fill="var(--amber)"/><text x="72.56" y="27.80000000000001" fill="var(--ink)" font-size="12" font-weight="700">p=0.001 → 6.91</text><text x="345" y="182" text-anchor="middle" fill="var(--ink-soft)" font-size="12">실제 다음 토큰에 준 확률 p</text><text x="30" y="92" text-anchor="middle" fill="var(--ink-soft)" font-size="12">손실</text><text x="60" y="176" text-anchor="middle" fill="var(--ink-soft)" font-size="11">0</text><text x="620" y="176" text-anchor="middle" fill="var(--ink-soft)" font-size="11">1</text>
+</svg>
+<figcaption>확률과 손실. 정답 토큰의 확률이 낮을수록 손실이 급격히 커집니다.</figcaption>
+</figure>
+
+<p>학습은 손실이 큰 위치일수록 파라미터를 크게 고치고, 이 일을 수조 토큰에 걸쳐 되풀이합니다. 그 결과 모델은 글이 이어지는 패턴을 익히고, 그 패턴에 담긴 사실도 함께 익힙니다.</p>
+<h3 id="처음부터-만드는-과정">처음부터 만드는 과정</h3>
+<figure>
+<svg viewBox="0 0 680 222" role="img" aria-label="모델을 처음부터 만드는 순서. 데이터를 정제하고, 토크나이저를 BPE로 학습하고, 층 수와 벡터 크기 같은 구조를 정한 뒤, 모든 파라미터를 무작위 값으로 채웁니다. 그다음 글 묶음을 넣고 손실을 계산하고 경사 하강법으로 파라미터를 고치는 일을 손실이 충분히 줄 때까지 수조 토큰에 걸쳐 되풀이하면 베이스 모델이 됩니다.">
+<rect x="10" y="14" width="150" height="52" rx="8" fill="var(--sheet)" stroke="var(--line)"/><text x="85" y="36" text-anchor="middle" fill="var(--ink)" font-size="13" font-weight="700">데이터 정제</text><text x="85" y="54" text-anchor="middle" fill="var(--ink-soft)" font-size="11">중복, 품질 낮은 글 제거</text><line x1="160" y1="40" x2="170" y2="40" stroke="var(--teal)" stroke-width="2"/><polygon points="170,35 178,40 170,45" fill="var(--teal)"/><rect x="178" y="14" width="150" height="52" rx="8" fill="var(--sheet)" stroke="var(--line)"/><text x="253" y="36" text-anchor="middle" fill="var(--ink)" font-size="13" font-weight="700">토크나이저 학습</text><text x="253" y="54" text-anchor="middle" fill="var(--ink-soft)" font-size="11">BPE로 어휘(1장)</text><line x1="328" y1="40" x2="338" y2="40" stroke="var(--teal)" stroke-width="2"/><polygon points="338,35 346,40 338,45" fill="var(--teal)"/><rect x="346" y="14" width="150" height="52" rx="8" fill="var(--sheet)" stroke="var(--line)"/><text x="421" y="36" text-anchor="middle" fill="var(--ink)" font-size="13" font-weight="700">구조와 크기</text><text x="421" y="54" text-anchor="middle" fill="var(--ink-soft)" font-size="11">층 수, 벡터 크기</text><line x1="496" y1="40" x2="506" y2="40" stroke="var(--teal)" stroke-width="2"/><polygon points="506,35 514,40 506,45" fill="var(--teal)"/><rect x="514" y="14" width="150" height="52" rx="8" fill="var(--sheet)" stroke="var(--line)"/><text x="589" y="36" text-anchor="middle" fill="var(--ink)" font-size="13" font-weight="700">무작위 파라미터</text><text x="589" y="54" text-anchor="middle" fill="var(--ink-soft)" font-size="11">모든 숫자를 무작위로</text><polyline points="589,66 589,84 340,84 340,96" fill="none" stroke="var(--teal)" stroke-width="2"/><polygon points="335,96 340,104 345,96" fill="var(--teal)"/><rect x="130" y="104" width="130" height="52" rx="8" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="195" y="126" text-anchor="middle" fill="var(--ink)" font-size="13" font-weight="700">글 묶음을 넣음</text><text x="195" y="144" text-anchor="middle" fill="var(--ink-soft)" font-size="11">예: 문장 64개</text><line x1="260" y1="130" x2="272" y2="130" stroke="var(--teal)" stroke-width="2"/><polygon points="272,125 280,130 272,135" fill="var(--teal)"/><rect x="280" y="104" width="130" height="52" rx="8" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="345" y="126" text-anchor="middle" fill="var(--ink)" font-size="13" font-weight="700">손실 계산</text><text x="345" y="144" text-anchor="middle" fill="var(--ink-soft)" font-size="11">다음 토큰 예측</text><line x1="410" y1="130" x2="422" y2="130" stroke="var(--teal)" stroke-width="2"/><polygon points="422,125 430,130 422,135" fill="var(--teal)"/><rect x="430" y="104" width="130" height="52" rx="8" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="495" y="126" text-anchor="middle" fill="var(--ink)" font-size="13" font-weight="700">파라미터 수정</text><text x="495" y="144" text-anchor="middle" fill="var(--ink-soft)" font-size="11">경사 하강법</text><path d="M 520 156 C 520 196, 195 196, 195 160" fill="none" stroke="var(--teal)" stroke-width="2" stroke-dasharray="5 4"/><polygon points="190,162 195,154 200,162" fill="var(--teal)"/><text x="357" y="210" text-anchor="middle" fill="var(--teal)" font-size="12">손실이 충분히 줄 때까지 되풀이(수조 토큰)</text><line x1="560" y1="130" x2="592" y2="130" stroke="var(--teal)" stroke-width="2"/><polygon points="592,125 600,130 592,135" fill="var(--teal)"/><rect x="600" y="104" width="70" height="52" rx="8" fill="var(--sheet)" stroke="var(--line)"/><text x="635" y="126" text-anchor="middle" fill="var(--ink)" font-size="13" font-weight="700">베이스</text><text x="635" y="144" text-anchor="middle" fill="var(--ink)" font-size="13" font-weight="700">모델</text>
+</svg>
+<figcaption>처음부터 만드는 순서. 청록색 세 칸이 사전 학습의 본체입니다.</figcaption>
+</figure>
+
+<p>데이터를 정제하고 토크나이저를 만든 뒤, 모델의 층 수와 벡터 크기를 정하고 모든 파라미터를 무작위 값으로 채웁니다. 이 상태의 모델은 아무 글자나 냅니다. 그다음 글 묶음을 넣고 손실을 계산해 파라미터를 고치는 일을 되풀이합니다. 고치는 방법을 <span class="term" tabindex="0" data-def="손실이 줄어드는 방향을 계산해 파라미터를 그 방향으로 조금씩 고치는 학습 방법">경사 하강법</span>(gradient descent)이라고 하며, 파라미터 하나하나를 손실이 줄어드는 방향으로 조금씩 옮깁니다(자세한 내용은 11장). 이 되풀이에 드는 자원은 매우 큽니다. Llama 3 405B는 15.6조 토큰을 최대 1만 6천여 개의 H100 GPU로 학습했습니다(Meta, 2024).</p>
+<section class="box example" id="예제-2-1">
+<header><span class="box-no">예제 2-1</span><span class="box-title">무작위 모델을 학습시키기</span><span class="box-where">노트북 <code>02_모델은_어떻게_만들어지는가.ipynb</code>의 <code>예제 2-1</code></span></header>
+<p>글자 하나를 토큰 하나로 쓰는 아주 작은 모델(파라미터 약 11만 개)을 무작위 값에서 시작해 후공정 문장 30개로 1,000번 고칩니다. 학습 전, 100번, 1,000번 고친 뒤에 같은 시작 글("와이어 본딩은 ")로 생성한 글과 손실을 비교합니다. <code>generate()</code>는 준비 셀에 있는 함수로, 1장의 네 단계대로 다음 글자를 샘플링해 붙입니다. PC에서 몇 초 안에 끝납니다.</p>
+<div class="codehilite"><pre><span></span><code><span class="n">text</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">DATA</span><span class="si">}</span><span class="s1">/후공정_문장.txt'</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">'utf-8'</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>   <span class="c1"># 후공정 문장 30개</span>
+<span class="n">characters</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">text</span><span class="p">))</span>                                           <span class="c1"># 이 예제의 어휘: 글자 하나가 토큰 하나</span>
+<span class="n">ids</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="n">characters</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">ch</span><span class="p">)</span> <span class="k">for</span> <span class="n">ch</span> <span class="ow">in</span> <span class="n">text</span><span class="p">])</span>
+<span class="n">inputs</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">ids</span><span class="p">[</span><span class="n">i</span><span class="p">:</span><span class="n">i</span> <span class="o">+</span> <span class="mi">8</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ids</span><span class="p">)</span> <span class="o">-</span> <span class="mi">8</span><span class="p">)])</span>        <span class="c1"># 앞 8글자를 보고</span>
+<span class="n">targets</span> <span class="o">=</span> <span class="n">ids</span><span class="p">[</span><span class="mi">8</span><span class="p">:]</span>                                                        <span class="c1"># 다음 글자를 맞힙니다</span>
+<span class="n">torch</span><span class="o">.</span><span class="n">manual_seed</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">tiny_model</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Embedding</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">characters</span><span class="p">),</span> <span class="mi">32</span><span class="p">),</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Flatten</span><span class="p">(),</span>
+                                 <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">8</span> <span class="o">*</span> <span class="mi">32</span><span class="p">,</span> <span class="mi">256</span><span class="p">),</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Tanh</span><span class="p">(),</span>
+                                 <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">256</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">characters</span><span class="p">)))</span>   <span class="c1"># 파라미터는 무작위 값에서 시작</span>
+<span class="n">optimizer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">AdamW</span><span class="p">(</span><span class="n">tiny_model</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span> <span class="n">lr</span><span class="o">=</span><span class="mf">0.003</span><span class="p">)</span>        <span class="c1"># 손실이 줄어드는 쪽으로 파라미터를 고치는 도구</span>
+<span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1001</span><span class="p">):</span>
+    <span class="n">batch</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">targets</span><span class="p">),</span> <span class="p">(</span><span class="mi">64</span><span class="p">,))</span>                           <span class="c1"># 64개씩 묶어</span>
+    <span class="n">loss</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">functional</span><span class="o">.</span><span class="n">cross_entropy</span><span class="p">(</span><span class="n">tiny_model</span><span class="p">(</span><span class="n">inputs</span><span class="p">[</span><span class="n">batch</span><span class="p">]),</span> <span class="n">targets</span><span class="p">[</span><span class="n">batch</span><span class="p">])</span>  <span class="c1"># 손실을 계산하고</span>
+    <span class="n">optimizer</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">();</span> <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">();</span> <span class="n">optimizer</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>             <span class="c1"># 파라미터를 고칩니다</span>
+    <span class="k">if</span> <span class="n">step</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">1000</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">step</span><span class="si">:</span><span class="s1">&gt;5</span><span class="si">}</span><span class="s1">번째 손실 </span><span class="si">{</span><span class="n">loss</span><span class="o">.</span><span class="n">item</span><span class="p">()</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">  생성: </span><span class="si">{</span><span class="n">generate</span><span class="p">(</span><span class="n">tiny_model</span><span class="p">,</span><span class="w"> </span><span class="n">characters</span><span class="p">,</span><span class="w"> </span><span class="s2">"와이어 본딩은 "</span><span class="p">)</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
+</code></pre></div>
+
+<div class="result">
+<div class="codehilite"><pre><span></span><code>    0번째 손실 5.17  생성: 와이어 본딩은 얇바싱쓰.레바을싸라표립출판인상어읍.식선드자회더백으블구백
+  100번째 손실 0.26  생성: 와이어 본딩은 합니다. /  공정에 합 다이 /  낸 다이 붙  트라고 합니
+ 1000번째 손실 0.09  생성: 와이어 본딩은 잇는 방식을 플립 칩이라고 합니다. / 백 그라인딩은 다이
+</code></pre></div>
+
+</div>
+</section>
+<p>학습 전의 모델은 무작위 글자를 내고, 100번 고친 뒤에는 "합니다", "다이" 같은 조각이 나오고, 1,000번 고친 뒤에는 학습한 문장과 비슷한 문장이 나옵니다. 그사이 손실은 5.17에서 0.1 아래로 줄었습니다. 문장이 30개뿐이라 이 모델은 문장을 거의 외웠고, 학습한 글에 없는 "와이어 본딩은" 다음에는 다른 문장의 조각을 이어 붙였습니다. 실제 사전 학습은 같은 일을 수조 토큰으로 하므로, 외우는 대신 글이 이어지는 일반적인 패턴을 익힙니다.</p>
+<h3 id="베이스-모델">베이스 모델</h3>
+<p>사전 학습만 마친 <span class="term" tabindex="0" data-def="사전 학습만 마친 모델. 질문에 답하기보다 주어진 글을 이어 쓴다">베이스 모델</span>(base model)이 배운 것은 "이 글 다음에 무엇이 올 법한가"뿐입니다. 그래서 질문을 넣으면 답하지 않고 그 질문이 실린 글이 이어질 법한 내용을 씁니다. 학습한 글에 FAQ 목록처럼 질문 다음에 질문이 오는 글이 있으면, 그 이어짐에도 확률이 붙습니다.</p>
+<section class="box example" id="예제-2-2">
+<header><span class="box-no">예제 2-2</span><span class="box-title">베이스 모델과 instruct 모델</span><span class="box-where">노트북 <code>02_모델은_어떻게_만들어지는가.ipynb</code>의 <code>예제 2-2</code></span></header>
+<p>같은 질문을 두 모델에 "질문만"과 "채팅 형식"으로 넣고, 어느 조합에서 답하는 글이 나오는지 봅니다. 채팅 형식은 질문을 사용자의 말로 표시하고 모델의 답 차례를 여는 표시를 붙인 글이며, 이 규칙을 채팅 템플릿(chat template)이라고 합니다(3장). 두 모델 모두 언제나 1위 토큰을 고르므로(greedy decoding) 다시 실행해도 같은 글이 나옵니다.</p>
+<div class="codehilite"><pre><span></span><code><span class="n">question</span> <span class="o">=</span> <span class="s1">'반도체 후공정에서 다이싱이란 무엇입니까?'</span>
+<span class="n">chat_format</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">apply_chat_template</span><span class="p">(</span>                  <span class="c1"># 채팅 형식의 글을 만듭니다(3장)</span>
+    <span class="p">[{</span><span class="s1">'role'</span><span class="p">:</span> <span class="s1">'user'</span><span class="p">,</span> <span class="s1">'content'</span><span class="p">:</span> <span class="n">question</span><span class="p">}],</span> <span class="n">tokenize</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">add_generation_prompt</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>                               <span class="c1"># 모델의 답 차례를 여는 표시를 붙입니다</span>
+<span class="k">for</span> <span class="n">model_name</span><span class="p">,</span> <span class="n">model</span> <span class="ow">in</span> <span class="p">[(</span><span class="s1">'베이스 모델'</span><span class="p">,</span> <span class="n">base_model</span><span class="p">),</span> <span class="p">(</span><span class="s1">'instruct 모델'</span><span class="p">,</span> <span class="n">instruct_model</span><span class="p">)]:</span>
+    <span class="k">for</span> <span class="n">input_name</span><span class="p">,</span> <span class="n">text</span> <span class="ow">in</span> <span class="p">[(</span><span class="s1">'질문만'</span><span class="p">,</span> <span class="n">question</span><span class="p">),</span> <span class="p">(</span><span class="s1">'채팅 형식'</span><span class="p">,</span> <span class="n">chat_format</span><span class="p">)]:</span>
+        <span class="n">input_ids</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s1">'pt'</span><span class="p">)</span><span class="o">.</span><span class="n">input_ids</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="n">input_ids</span><span class="p">,</span> <span class="n">max_new_tokens</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">pad_token_id</span><span class="o">=</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">eos_token_id</span><span class="p">)</span>
+        <span class="n">continuation</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">output</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">input_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]:],</span>   <span class="c1"># 입력 뒤에 새로 생성한 토큰만</span>
+                                        <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'[</span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s1">, </span><span class="si">{</span><span class="n">input_name</span><span class="si">}</span><span class="s1">]'</span><span class="p">,</span> <span class="n">continuation</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">'</span><span class="se">\n</span><span class="s1">'</span><span class="p">,</span> <span class="s1">' / '</span><span class="p">),</span> <span class="s1">'</span><span class="se">\n</span><span class="s1">'</span><span class="p">)</span>
+</code></pre></div>
+
+<div class="result">
+<div class="codehilite"><pre><span></span><code>[베이스 모델, 질문만]  - 전기전자뉴스 / 반도체 후공정에서 다이싱이란 무엇입니까? / 반도체 후공정에서 다이싱이란 무엇입니까? / 반도체 후공정에서 다이싱이란 
+
+[베이스 모델, 채팅 형식] 반도체 후공정에서 다이싱은 반도체의 전기부호를 전송하는 과정을 말합니다. 전기부호는 전기부호를 전송하는 데 사용되는 전자기 
+
+[instruct 모델, 질문만]  - 전자제품의 기술, 기술의 기술, 기술의 기술 / Home / 전자제품 / 전자제품의 기술 / 전자제품의 기술 / 전자제품의 기 
+
+[instruct 모델, 채팅 형식] 반도체 후공정에서 다이싱은 반도체 제조 기술의 중요한 단계 중 하나입니다. 이 단계는 반도체를 제조하는 데 필요한 다양한 물질을 다이싱하는 것입니다. 
+</code></pre></div>
+
+</div>
+</section>
+<p>실행 결과를 정리하면 다음과 같습니다.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>질문만</th>
+<th>채팅 형식</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>베이스 모델</td>
+<td>질문 뒤에 사이트 이름 같은 말을 붙이고 같은 질문을 되풀이합니다</td>
+<td>답하는 듯한 문장을 쓰지만 같은 말을 되풀이합니다</td>
+</tr>
+<tr>
+<td>instruct 모델</td>
+<td>웹 문서의 메뉴 같은 글을 이어 씁니다</td>
+<td>질문에 답하는 문장을 씁니다</td>
+</tr>
+</tbody>
+</table>
+<p>instruct 모델도 질문만 넣으면 답하지 않습니다. 다음 절의 SFT가 학습시킨 것은 "채팅 형식에서 답 차례가 열리면 답을 쓴다"는 행동이기 때문입니다. 베이스 모델이 채팅 형식에서 답하는 흉내를 낸 것은 어휘에 채팅 형식의 표시 토큰이 이미 들어 있기 때문으로 보입니다. 답의 품질은 두 모델 모두 낮습니다(파라미터 5억 개).</p>
+<h2 id="질문에-답하는-법-SFT">질문에 답하는 법: SFT</h2>
+<div class="gist">
+<p>SFT는 질문과 모범 답의 쌍으로 다음 토큰 예측을 이어서 학습합니다. 학습 방식은 사전 학습과 같고, 데이터가 "질문 다음에는 답이 온다"는 글로 바뀐 것입니다.</p>
+</div>
+<p><span class="term" tabindex="0" data-def="질문과 모범 답의 쌍으로 다음 토큰 예측을 이어서 학습시키는 단계. 답하는 형식과 차례를 익힌다">SFT</span>(supervised fine-tuning, instruction tuning이라고도 함)는 사람이 쓰거나 검수한 모범 답을 채팅 형식으로 감싸, 답 부분을 다음 토큰 예측으로 학습합니다(아래 그림). 질문 다음에 언제나 답이 오는 데이터이므로 "질문을 받으면 답한다"를 익히고, 끝 토큰까지 맞히므로 답을 다 쓰면 멈추는 법도 익힙니다.</p>
+<figure>
+<svg viewBox="0 0 680 118" role="img" aria-label="SFT 데이터 한 건을 채팅 템플릿으로 감싼 그림. 사용자 표시, 질문 다이싱이란?, 답 차례 표시는 회색으로 입력으로만 넣고, 답 웨이퍼를 개별 칩으로 자르는 공정입니다와 끝 토큰은 청록색으로 맞히도록 학습합니다.">
+<rect x="10" y="20" width="112" height="40" rx="4" fill="var(--sheet)" stroke="var(--line)"/><text x="66" y="45" text-anchor="middle" fill="var(--ink-soft)" font-size="12">&lt;|im_start|&gt;user</text><rect x="128" y="20" width="88" height="40" rx="4" fill="var(--sheet)" stroke="var(--line)"/><text x="172" y="45" text-anchor="middle" fill="var(--ink-soft)" font-size="12">다이싱이란?</text><rect x="222" y="20" width="150" height="40" rx="4" fill="var(--sheet)" stroke="var(--line)"/><text x="297" y="45" text-anchor="middle" fill="var(--ink-soft)" font-size="12">&lt;|im_start|&gt;assistant</text><rect x="378" y="20" width="214" height="40" rx="4" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="485" y="45" text-anchor="middle" fill="var(--ink)" font-size="12" font-weight="700">웨이퍼를 개별 칩으로 자르는 공정입니다.</text><rect x="598" y="20" width="62" height="40" rx="4" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="629" y="45" text-anchor="middle" fill="var(--ink)" font-size="12" font-weight="700">끝 토큰</text><text x="10" y="86" fill="var(--ink-soft)" font-size="12">회색 칸: 입력으로만 넣고 맞히지 않습니다</text><text x="10" y="106" fill="var(--teal)" font-size="12">청록색 칸: 다음 토큰 예측으로 맞히도록 학습합니다. 끝 토큰까지 맞히므로 답을 다 쓰면 멈추는 법도 익힙니다</text>
+</svg>
+<figcaption>SFT 데이터 한 건. 채팅 템플릿의 표시 토큰(&lt;|im_start|&gt; 등)은 예제의 모델이 쓰는 것입니다.</figcaption>
+</figure>
+
+<p>예제의 instruct 모델은 100만 건이 넘는 데이터로 SFT를 했습니다(Qwen Team, 2024).</p>
+<p>SFT와 다음 절의 학습을 더한 모델을 <span class="term" tabindex="0" data-def="베이스 모델에 SFT와 RLHF 같은 학습을 더해 지시에 따라 답하게 만든 모델">instruct 모델</span>(instruct model)이라고 하며, API와 채팅 서비스에서 쓰는 모델이 이것입니다. 11장의 파인튜닝도 같은 방식입니다. 다만 모범 답은 사람이 직접 써야 해서 많이 만들기 어렵고, "어떤 답이 더 나은가"는 가르치기 어렵습니다.</p>
+<h2 id="사람이-고른-답-쪽으로-RLHF와-DPO">사람이 고른 답 쪽으로: RLHF와 DPO</h2>
+<div class="gist">
+<p>한 질문에 대한 두 답 가운데 사람이 나은 쪽을 고른 데이터로 모델을 다듬습니다. RLHF는 이 데이터로 점수를 매기는 모델을 만들어 강화 학습하고, DPO는 쌍으로 바로 학습합니다.</p>
+</div>
+<p>이 단계의 데이터는 "질문, 답 A, 답 B, 사람이 고른 쪽"입니다. 모범 답을 쓰는 것보다 고르는 일이 쉬워 데이터를 더 많이 모을 수 있습니다. 말투, 길이, 위험한 요청의 거절, 모르면 모른다고 하기 같은 행동을 여기서 다듬습니다. 모델을 고치는 방법은 두 가지가 널리 쓰입니다(아래 그림).</p>
+<ul>
+<li><span class="term" tabindex="0" data-def="사람이 두 답 중 나은 쪽을 고른 데이터로 보상 모델을 만들고, 그 점수로 강화 학습하는 단계">RLHF</span>(reinforcement learning from human feedback)는 먼저 사람의 선택을 흉내 내는 <span class="term" tabindex="0" data-def="응답을 입력받아 사람이 얼마나 좋아할지 점수를 내도록 사람의 선택 데이터로 학습시킨 모델">보상 모델</span>(reward model)을 학습시킵니다. 보상 모델은 답에 사람이 얼마나 좋아할지 점수(보상, reward)를 매깁니다. 그다음 모델이 생성한 답에 보상 모델이 점수를 매기고, 보상이 높은 답이 더 자주 나오도록 모델을 고칩니다. 이런 학습을 <span class="term" tabindex="0" data-def="모델이 만든 결과에 점수(보상)를 매기고, 점수가 높은 결과가 더 자주 나오도록 모델을 고치는 학습 방법">강화 학습</span>(reinforcement learning)이라고 합니다. InstructGPT(Ouyang 외, 2022)가 이 방법으로 지시를 따르는 모델을 만들었습니다.</li>
+<li><span class="term" tabindex="0" data-def="보상 모델과 강화 학습 없이, 나은 답과 못한 답의 쌍으로 나은 답의 확률을 높이도록 바로 학습하는 방법">DPO</span>(direct preference optimization)는 보상 모델과 강화 학습을 거치지 않습니다. 나은 답의 확률은 높이고 못한 답의 확률은 낮추도록 바로 학습시킵니다(Rafailov 외, 2023). 예제의 instruct 모델은 DPO에 15만 쌍을 쓰고, 그 뒤에 강화 학습을 더 했습니다(Qwen Team, 2024).</li>
+</ul>
+<figure>
+<svg viewBox="0 0 680 184" role="img" aria-label="RLHF는 선호 데이터로 보상 모델을 학습한 뒤, 보상 모델의 점수가 높은 답이 나오도록 강화 학습해 모델을 고칩니다. DPO는 같은 선호 데이터로 나은 답의 확률은 높이고 못한 답의 확률은 낮추도록 바로 학습합니다.">
+<text x="10" y="42" fill="var(--ink)" font-size="13" font-weight="700">RLHF</text><rect x="80" y="14" width="130" height="48" rx="6" fill="var(--sheet)" stroke="var(--line)"/><text x="145" y="34" text-anchor="middle" fill="var(--ink)" font-size="13" font-weight="700">선호 데이터</text><text x="145" y="52" text-anchor="middle" fill="var(--ink-soft)" font-size="11">두 답 중 사람이 고른 쪽</text><line x1="210" y1="38" x2="222" y2="38" stroke="var(--teal)" stroke-width="2"/><polygon points="222,33 230,38 222,43" fill="var(--teal)"/><rect x="230" y="14" width="130" height="48" rx="6" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="295" y="34" text-anchor="middle" fill="var(--ink)" font-size="13" font-weight="700">보상 모델 학습</text><text x="295" y="52" text-anchor="middle" fill="var(--ink-soft)" font-size="11">답에 점수를 매기는 모델</text><line x1="360" y1="38" x2="372" y2="38" stroke="var(--teal)" stroke-width="2"/><polygon points="372,33 380,38 372,43" fill="var(--teal)"/><rect x="380" y="14" width="130" height="48" rx="6" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="445" y="34" text-anchor="middle" fill="var(--ink)" font-size="13" font-weight="700">강화 학습</text><text x="445" y="52" text-anchor="middle" fill="var(--ink-soft)" font-size="11">점수가 높은 답이 나오게</text><line x1="510" y1="38" x2="522" y2="38" stroke="var(--teal)" stroke-width="2"/><polygon points="522,33 530,38 522,43" fill="var(--teal)"/><rect x="530" y="14" width="130" height="48" rx="6" fill="var(--sheet)" stroke="var(--line)"/><text x="595" y="44" text-anchor="middle" fill="var(--ink)" font-size="13" font-weight="700">고친 모델</text><text x="595" y="52" text-anchor="middle" fill="var(--ink-soft)" font-size="11"></text><text x="10" y="128" fill="var(--ink)" font-size="13" font-weight="700">DPO</text><rect x="80" y="100" width="180" height="48" rx="6" fill="var(--sheet)" stroke="var(--line)"/><text x="170" y="120" text-anchor="middle" fill="var(--ink)" font-size="13" font-weight="700">선호 데이터</text><text x="170" y="138" text-anchor="middle" fill="var(--ink-soft)" font-size="11">두 답 중 사람이 고른 쪽</text><line x1="260" y1="124" x2="277" y2="124" stroke="var(--teal)" stroke-width="2"/><polygon points="277,119 285,124 277,129" fill="var(--teal)"/><rect x="285" y="100" width="180" height="48" rx="6" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="375" y="120" text-anchor="middle" fill="var(--ink)" font-size="13" font-weight="700">쌍으로 바로 학습</text><text x="375" y="138" text-anchor="middle" fill="var(--ink-soft)" font-size="11">나은 답의 확률↑ 못한 답↓</text><line x1="465" y1="124" x2="482" y2="124" stroke="var(--teal)" stroke-width="2"/><polygon points="482,119 490,124 482,129" fill="var(--teal)"/><rect x="490" y="100" width="180" height="48" rx="6" fill="var(--sheet)" stroke="var(--line)"/><text x="580" y="130" text-anchor="middle" fill="var(--ink)" font-size="13" font-weight="700">고친 모델</text><text x="580" y="138" text-anchor="middle" fill="var(--ink-soft)" font-size="11"></text><text x="340" y="172" text-anchor="middle" fill="var(--ink-soft)" font-size="12">DPO는 보상 모델과 강화 학습을 거치지 않아 단계가 하나 줄어듭니다</text>
+</svg>
+<figcaption>RLHF와 DPO. 같은 선호 데이터에서 출발하지만, DPO는 중간 단계 없이 모델을 바로 고칩니다.</figcaption>
+</figure>
+
+<h2 id="지식-기준일">지식 기준일</h2>
+<div class="gist">
+<p>모델은 학습 데이터를 모은 시점까지의 글만 보았으므로 그 뒤의 일을 알지 못합니다. 모델이 출시된 뒤에도 기준일은 그대로이므로, 출시 뒤 시간이 지날수록 모르는 기간이 길어집니다.</p>
+</div>
+<p>학습 데이터를 모은 마지막 시점을 <span class="term" tabindex="0" data-def="모델이 학습한 글의 마지막 시점. 그 뒤의 일은 모델이 알지 못한다">지식 기준일</span>(knowledge cutoff)이라고 합니다. Anthropic은 학습에 쓴 데이터의 범위인 학습 데이터 기준일과, 지식이 가장 풍부하고 믿을 만한 "신뢰할 수 있는 기준일"을 따로 밝힙니다(아래 그림, 2026-11 확인). 기준일 직전의 일은 잘 모를 수 있다는 뜻입니다.</p>
+<figure>
+<svg viewBox="0 0 680 190" role="img" aria-label="시간 축 그림. 학습 데이터를 모은 기간이 학습 데이터 기준일(예: 2025년 7월)에서 끝나고, 그보다 앞선 신뢰할 수 있는 기준일(예: 2025년 1월)까지는 많이 학습했습니다. 그 뒤 출시를 거쳐 사용하는 날까지가 모델이 모르는 기간이고, 시간이 지날수록 길어집니다.">
+<line x1="20" y1="80" x2="660" y2="80" stroke="var(--line)" stroke-width="2"/><polygon points="652,75 662,80 652,85" fill="var(--line)"/><rect x="20" y="70" width="330" height="20" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="185" y="62" text-anchor="middle" fill="var(--teal)" font-size="12">학습 데이터를 모은 기간</text><line x1="200" y1="66" x2="200" y2="94" stroke="var(--teal)" stroke-width="2"/><text x="200" y="112" text-anchor="middle" fill="var(--teal)" font-size="12" font-weight="700">신뢰할 수 있는 기준일</text><text x="200" y="128" text-anchor="middle" fill="var(--ink-soft)" font-size="11">예: 2025년 1월</text><line x1="350" y1="66" x2="350" y2="94" stroke="var(--teal)" stroke-width="2"/><text x="350" y="112" text-anchor="middle" fill="var(--teal)" font-size="12" font-weight="700">학습 데이터 기준일</text><text x="350" y="128" text-anchor="middle" fill="var(--ink-soft)" font-size="11">예: 2025년 7월</text><line x1="470" y1="66" x2="470" y2="94" stroke="var(--ink)" stroke-width="2"/><text x="470" y="112" text-anchor="middle" fill="var(--ink)" font-size="12" font-weight="700">출시</text><text x="470" y="128" text-anchor="middle" fill="var(--ink-soft)" font-size="11"></text><line x1="610" y1="66" x2="610" y2="94" stroke="var(--amber)" stroke-width="2"/><text x="610" y="112" text-anchor="middle" fill="var(--amber)" font-size="12" font-weight="700">사용하는 날</text><text x="610" y="128" text-anchor="middle" fill="var(--ink-soft)" font-size="11"></text><path d="M 352 150 L 608 150" stroke="var(--amber)" stroke-width="2" stroke-dasharray="5 4"/><text x="480" y="168" text-anchor="middle" fill="var(--amber)" font-size="12">모델이 모르는 기간. 시간이 지날수록 길어집니다</text><text x="120" y="160" text-anchor="middle" fill="var(--ink-soft)" font-size="11">앞쪽의 일은 많이 학습했고,</text><text x="120" y="176" text-anchor="middle" fill="var(--ink-soft)" font-size="11">기준일에 가까울수록 글이 적습니다</text>
+</svg>
+<figcaption>지식 기준일. 날짜는 Anthropic이 Claude Sonnet 4.5에 대해 밝힌 두 기준일입니다.</figcaption>
+</figure>
+
+<p>모델에게 기준일을 물어 얻은 답도 생성한 글이므로, 기준일은 공식 문서로 확인합니다. 기준일 뒤의 정보가 필요하면 입력에 넣어 줍니다(8장 "RAG").</p>
+<h2 id="환각이-생기는-이유">환각이 생기는 이유</h2>
+<div class="gist">
+<p>사전 학습은 그럴듯한 글이 나오도록 모델을 고칠 뿐, 사실인지 확인하는 단계가 없습니다. 그래서 틀린 문장도 그럴듯하면 높은 확률로 생성됩니다.</p>
+</div>
+<p><span class="term" tabindex="0" data-def="근거가 없는 내용을 사실처럼 생성하는 현상. 사실과 다른 내용을 지어내는 경우와, 입력한 원문에 없는 내용을 덧붙이는 경우가 있다">환각</span>(hallucination)은 근거가 없는 내용을 사실처럼 생성하는 현상이고, 원인은 학습 목표에 있습니다. 사전 학습은 "실제로 이어진 토큰"의 확률을 높일 뿐, 내용이 사실인지는 따로 가르치지 않습니다. 그래서 드물게 나온 사실이나 학습하지 않은 내용 앞에서도 그럴듯한 말을 이어 씁니다.</p>
+<section class="box example" id="예제-2-3">
+<header><span class="box-no">예제 2-3</span><span class="box-title">틀린 문장의 손실</span><span class="box-where">노트북 <code>02_모델은_어떻게_만들어지는가.ipynb</code>의 <code>예제 2-3</code></span></header>
+<p>베이스 모델로 맞는 문장, 낱말 하나만 바꾼 틀린 문장, 어순을 섞은 문장의 손실을 계산합니다. 손실이 낮을수록 모델이 그럴듯하다고 본다는 뜻입니다. 평균 손실은 토큰 수가 같은 문장끼리 비교해야 하므로 쌍마다 토큰 수를 같게 맞췄습니다. 틀린 문장의 손실이 더 높은지 봅니다.</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">sentence_loss</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""위치마다 -log(실제 다음 토큰의 확률)을 구해 평균한 값"""</span>
+    <span class="n">input_ids</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s1">'pt'</span><span class="p">)</span><span class="o">.</span><span class="n">input_ids</span>
+    <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+        <span class="c1"># labels를 넣으면 위치마다 실제 다음 토큰의 -log p를 구해 평균한 손실을 돌려줍니다</span>
+        <span class="k">return</span> <span class="n">base_model</span><span class="p">(</span><span class="n">input_ids</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="n">input_ids</span><span class="p">)</span><span class="o">.</span><span class="n">loss</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>   <span class="c1"># .item(): 파이썬 숫자로</span>
+
+
+<span class="n">sentences</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s1">'다이싱은 웨이퍼를 개별 칩으로 자르는 공정입니다.'</span><span class="p">,</span>
+    <span class="s1">'다이싱은 웨이퍼를 개별 칩으로 붙이는 공정입니다.'</span><span class="p">,</span>
+    <span class="s1">'와이어 본딩은 칩과 리드를 금속선으로 잇는 공정입니다.'</span><span class="p">,</span>
+    <span class="s1">'와이어 본딩은 칩과 리드를 금속선으로 자르는 공정입니다.'</span><span class="p">,</span>
+    <span class="s1">'공정입니다 칩으로 웨이퍼를 다이싱은 개별 자르는.'</span><span class="p">,</span>
+<span class="p">]</span>
+<span class="k">for</span> <span class="n">sentence</span> <span class="ow">in</span> <span class="n">sentences</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'손실 </span><span class="si">{</span><span class="n">sentence_loss</span><span class="p">(</span><span class="n">sentence</span><span class="p">)</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">  </span><span class="si">{</span><span class="n">sentence</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
+</code></pre></div>
+
+<div class="result">
+<div class="codehilite"><pre><span></span><code>손실 3.69  다이싱은 웨이퍼를 개별 칩으로 자르는 공정입니다.
+손실 3.67  다이싱은 웨이퍼를 개별 칩으로 붙이는 공정입니다.
+손실 4.18  와이어 본딩은 칩과 리드를 금속선으로 잇는 공정입니다.
+손실 3.97  와이어 본딩은 칩과 리드를 금속선으로 자르는 공정입니다.
+손실 4.73  공정입니다 칩으로 웨이퍼를 다이싱은 개별 자르는.
+</code></pre></div>
+
+</div>
+</section>
+<p>틀린 문장의 손실은 맞는 문장보다 높지 않았고, 확실히 높은 것은 어순을 섞은 문장뿐입니다. 이 모델은 한국어로 자연스러운지는 구분하지만, 다이싱이 칩을 자르는지 붙이는지는 거의 구분하지 못합니다.</p>
+<figure>
+<svg viewBox="0 0 680 222" role="img" aria-label="다이싱은 웨이퍼를 개별 칩으로 다음 자리에서 베이스 모델은 사실인 자르의 첫 조각 자에 0.7%, 사실이 아닌 붙이의 첫 조각 붙에 0.5%를 주었습니다. 그러나 뒤에 오는 입니다에 맞는 문장에서는 1.3%, 틀린 문장에서는 5.8%를 주어, 문장 전체의 손실은 맞는 문장 3.69, 틀린 문장 3.67로 틀린 문장이 조금 낮습니다.">
+<rect x="10" y="70" width="250" height="44" rx="6" fill="var(--sheet)" stroke="var(--line)"/><text x="135" y="97" text-anchor="middle" fill="var(--ink)" font-size="13">다이싱은 웨이퍼를 개별 칩으로</text><path d="M 260 92 C 280 92, 280 40, 300 40" fill="none" stroke="var(--teal)" stroke-width="2"/><path d="M 260 92 C 280 92, 280 144, 300 144" fill="none" stroke="var(--amber)" stroke-width="2"/><rect x="300" y="18" width="120" height="44" rx="6" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="360" y="38" text-anchor="middle" fill="var(--ink)" font-size="13" font-weight="700">" 자르"</text><text x="360" y="55" text-anchor="middle" fill="var(--teal)" font-size="12">" 자" 0.7%</text><rect x="300" y="122" width="120" height="44" rx="6" fill="var(--amber-wash)" stroke="var(--amber)"/><text x="360" y="142" text-anchor="middle" fill="var(--amber)" font-size="13" font-weight="700">" 붙이"</text><text x="360" y="159" text-anchor="middle" fill="var(--amber)" font-size="12">" 붙" 0.5%</text><line x1="420" y1="40" x2="432" y2="40" stroke="var(--teal)" stroke-width="2"/><polygon points="432,35 440,40 432,45" fill="var(--teal)"/><line x1="420" y1="144" x2="432" y2="144" stroke="var(--amber)" stroke-width="2"/><polygon points="432,139 440,144 432,149" fill="var(--amber)"/><rect x="440" y="18" width="230" height="44" rx="6" fill="var(--sheet)" stroke="var(--line)"/><text x="452" y="38" fill="var(--ink)" font-size="13">는 공정입니다.</text><text x="452" y="55" fill="var(--teal)" font-size="12" font-weight="700">맞는 문장: 손실 3.69</text><rect x="440" y="122" width="230" height="44" rx="6" fill="var(--sheet)" stroke="var(--line)"/><text x="452" y="142" fill="var(--ink)" font-size="13">는 공정입니다.</text><text x="452" y="159" fill="var(--amber)" font-size="12" font-weight="700">틀린 문장: 손실 3.67</text><text x="340" y="192" text-anchor="middle" fill="var(--ink-soft)" font-size="12">"칩으로" 다음 자리에서는 사실인 " 자"(0.7%)가 " 붙"(0.5%)보다 조금 높습니다</text><text x="340" y="210" text-anchor="middle" fill="var(--ink-soft)" font-size="12">그러나 뒤의 "입니다"가 맞는 문장에서 1.3%, 틀린 문장에서 5.8%여서 합치면 틀린 문장의 손실이 낮아집니다</text>
+</svg>
+<figcaption>맞는 문장과 틀린 문장이 달라지는 자리의 확률(예제 2-3의 베이스 모델). 모델은 어느 쪽이 사실인지가 아니라 어느 쪽이 글로서 그럴듯한지를 배웠습니다.</figcaption>
+</figure>
+
+<p>파라미터가 많은 모델은 같은 글에서 더 많은 사실을 익히므로, 자주 나온 사실은 더 잘 구분합니다. 그러나 우리 회사의 규격 값처럼 학습한 글에 거의 없는 사실 앞에서는 큰 모델도 근거 없이 그럴듯한 글을 씁니다.</p>
+<p>평가 방식도 환각을 늘립니다. Kalai 외(2025)는 모델 평가 대부분이 정답만 점수로 세고 "모른다"에는 점수를 주지 않는다고 지적했습니다. 맞힐 가능성이 20%인 문제라면 다음과 같습니다.</p>
+<table>
+<thead>
+<tr>
+<th>행동</th>
+<th>정답 1점, 오답 0점, "모른다" 0점일 때의 기대 점수</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>추측해서 답한다</td>
+<td>0.2 × 1 + 0.8 × 0 = 0.2점</td>
+</tr>
+<tr>
+<td>"모른다"고 답한다</td>
+<td>0점</td>
+</tr>
+</tbody>
+</table>
+<p>이런 시험으로 모델을 고르면 모를 때도 추측하는 모델이 남습니다. RLHF로 모르면 모른다고 답하게 다듬을 수는 있지만, 보상 모델도 사실 여부를 확인하지 못하고 모르던 사실이 새로 생기지도 않으므로 환각은 없어지지 않습니다. 파인튜닝도 마찬가지입니다(11장).</p>
+<p>계산도 같은 이유로 틀릴 수 있습니다. 숫자도 토큰으로 나뉘어(1장) 다음 토큰 예측으로 답이 만들어지므로, 계산은 도구에 맡깁니다(13장).</p>
+<h2 id="thinking-모델">thinking 모델</h2>
+<div class="gist">
+<p>thinking 모델은 답하기 전에 문제를 푸는 토큰을 먼저 생성하도록, 정답을 확인할 수 있는 문제로 강화 학습한 모델입니다. 이 thinking 토큰도 출력 토큰이므로 화면에 보이지 않아도 시간과 요금이 듭니다.</p>
+</div>
+<p>모델은 토큰 하나마다 정해진 층을 한 번씩 거칩니다(1장). 복잡한 문제의 답을 바로 쓰게 하면 답 토큰 하나에 그 한 번의 계산만 쓰는 셈입니다. <span class="term" tabindex="0" data-def="답하기 전에 thinking을 하도록 학습시킨 모델. 정답을 확인할 수 있는 문제로 강화 학습해 만든다">thinking 모델</span>(reasoning model)은 답하기 전에 문제를 푸는 토큰(thinking 토큰)을 먼저 생성하는데, 이 과정을 <span class="term" tabindex="0" data-def="모델이 응답을 쓰기 전에 내부적으로 문제를 풀어 보는 과정. 출력 토큰으로 계산된다. 학습된 모델을 실행한다는 뜻의 추론(inference)과 다른 말이다">thinking</span>이라고 합니다. 답 토큰은 앞의 thinking 토큰을 입력으로 보고 계산됩니다(아래 그림).</p>
+<figure>
+<svg viewBox="0 0 680 146" role="img" aria-label="질문 뒤에 화면에 보이지 않는 thinking 토큰이 이어지고, 그 뒤에 답이 나오는 토큰 열. 답 토큰은 앞의 thinking 토큰을 입력으로 보고 계산합니다. 출력 토큰은 thinking 토큰과 답 토큰의 합이고 둘 다 요금과 시간에 들어갑니다.">
+<rect x="10" y="20" width="110" height="40" rx="4" fill="var(--sheet)" stroke="var(--line)"/><text x="65" y="45" text-anchor="middle" fill="var(--ink)" font-size="13">질문</text><rect x="126" y="20" width="330" height="40" rx="4" fill="var(--amber-wash)" stroke="var(--amber)" stroke-dasharray="5 4"/><text x="291" y="38" text-anchor="middle" fill="var(--amber)" font-size="13" font-weight="700">thinking 토큰</text><text x="291" y="54" text-anchor="middle" fill="var(--ink-soft)" font-size="11">조건 확인, 경우 나누기, 검산 … (화면에 보이지 않음)</text><rect x="462" y="20" width="208" height="40" rx="4" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="566" y="45" text-anchor="middle" fill="var(--ink)" font-size="12" font-weight="700">답 "월-A, 화-D, 수-B, 목-C"</text><path d="M 566 60 C 566 100, 300 100, 300 64" fill="none" stroke="var(--teal)" stroke-width="2"/><polygon points="295,66 300,58 305,66" fill="var(--teal)"/><text x="434" y="108" text-anchor="middle" fill="var(--teal)" font-size="12">답 토큰은 앞의 thinking 토큰을 입력으로 보고 계산합니다</text><text x="340" y="134" text-anchor="middle" fill="var(--ink-soft)" font-size="12">출력 토큰 = thinking 토큰 + 답 토큰. 둘 다 요금과 시간에 들어갑니다</text>
+</svg>
+<figcaption>thinking 모델의 출력. thinking 토큰도 1장의 과정대로 하나씩 생성되어 입력 끝에 붙습니다.</figcaption>
+</figure>
+
+<p>이 행동은 정답을 기계적으로 확인할 수 있는 문제(수학의 답, 코드의 테스트)로 강화 학습해 익힙니다. DeepSeek-AI(2025)는 정답과 형식만 확인해 보상을 준 모델(DeepSeek-R1-Zero)의 응답이 학습할수록 길어졌다고 보고했습니다.</p>
+<p>thinking 토큰은 단가가 높은 출력 토큰으로 계산됩니다(5장). 최신 Claude 모델은 기본 설정에서 thinking 내용을 보여 주지 않지만, 생성한 토큰은 요금과 시간에 들어갑니다(2026-11 확인). thinking의 양을 조절하는 <code>effort</code>는 5장에서 다룹니다.</p>
+<section class="box example" id="예제-2-4">
+<header><span class="box-no">예제 2-4</span><span class="box-title">thinking 토큰</span><span class="box-where">노트북 <code>02_모델은_어떻게_만들어지는가.ipynb</code>의 <code>예제 2-4</code></span></header>
+<p>쉬운 질문과 조건이 얽힌 일정 문제(정답 "월-A, 화-D, 수-B, 목-C")를 보내 출력 토큰 수(<code>reply.output_tokens</code>), 걸린 시간(<code>reply.seconds</code>), 응답 글자 수를 비교합니다. 응답은 짧은데 출력 토큰이 많으면 그만큼 thinking에 쓴 것입니다. <code>max_tokens=8000</code>은 thinking이 잘리지 않게 넉넉히 둔 상한입니다. 사내 API의 모델이 thinking 모델이 아니면 두 질문의 차이가 작습니다. 이 셀은 API를 2번 호출합니다.</p>
+<div class="codehilite"><pre><span></span><code><span class="n">questions</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">'쉬운 질문'</span><span class="p">:</span> <span class="s1">'3 더하기 4는 얼마입니까? 숫자만 답해 주세요.'</span><span class="p">,</span>
+    <span class="s1">'일정 문제'</span><span class="p">:</span> <span class="p">(</span><span class="s1">'로트 A, B, C, D를 월, 화, 수, 목에 하루 한 개씩 테스트합니다. '</span>
+              <span class="s1">'A는 B보다 먼저 합니다. C는 수요일에 할 수 없습니다. '</span>
+              <span class="s1">'D는 A 바로 다음 날에 합니다. B는 목요일에 할 수 없습니다. '</span>
+              <span class="s1">'요일별 로트를 "월-?, 화-?, 수-?, 목-?" 형식으로 한 줄만 답해 주세요.'</span><span class="p">),</span>
+<span class="p">}</span>
+<span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">question</span> <span class="ow">in</span> <span class="n">questions</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="n">reply</span> <span class="o">=</span> <span class="n">llm</span><span class="o">.</span><span class="n">ask</span><span class="p">(</span><span class="n">question</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s1">'소형'</span><span class="p">,</span> <span class="n">max_tokens</span><span class="o">=</span><span class="mi">8000</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'[</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s1">] 출력 토큰 </span><span class="si">{</span><span class="n">reply</span><span class="o">.</span><span class="n">output_tokens</span><span class="si">:</span><span class="s1">,</span><span class="si">}</span><span class="s1">개, </span><span class="si">{</span><span class="n">reply</span><span class="o">.</span><span class="n">seconds</span><span class="si">:</span><span class="s1">.1f</span><span class="si">}</span><span class="s1">초, 응답 </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">reply</span><span class="o">.</span><span class="n">text</span><span class="p">)</span><span class="si">}</span><span class="s1">자'</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">'  응답:'</span><span class="p">,</span> <span class="n">reply</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">()[:</span><span class="mi">200</span><span class="p">])</span>
+</code></pre></div>
+
+<div class="result">
+<div class="codehilite"><pre><span></span><code>[쉬운 질문] 출력 토큰 3개, 0.7초, 응답 1자
+  응답: 7
+[일정 문제] 출력 토큰 350개, 1.8초, 응답 18자
+  응답: 월-A, 화-D, 수-B, 목-C
+</code></pre></div>
+
+</div>
+</section>
+<p>일정 문제의 응답은 18자인데 출력 토큰은 350개였습니다. 18자는 많아야 수십 토큰이므로, 나머지 300개 넘는 토큰은 보이지 않는 thinking에 쓰였습니다.</p>
+<figure>
+<svg viewBox="0 0 680 172" role="img" aria-label="예제 2-4의 출력 토큰 막대그래프. 쉬운 질문은 출력 토큰 3개, 0.7초, 응답 7 한 글자입니다. 일정 문제는 출력 토큰 350개, 1.8초인데 응답은 월-A, 화-D, 수-B, 목-C 18자뿐이어서 대부분의 토큰이 화면에 보이지 않는 thinking에 쓰였습니다.">
+<text x="10" y="34" fill="var(--ink)" font-size="13" font-weight="700">쉬운 질문</text><rect x="110" y="14" width="4.114285714285714" height="30" rx="2" fill="var(--teal)" stroke="var(--teal)"/><text x="122.11428571428571" y="34" fill="var(--ink)" font-size="12" font-weight="700">3토큰, 0.7초</text><text x="110" y="62" fill="var(--ink-soft)" font-size="12">응답 "7" (1자)</text><text x="10" y="104" fill="var(--ink)" font-size="13" font-weight="700">일정 문제</text><rect x="110" y="84" width="480" height="30" rx="2" fill="var(--teal)" stroke="var(--teal)"/><text x="598" y="104" fill="var(--ink)" font-size="12" font-weight="700">350토큰, 1.8초</text><text x="110" y="132" fill="var(--ink-soft)" font-size="12">응답 "월-A, 화-D, 수-B, 목-C" (18자). 응답에 쓰인 토큰은 많아야 수십 개이고, 나머지는 thinking</text><text x="340" y="160" text-anchor="middle" fill="var(--ink-soft)" font-size="12">출력 토큰 수(예제 2-4의 실행 결과, 모델: 소형)</text>
+</svg>
+<figcaption>응답의 길이와 출력 토큰 수(예제 2-4의 실행 결과).</figcaption>
+</figure>
+
+<p>현행 Claude 모델은 문제에 따라 thinking의 양을 스스로 정합니다(adaptive thinking, 2026-11 확인). 그래서 비용은 응답 글자 수가 아니라 출력 토큰 수로 계산합니다. OpenAI 호환 API도 thinking 토큰을 출력 토큰(<code>completion_tokens</code>)에 포함하는 경우가 많지만, 서버마다 다르므로 응답의 토큰 수로 확인합니다.</p>
+<h2 id="개념-확인-실습">개념 확인 실습</h2>
+<p>실습은 장 노트북의 빈칸을 채워 실행합니다. 코드를 실행하기 전에 결과를 먼저 예측해 적고, 실행한 뒤 예측과 다른 부분을 이 장의 원리로 설명해 봅니다.</p>
+<section class="box practice" id="실습-2-1">
+<header><span class="box-no">실습 2-1</span><span class="box-title">베이스 모델에게 답하게 하기</span><span class="box-where">노트북 <code>02_모델은_어떻게_만들어지는가.ipynb</code>의 <code>실습 2-1</code></span></header>
+<p>베이스 모델에 "질문: …" "답: …" 예를 하나 붙이고 새 질문을 넣으면 무엇을 생성할지 먼저 <code>my_guess</code>에 적습니다. <code>few_shot_prompt()</code>는 이 형식의 글을 "답:"으로 끝나게 만들도록 작성합니다. 실행한 뒤 답 뒤에 무엇을 이어 썼는지 확인하고, 이유를 사전 학습으로 설명하면 끝납니다.</p>
+<p>힌트: 예 하나는 <code>f'질문: {example_question}\n답: {example_answer}'</code>로 만들고, 줄들을 <code>'\n'.join()</code>으로 잇습니다. 빈칸을 채우기 전에 실행하면 <code>assert</code> 줄에서 멈춥니다.</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">few_shot_prompt</span><span class="p">(</span><span class="n">examples</span><span class="p">,</span> <span class="n">question</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""(질문, 답) 예 목록과 새 질문으로 '질문: …' '답: …' 형식의 글을 만듭니다"""</span>
+    <span class="k">return</span> <span class="s1">''</span>  <span class="c1"># TODO</span>
+
+
+<span class="n">examples</span> <span class="o">=</span> <span class="p">[(</span><span class="s1">'웨이퍼란 무엇입니까?'</span><span class="p">,</span> <span class="s1">'반도체 칩을 만드는 얇은 원판입니다.'</span><span class="p">)]</span>
+<span class="n">my_guess</span> <span class="o">=</span> <span class="s1">''</span>  <span class="c1"># TODO: 베이스 모델이 무엇을 생성할지 먼저 적습니다</span>
+<span class="n">my_explanation</span> <span class="o">=</span> <span class="s1">''</span>  <span class="c1"># TODO: 실행한 뒤 결과의 이유를 한두 문장으로 적습니다</span>
+<span class="n">prompt</span> <span class="o">=</span> <span class="n">few_shot_prompt</span><span class="p">(</span><span class="n">examples</span><span class="p">,</span> <span class="s1">'반도체 후공정에서 다이싱이란 무엇입니까?'</span><span class="p">)</span>
+<span class="k">assert</span> <span class="n">prompt</span><span class="p">,</span> <span class="s1">'few_shot_prompt()를 먼저 작성합니다'</span>
+<span class="n">input_ids</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s1">'pt'</span><span class="p">)</span><span class="o">.</span><span class="n">input_ids</span>
+<span class="n">output</span> <span class="o">=</span> <span class="n">base_model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="n">input_ids</span><span class="p">,</span> <span class="n">max_new_tokens</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span> <span class="n">pad_token_id</span><span class="o">=</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">eos_token_id</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">prompt</span> <span class="o">+</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">output</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">input_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]:],</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+</code></pre></div>
+
+<details class="answer">
+<summary>풀이 보기</summary>
+<p>예 하나를 "질문: …" 줄과 "답: …" 줄로 만들고, 새 질문은 "답:"에서 끝냅니다.</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">few_shot_prompt</span><span class="p">(</span><span class="n">examples</span><span class="p">,</span> <span class="n">question</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""(질문, 답) 예 목록과 새 질문으로 '질문: …' '답: …' 형식의 글을 만듭니다"""</span>
+    <span class="n">lines</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s1">'질문: </span><span class="si">{</span><span class="n">example_question</span><span class="si">}</span><span class="se">\n</span><span class="s1">답: </span><span class="si">{</span><span class="n">example_answer</span><span class="si">}</span><span class="s1">'</span> <span class="k">for</span> <span class="n">example_question</span><span class="p">,</span> <span class="n">example_answer</span> <span class="ow">in</span> <span class="n">examples</span><span class="p">]</span>
+    <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s1">'질문: </span><span class="si">{</span><span class="n">question</span><span class="si">}</span><span class="se">\n</span><span class="s1">답:'</span><span class="p">)</span>
+    <span class="k">return</span> <span class="s1">'</span><span class="se">\n</span><span class="s1">'</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span>
+
+
+<span class="n">examples</span> <span class="o">=</span> <span class="p">[(</span><span class="s1">'웨이퍼란 무엇입니까?'</span><span class="p">,</span> <span class="s1">'반도체 칩을 만드는 얇은 원판입니다.'</span><span class="p">)]</span>
+<span class="n">my_guess</span> <span class="o">=</span> <span class="s1">'다이싱의 뜻을 한 문장으로 답하고, 다음 질문을 이어 쓸 것이다'</span>
+<span class="n">my_explanation</span> <span class="o">=</span> <span class="s1">'질문과 답이 번갈아 나오는 글에서는 답 다음에 질문이 오는 이어짐에 높은 확률이 붙는다'</span>
+<span class="n">prompt</span> <span class="o">=</span> <span class="n">few_shot_prompt</span><span class="p">(</span><span class="n">examples</span><span class="p">,</span> <span class="s1">'반도체 후공정에서 다이싱이란 무엇입니까?'</span><span class="p">)</span>
+<span class="k">assert</span> <span class="n">prompt</span><span class="p">,</span> <span class="s1">'few_shot_prompt()를 먼저 작성합니다'</span>
+<span class="n">input_ids</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s1">'pt'</span><span class="p">)</span><span class="o">.</span><span class="n">input_ids</span>
+<span class="n">output</span> <span class="o">=</span> <span class="n">base_model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="n">input_ids</span><span class="p">,</span> <span class="n">max_new_tokens</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span> <span class="n">pad_token_id</span><span class="o">=</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">eos_token_id</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">prompt</span> <span class="o">+</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">output</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">input_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]:],</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+</code></pre></div>
+
+<div class="result">
+<div class="codehilite"><pre><span></span><code>질문: 웨이퍼란 무엇입니까?
+답: 반도체 칩을 만드는 얇은 원판입니다.
+질문: 반도체 후공정에서 다이싱이란 무엇입니까?
+답: 반도체 후공정에서 다이싱은 반도체를 높이기 위해 사용하는 높이기 기법입니다.
+질문: 반도체 후공정에서 다이싱이란 무엇입니까?
+답: 반도체 후공정에서
+</code></pre></div>
+
+</div>
+<p>베이스 모델은 "답:" 뒤에 답 형식의 문장을 썼습니다. 내용은 틀렸지만 형식은 예를 따랐습니다. 그리고 답 뒤에 멈추지 않고 "질문: …"을 다시 이어 썼습니다. 베이스 모델이 배운 것은 "이 글이 어떻게 이어질 법한가"이므로, 질문과 답이 번갈아 나오는 글에서는 답 다음에 질문이 오는 이어짐에 높은 확률을 준 것입니다. 답이 끝나면 멈추는 행동은 SFT에서 배웁니다. 예를 붙여 형식을 따르게 하는 방법은 4장 "프롬프트 설계"의 few-shot에서 다시 다룹니다.</p>
+</details>
+</section>
+<section class="box practice" id="실습-2-2">
+<header><span class="box-no">실습 2-2</span><span class="box-title">그럴듯함과 사실 구분해 보기</span><span class="box-where">노트북 <code>02_모델은_어떻게_만들어지는가.ipynb</code>의 <code>실습 2-2</code></span></header>
+<p>맞는 문장과 낱말 하나만 바꾼 틀린 문장의 쌍을 세 개 만듭니다. 토큰 수가 달라질 수 있으므로 평균 대신 -log p의 합으로 비교합니다. <code>total_loss()</code>는 예제 2-3의 <code>sentence_loss()</code>(평균)에 예측한 위치의 수(토큰 수 - 1)를 곱하도록 작성합니다. 어느 쪽의 합이 낮을지 먼저 <code>my_guess</code>에 적고, 예측과 다른 쌍의 이유를 <code>my_explanation</code>에 적으면 끝납니다.</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">total_loss</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""문장 전체의 -log p 합. 평균 손실에 예측한 위치의 수(토큰 수 - 1)를 곱합니다"""</span>
+    <span class="k">return</span> <span class="kc">None</span>  <span class="c1"># TODO</span>
+
+
+<span class="n">pairs</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">(</span><span class="s1">''</span><span class="p">,</span> <span class="s1">''</span><span class="p">),</span>  <span class="c1"># TODO: (맞는 문장, 낱말 하나만 바꾼 틀린 문장)</span>
+    <span class="p">(</span><span class="s1">''</span><span class="p">,</span> <span class="s1">''</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">''</span><span class="p">,</span> <span class="s1">''</span><span class="p">),</span>
+<span class="p">]</span>
+<span class="n">my_guess</span> <span class="o">=</span> <span class="p">[</span><span class="s1">''</span><span class="p">,</span> <span class="s1">''</span><span class="p">,</span> <span class="s1">''</span><span class="p">]</span>  <span class="c1"># TODO: 쌍마다 합이 낮을 것 같은 쪽('맞는 문장' 또는 '틀린 문장')</span>
+<span class="n">my_explanation</span> <span class="o">=</span> <span class="s1">''</span>  <span class="c1"># TODO: 실행한 뒤 예측과 다른 쌍의 이유를 적습니다</span>
+<span class="k">for</span> <span class="p">(</span><span class="n">true_sentence</span><span class="p">,</span> <span class="n">false_sentence</span><span class="p">),</span> <span class="n">guess</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">pairs</span><span class="p">,</span> <span class="n">my_guess</span><span class="p">):</span>
+    <span class="n">true_total</span><span class="p">,</span> <span class="n">false_total</span> <span class="o">=</span> <span class="n">total_loss</span><span class="p">(</span><span class="n">true_sentence</span><span class="p">),</span> <span class="n">total_loss</span><span class="p">(</span><span class="n">false_sentence</span><span class="p">)</span>
+    <span class="n">lower</span> <span class="o">=</span> <span class="s1">'맞는 문장'</span> <span class="k">if</span> <span class="n">true_total</span> <span class="o">&lt;</span> <span class="n">false_total</span> <span class="k">else</span> <span class="s1">'틀린 문장'</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'맞는 문장 </span><span class="si">{</span><span class="n">true_total</span><span class="si">:</span><span class="s1">.1f</span><span class="si">}</span><span class="s1">, 틀린 문장 </span><span class="si">{</span><span class="n">false_total</span><span class="si">:</span><span class="s1">.1f</span><span class="si">}</span><span class="s1"> → 합이 낮은 쪽: </span><span class="si">{</span><span class="n">lower</span><span class="si">}</span><span class="s1"> (예측: </span><span class="si">{</span><span class="n">guess</span><span class="si">}</span><span class="s1">)'</span><span class="p">)</span>
+</code></pre></div>
+
+<details class="answer">
+<summary>풀이 보기</summary>
+<p>토큰 수는 <code>tokenizer(text).input_ids</code>의 길이입니다. 첫 토큰은 앞에 아무것도 없어 예측하지 않으므로, 예측한 위치의 수는 토큰 수보다 하나 적습니다.</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">total_loss</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""문장 전체의 -log p 합. 평균 손실에 예측한 위치의 수(토큰 수 - 1)를 곱합니다"""</span>
+    <span class="n">token_count</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">tokenizer</span><span class="p">(</span><span class="n">text</span><span class="p">)</span><span class="o">.</span><span class="n">input_ids</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">sentence_loss</span><span class="p">(</span><span class="n">text</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">token_count</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+
+
+<span class="n">pairs</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">(</span><span class="s1">'몰딩은 칩을 수지로 감싸 보호하는 공정입니다.'</span><span class="p">,</span> <span class="s1">'몰딩은 칩을 수지로 감싸 가열하는 공정입니다.'</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">'웨이퍼는 주로 실리콘으로 만듭니다.'</span><span class="p">,</span> <span class="s1">'웨이퍼는 주로 유리로 만듭니다.'</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">'반도체 칩은 전기 신호를 처리합니다.'</span><span class="p">,</span> <span class="s1">'반도체 칩은 전기 신호를 차단합니다.'</span><span class="p">),</span>
+<span class="p">]</span>
+<span class="n">my_guess</span> <span class="o">=</span> <span class="p">[</span><span class="s1">'맞는 문장'</span><span class="p">,</span> <span class="s1">'맞는 문장'</span><span class="p">,</span> <span class="s1">'맞는 문장'</span><span class="p">]</span>
+<span class="n">my_explanation</span> <span class="o">=</span> <span class="s1">'모델은 실제로 이어진 글을 학습했을 뿐이라, 사실이 아닌 낱말도 글로서 자연스러우면 확률이 높다'</span>
+<span class="k">for</span> <span class="p">(</span><span class="n">true_sentence</span><span class="p">,</span> <span class="n">false_sentence</span><span class="p">),</span> <span class="n">guess</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">pairs</span><span class="p">,</span> <span class="n">my_guess</span><span class="p">):</span>
+    <span class="n">true_total</span><span class="p">,</span> <span class="n">false_total</span> <span class="o">=</span> <span class="n">total_loss</span><span class="p">(</span><span class="n">true_sentence</span><span class="p">),</span> <span class="n">total_loss</span><span class="p">(</span><span class="n">false_sentence</span><span class="p">)</span>
+    <span class="n">lower</span> <span class="o">=</span> <span class="s1">'맞는 문장'</span> <span class="k">if</span> <span class="n">true_total</span> <span class="o">&lt;</span> <span class="n">false_total</span> <span class="k">else</span> <span class="s1">'틀린 문장'</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'맞는 문장 </span><span class="si">{</span><span class="n">true_total</span><span class="si">:</span><span class="s1">.1f</span><span class="si">}</span><span class="s1">, 틀린 문장 </span><span class="si">{</span><span class="n">false_total</span><span class="si">:</span><span class="s1">.1f</span><span class="si">}</span><span class="s1"> → 합이 낮은 쪽: </span><span class="si">{</span><span class="n">lower</span><span class="si">}</span><span class="s1"> (예측: </span><span class="si">{</span><span class="n">guess</span><span class="si">}</span><span class="s1">)'</span><span class="p">)</span>
+</code></pre></div>
+
+<div class="result">
+<div class="codehilite"><pre><span></span><code>맞는 문장 78.2, 틀린 문장 79.8 → 합이 낮은 쪽: 맞는 문장 (예측: 맞는 문장)
+맞는 문장 40.7, 틀린 문장 38.5 → 합이 낮은 쪽: 틀린 문장 (예측: 맞는 문장)
+맞는 문장 45.3, 틀린 문장 49.0 → 합이 낮은 쪽: 맞는 문장 (예측: 맞는 문장)
+</code></pre></div>
+
+</div>
+<p>세 쌍 모두 맞는 문장의 합이 낮을 것으로 예측했지만, 웨이퍼 쌍은 틀린 문장("유리로")의 합이 더 낮았습니다. 이 모델에게는 "웨이퍼는 주로 유리로 만듭니다"도 글로서 자연스러운 이어짐이고, 어느 쪽이 사실인지는 손실에 드러나지 않았습니다. 사전 학습의 목표가 사실이 아니라 실제로 이어진 글이기 때문입니다. 몰딩과 반도체 칩 쌍은 맞는 문장의 합이 낮았지만, 차이는 크지 않습니다.</p>
+</details>
+</section>
+<h2 id="자가점검">자가점검</h2>
+<p><strong>1.</strong> 베이스 모델에 "다이싱이란 무엇입니까?"를 넣었더니 비슷한 질문을 여러 줄 이어 썼습니다. 사전 학습의 목표로 이 행동을 설명해 보세요.</p>
+<details class="answer">
+<summary>정답 보기</summary>
+<p>사전 학습은 글에서 실제로 이어진 다음 토큰을 맞히도록 학습합니다. 학습한 글에 FAQ 목록처럼 질문이 나열된 글이 있으면, 질문 다음에 다른 질문이 오는 이어짐도 그럴듯합니다. 베이스 모델은 "질문을 받으면 답한다"를 배운 적이 없고, 이 글이 이어질 법한 방향으로 쓴 것입니다.</p>
+</details>
+<p><strong>2.</strong> 어떤 위치에서 모델이 실제 다음 토큰에 0.5의 확률을 주었고, 다른 위치에서는 0.05를 주었습니다. 두 위치의 손실은 각각 얼마이고, 학습은 이 값을 어떻게 바꾸려 합니까?</p>
+<details class="answer">
+<summary>정답 보기</summary>
+<p>-log 0.5 ≈ 0.69, -log 0.05 ≈ 3.00입니다(자연로그). 학습은 손실이 줄어들도록, 즉 실제 다음 토큰의 확률이 높아지도록 파라미터를 고칩니다. 손실이 큰 둘째 위치를 학습이 더 크게 고칩니다.</p>
+</details>
+<p><strong>3.</strong> 다음 데이터는 각각 어느 학습 단계에 쓰입니까? (가) "질문: 와이어 본딩이란? 답: 칩과 리드를 금속선으로 잇는 공정입니다." (나) 한 질문에 대한 두 답과 "답 B가 낫다"는 표시 (다) 정답이 정해진 수학 문제 (라) 반도체 관련 웹 문서 수십억 건</p>
+<details class="answer">
+<summary>정답 보기</summary>
+<p>(가) SFT, (나) RLHF 또는 DPO, (다) thinking 모델의 강화 학습, (라) 사전 학습입니다.</p>
+</details>
+<p><strong>4.</strong> RLHF와 DPO는 같은 선호 데이터를 씁니다. 두 방법은 무엇이 다릅니까?</p>
+<details class="answer">
+<summary>정답 보기</summary>
+<p>RLHF는 선호 데이터로 보상 모델을 먼저 학습시키고, 모델이 생성한 답에 보상 모델이 점수를 매기게 해 강화 학습합니다. DPO는 보상 모델과 강화 학습 없이, 나은 답의 확률은 높이고 못한 답의 확률은 낮추도록 모델을 바로 학습시킵니다.</p>
+</details>
+<p><strong>5.</strong> 지난달 개정된 사내 규정을 모델에게 물었더니 그럴듯한 개정 내용을 답했습니다. 이 답을 믿으면 안 되는 이유를 두 가지 이상 들어 보세요.</p>
+<details class="answer">
+<summary>정답 보기</summary>
+<p>개정이 지식 기준일 뒤의 일이면 모델은 그 내용을 학습하지 않았습니다. 사내 규정은 기준일과 상관없이 학습한 글에 없습니다. 모델은 학습하지 않은 내용 앞에서도 그럴듯한 글을 이어 쓰도록 학습했으므로 환각이 생깁니다. 개정 문서를 입력에 넣어 그 문서를 근거로 답하게 해야 합니다.</p>
+</details>
+<p><strong>6.</strong> 교재의 실행에서 예제 2-3의 "다이싱은 웨이퍼를 개별 칩으로 붙이는 공정입니다"의 손실이 맞는 문장보다 낮았습니다. 이 결과가 환각에 대해 말해 주는 것은 무엇입니까?</p>
+<details class="answer">
+<summary>정답 보기</summary>
+<p>모델이 학습으로 배운 것은 글이 그럴듯하게 이어지는지이고, 사실인지가 아닙니다. 틀린 문장도 그럴듯하면 높은 확률로 생성될 수 있습니다. 큰 모델은 학습한 글에 많이 나온 사실은 잘 구분하지만, 학습한 글에 드문 사실 앞에서는 같은 문제가 생깁니다.</p>
+</details>
+<p><strong>7.</strong> thinking 모델로 짧은 답을 받았는데, 토큰 사용량을 보니 출력 토큰이 수천 개였습니다. 왜 그렇습니까? 이 점을 업무에 쓸 때 무엇을 고려해야 합니까?</p>
+<details class="answer">
+<summary>정답 보기</summary>
+<p>thinking 모델은 답하기 전에 thinking 토큰을 생성하고, 이 토큰은 응답에 보이지 않아도 출력 토큰으로 계산됩니다. 출력 토큰은 단가가 높고 생성 시간도 걸리므로, 단순한 작업에는 thinking을 적게 쓰게 하고 판단이 필요한 작업에만 많이 쓰게 하는 것을 고려합니다(5장의 effort).</p>
+</details>
+<h2 id="참고-문헌">참고 문헌</h2>
+<ul>
+<li>Qwen Team (2024). Qwen2.5 Technical Report. arXiv:2412.15115.</li>
+<li>Meta (2024). The Llama 3 Herd of Models. arXiv:2407.21783.</li>
+<li>Ouyang, L. 외 (2022). Training language models to follow instructions with human feedback. NeurIPS 2022.</li>
+<li>Rafailov, R. 외 (2023). Direct Preference Optimization: Your Language Model is Secretly a Reward Model. NeurIPS 2023.</li>
+<li>Kalai, A. T., Nachum, O., Vempala, S., Zhang, E. (2025). Why Language Models Hallucinate. arXiv:2509.04664.</li>
+<li>DeepSeek-AI (2025). DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via Reinforcement Learning. arXiv:2501.12948.</li>
+<li>Anthropic. Claude 모델 개요(지식 기준일), Claude API 문서(thinking)(2026-11 확인).</li>
+</ul>
+</article>
+    <footer class="foot">GenAI Intensive 강의(삼성전자 DS 부문 교육)의 주제를 바탕으로 새로 쓴 교재입니다.</footer>
+  </main>
+</div>
+<script>
+// 교재 화면 동작: 화면 밝기, 목차, 탭, 코드 복사, 찾기.
+(function () {
+  var root = document.documentElement;
+
+  // 화면 밝기. 기억해 둔 값이 없으면 기기 설정을 따른다.
+  var themeButton = document.querySelector('.theme');
+  function stored() { try { return localStorage.getItem('theme'); } catch (e) { return null; } }
+  function setTheme(name) {
+    root.setAttribute('data-theme', name);
+    themeButton.textContent = name === 'dark' ? '밝은 화면' : '어두운 화면';
+  }
+  setTheme(stored() || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+  themeButton.addEventListener('click', function () {
+    var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+    try { localStorage.setItem('theme', next); } catch (e) { /* 저장하지 못해도 화면은 바뀐다 */ }
+  });
+
+  // 본문 폭. 기본은 읽기 편한 폭, "넓게 보기"는 표와 코드를 넓게 본다.
+  var widthButton = document.querySelector('.width');
+  function setWidth(name) {
+    root.setAttribute('data-width', name);
+    widthButton.textContent = name === 'wide' ? '기본 폭으로' : '넓게 보기';
+  }
+  var savedWidth = null;
+  try { savedWidth = localStorage.getItem('width'); } catch (e) { /* 무시 */ }
+  setWidth(savedWidth === 'wide' ? 'wide' : 'normal');
+  widthButton.addEventListener('click', function () {
+    var next = root.getAttribute('data-width') === 'wide' ? 'normal' : 'wide';
+    setWidth(next);
+    try { localStorage.setItem('width', next); } catch (e) { /* 저장하지 못해도 화면은 바뀐다 */ }
+  });
+
+  // 좁은 화면의 목차 열고 닫기
+  var side = document.getElementById('side');
+  var menu = document.querySelector('.menu');
+  menu.addEventListener('click', function () {
+    var open = side.classList.toggle('open');
+    menu.setAttribute('aria-expanded', open);
+  });
+  side.addEventListener('click', function (event) {
+    if (event.target.closest('a')) { side.classList.remove('open'); menu.setAttribute('aria-expanded', false); }
+  });
+
+  // 이어진 탭을 한 묶음으로 만든다
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('.tab'));
+  tabs.forEach(function (tab) {
+    if (tab.classList.contains('ready')) return;
+    var group = [tab];
+    var next = tab.nextElementSibling;
+    while (next && next.classList.contains('tab')) { group.push(next); next = next.nextElementSibling; }
+    var wrap = document.createElement('div');
+    wrap.className = 'tabs';
+    var list = document.createElement('div');
+    list.className = 'tablist';
+    list.setAttribute('role', 'tablist');
+    tab.parentNode.insertBefore(wrap, tab);
+    wrap.appendChild(list);
+    group.forEach(function (panel, index) {
+      panel.classList.add('ready');
+      var button = document.createElement('button');
+      button.type = 'button';
+      button.setAttribute('role', 'tab');
+      button.textContent = panel.getAttribute('data-tab');
+      button.addEventListener('click', function () { choose(panel.getAttribute('data-tab')); });
+      list.appendChild(button);
+      wrap.appendChild(panel);
+      panel.hidden = index !== 0;
+      button.setAttribute('aria-selected', index === 0);
+    });
+  });
+  // 탭 하나를 고르면 같은 이름의 탭이 쪽 전체에서 함께 바뀐다
+  function choose(name) {
+    document.querySelectorAll('.tabs').forEach(function (wrap) {
+      var panels = wrap.querySelectorAll(':scope > .tab');
+      var has = Array.prototype.some.call(panels, function (p) { return p.getAttribute('data-tab') === name; });
+      if (!has) return;
+      panels.forEach(function (p) { p.hidden = p.getAttribute('data-tab') !== name; });
+      wrap.querySelectorAll('.tablist button').forEach(function (b) {
+        b.setAttribute('aria-selected', b.textContent === name);
+      });
+    });
+    try { localStorage.setItem('tab', name); } catch (e) { /* 무시 */ }
+  }
+  try { var savedTab = localStorage.getItem('tab'); if (savedTab) choose(savedTab); } catch (e) { /* 무시 */ }
+
+  // 코드 복사 단추
+  document.querySelectorAll('.codehilite').forEach(function (block) {
+    if (block.closest('.result') || !navigator.clipboard) return;
+    var button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'copy';
+    button.textContent = '복사';
+    button.addEventListener('click', function () {
+      navigator.clipboard.writeText(block.querySelector('pre').innerText).then(function () {
+        button.textContent = '복사했습니다';
+        setTimeout(function () { button.textContent = '복사'; }, 1500);
+      });
+    });
+    block.appendChild(button);
+  });
+
+  // 지금 읽는 절을 목차에 표시한다
+  var links = {};
+  document.querySelectorAll('.toc a').forEach(function (a) { links[decodeURIComponent(a.hash.slice(1))] = a; });
+  var headings = Array.prototype.slice.call(document.querySelectorAll('main h1[id], main h2[id], main h3[id]'));
+  function mark() {
+    var current = headings[0];
+    headings.forEach(function (h) { if (h.getBoundingClientRect().top < 120) current = h; });
+    Object.keys(links).forEach(function (id) { links[id].classList.remove('now'); });
+    if (current && links[current.id]) links[current.id].classList.add('now');
+  }
+  window.addEventListener('scroll', mark, { passive: true });
+  mark();
+
+  // 이 쪽에서 찾기: 절 단위로 찾아 목차 자리에 보여 준다
+  var input = document.querySelector('.search input');
+  var hits = document.querySelector('.hits');
+  var toc = document.querySelector('.toc');
+  var sections = headings.map(function (h) {
+    var text = '';
+    var node = h.nextElementSibling;
+    while (node && !/^H[123]$/.test(node.tagName)) { text += ' ' + node.textContent; node = node.nextElementSibling; }
+    return { id: h.id, title: h.childNodes[0].textContent.trim(), text: (h.textContent + text).toLowerCase(), raw: text };
+  });
+  input.addEventListener('input', function () {
+    var query = input.value.trim().toLowerCase();
+    if (!query) { hits.hidden = true; toc.hidden = false; return; }
+    var found = sections.filter(function (s) { return s.text.indexOf(query) !== -1; });
+    hits.textContent = '';
+    var summary = document.createElement('p');
+    summary.textContent = found.length ? '찾은 절 ' + found.length + '개' : '찾는 내용이 없습니다. 다른 낱말로 찾아 보세요.';
+    hits.appendChild(summary);
+    found.forEach(function (s) {
+      var a = document.createElement('a');
+      a.href = '#' + s.id;
+      a.textContent = s.title;
+      var at = s.raw.toLowerCase().indexOf(query);
+      if (at !== -1) {
+        var small = document.createElement('small');
+        small.textContent = '…' + s.raw.slice(Math.max(0, at - 20), at + 40).replace(/\s+/g, ' ') + '…';
+        a.appendChild(small);
+      }
+      hits.appendChild(a);
+    });
+    hits.hidden = false;
+    toc.hidden = true;
+  });
+})();
+
+</script>
+</body>
+</html>

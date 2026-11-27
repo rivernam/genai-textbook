@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{title}} | {{site}}</title>
+<style>
+{{style}}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">본문으로 건너뛰기</a>
+<header class="top">
+  <button class="menu" type="button" aria-controls="side" aria-expanded="false">목차</button>
+  <span class="site">{{site}}</span>
+  <nav class="days" aria-label="일자">
+{{nav}}
+  </nav>
+  <button class="width" type="button">넓게 보기</button>
+  <button class="theme" type="button">어두운 화면</button>
+</header>
+<div class="layout">
+  <aside class="side" id="side">
+    <label class="search">
+      <span>이 쪽에서 찾기</span>
+      <input type="search" placeholder="예: 토큰, 재시도" autocomplete="off">
+    </label>
+    <div class="hits" hidden></div>
+    <nav class="toc" aria-label="목차">
+{{toc}}
+    </nav>
+  </aside>
+  <main id="main">
+{{content}}
+    <footer class="foot">{{footer}}</footer>
+  </main>
+</div>
+<script>
+{{script}}
+</script>
+</body>
+</html>
