@@ -283,6 +283,9 @@ def chapter_label(path):
 
 
 def write_notebook(notebook, folder, name):
+    # 셀 id를 위치로 정해, 내용이 같으면 빌드할 때마다 같은 파일이 나오게 합니다(git diff를 줄이려고)
+    for index, cell in enumerate(notebook.cells):
+        cell['id'] = f'cell-{index:03d}'
     folder.mkdir(parents=True, exist_ok=True)
     nbformat.write(notebook, folder / name)
 
