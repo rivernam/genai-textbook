@@ -126,7 +126,7 @@ def test_anthropic_omits_system_when_none(anthropic_env):
 @pytest.mark.parametrize('raw, expected', [('end_turn', 'end'), ('stop_sequence', 'end'),
                                            ('max_tokens', 'max_tokens'),
                                            ('model_context_window_exceeded', 'max_tokens'),
-                                           ('refusal', 'refusal'), ('tool_use', 'other'),
+                                           ('refusal', 'refusal'), ('tool_use', 'tool_use'),
                                            ('pause_turn', 'other')])
 def test_anthropic_stop_reason(anthropic_env, raw, expected):
     anthropic_env.script = [(200, anthropic_body(stop_reason=raw))]
@@ -151,7 +151,7 @@ def test_openai_request_and_reply(openai_env):
 
 
 @pytest.mark.parametrize('raw, expected', [('stop', 'end'), ('length', 'max_tokens'),
-                                           ('content_filter', 'refusal'), ('tool_calls', 'other'),
+                                           ('content_filter', 'refusal'), ('tool_calls', 'tool_use'),
                                            ('function_call', 'other')])
 def test_openai_stop_reason(openai_env, raw, expected):
     openai_env.script = [(200, openai_body(finish_reason=raw))]
@@ -402,3 +402,81 @@ def test_chat_reports_cut_reply_and_skips_empty_history(anthropic_env, capsys):
     printed = capsys.readouterr().out
     assert '응답 텍스트가 없습니다' in printed and 'max_tokens' in printed
     assert chat.history == [] and chat.last.stop_reason == 'max_tokens'
+
+
+TOOLS = [{'name': 'search_docs', 'description': '사내 문서를 검색한다',
+          'input_schema': {'type': 'object', 'properties': {'query': {'type': 'string'}},
+                           'required': ['query']}}]
+
+
+def test_anthropic_tool_round_trip(anthropic_env):
+    body = anthropic_body(stop_reason='tool_use')
+    body['content'] = [{'type': 'text', 'text': '찾아보겠습니다'},
+                       {'type': 'tool_use', 'id': 'toolu_1', 'name': 'search_docs', 'input': {'query': 'SSC'}}]
+    anthropic_env.script = [(200, body), (200, anthropic_body(text='SSC는 교대 시작 점검입니다'))]
+    messages = [{'role': 'user', 'content': 'SSC가 뭔가요?'}]
+    reply = llm.ask_messages(messages, tools=TOOLS)
+    assert anthropic_env.requests[0][1]['tools'] == TOOLS
+    assert reply.stop_reason == 'tool_use'
+    assert reply.tool_calls == [llm.ToolCall('toolu_1', 'search_docs', {'query': 'SSC'})]
+
+    call = reply.tool_calls[0]
+    messages += [llm.assistant_turn(reply), llm.tool_result(call, '[EDU-002] 사내 약어')]
+    final = llm.ask_messages(messages, tools=TOOLS)
+    sent = anthropic_env.requests[1][1]['messages']
+    assert sent[1] == {'role': 'assistant', 'content': [
+        {'type': 'text', 'text': '찾아보겠습니다'},
+        {'type': 'tool_use', 'id': 'toolu_1', 'name': 'search_docs', 'input': {'query': 'SSC'}}]}
+    assert sent[2] == {'role': 'user', 'content': [
+        {'type': 'tool_result', 'tool_use_id': 'toolu_1', 'content': '[EDU-002] 사내 약어', 'is_error': False}]}
+    assert final.stop_reason == 'end' and final.tool_calls == []
+
+
+def test_anthropic_parallel_tool_results_go_in_one_user_message(anthropic_env):
+    anthropic_env.script = [(200, anthropic_body())]
+    first, second = llm.ToolCall('a', 'search_docs', {'query': 'x'}), llm.ToolCall('b', 'search_docs', {'query': 'y'})
+    turn = {'role': 'assistant', 'content': '', 'tool_calls': [first, second]}
+    llm.ask_messages([{'role': 'user', 'content': '질문'}, turn,
+                      llm.tool_result(first, '1'), llm.tool_result(second, '2', is_error=True)])
+    sent = anthropic_env.requests[0][1]['messages']
+    assert len(sent) == 3
+    assert [block['tool_use_id'] for block in sent[2]['content']] == ['a', 'b']
+    assert sent[2]['content'][1]['is_error'] is True
+    assert sent[1]['content'][0]['type'] == 'tool_use'       # 빈 텍스트 블록은 넣지 않는다
+
+
+def test_openai_tool_round_trip(openai_env):
+    body = openai_body(finish_reason='tool_calls')
+    body['choices'][0]['message'] = {'role': 'assistant', 'content': None, 'tool_calls': [
+        {'id': 'call_1', 'type': 'function',
+         'function': {'name': 'search_docs', 'arguments': '{"query": "SSC"}'}}]}
+    openai_env.script = [(200, body), (200, openai_body())]
+    messages = [{'role': 'user', 'content': 'SSC가 뭔가요?'}]
+    reply = llm.ask_messages(messages, system='규칙', tools=TOOLS)
+    assert openai_env.requests[0][1]['tools'] == [{'type': 'function', 'function': {
+        'name': 'search_docs', 'description': '사내 문서를 검색한다',
+        'parameters': TOOLS[0]['input_schema']}}]
+    assert reply.stop_reason == 'tool_use'
+    assert reply.tool_calls == [llm.ToolCall('call_1', 'search_docs', {'query': 'SSC'})]
+
+    messages += [llm.assistant_turn(reply), llm.tool_result(reply.tool_calls[0], '[EDU-002] 사내 약어')]
+    llm.ask_messages(messages, system='규칙', tools=TOOLS)
+    sent = openai_env.requests[1][1]['messages']
+    assert sent[2] == {'role': 'assistant', 'content': None, 'tool_calls': [
+        {'id': 'call_1', 'type': 'function', 'function': {'name': 'search_docs', 'arguments': '{"query": "SSC"}'}}]}
+    assert sent[3] == {'role': 'tool', 'tool_call_id': 'call_1', 'content': '[EDU-002] 사내 약어'}
+
+
+def test_openai_bad_arguments_are_kept(openai_env):
+    body = openai_body(finish_reason='tool_calls')
+    body['choices'][0]['message'] = {'role': 'assistant', 'content': None, 'tool_calls': [
+        {'id': 'c', 'type': 'function', 'function': {'name': 'search_docs', 'arguments': '{"query": '}}]}
+    openai_env.script = [(200, body)]
+    reply = llm.ask_messages([{'role': 'user', 'content': '질문'}], tools=TOOLS)
+    assert reply.tool_calls[0].arguments == {'_파싱_오류': '{"query": '}
+
+
+def test_ask_messages_retries(anthropic_env):
+    anthropic_env.script = [(429, ERROR), (200, anthropic_body())]
+    assert llm.ask_messages([{'role': 'user', 'content': '질문'}]).text == '안녕하세요'
+    assert anthropic_env.waits == [1]

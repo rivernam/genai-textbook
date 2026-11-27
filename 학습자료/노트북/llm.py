@@ -20,13 +20,14 @@ OpenAI 호환 API에는 모델 기본값이 없으므로 쓰는 별칭의 환경
     send(messages, ...)   한 번 보낸다. 실패하면 CallError를 낸다. 재시도하지 않는다.
                           schema에 JSON 스키마를 주면 구조화 출력으로 요청한다.
     ask(prompt, ...)      send()에 재시도와 백오프를 더한 것.
+    ask_messages(...)     메시지 목록을 그대로 보낸다. 재시도는 ask()와 같다. 도구 호출이 든 대화를 이어 갈 때 쓴다.
     count_tokens(...)     보내기 전에 입력 토큰 수를 센다. 지원하지 않는 API면 None.
     Chat(...)             채팅 화면처럼 쓰는 대화 하나. say()로 보내면 응답을 출력하고 대화를 잇는다.
 """
 import json
 import os
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 _ALIAS_ENV = {'소형': 'LLM_MODEL_SMALL', '기본': 'LLM_MODEL_DEFAULT', '대형': 'LLM_MODEL_LARGE'}
 
@@ -37,12 +38,21 @@ _ANTHROPIC_DEFAULTS = {'소형': 'claude-haiku-5-5', '기본': 'claude-sonnet-5-
 # 컨텍스트 윈도우가 가득 차서 끊긴 응답도 잘린 응답이므로 'max_tokens' 로 돌려준다
 _ANTHROPIC_STOP = {'end_turn': 'end', 'stop_sequence': 'end',
                    'max_tokens': 'max_tokens', 'model_context_window_exceeded': 'max_tokens',
-                   'refusal': 'refusal'}
-_OPENAI_STOP = {'stop': 'end', 'length': 'max_tokens', 'content_filter': 'refusal'}
+                   'refusal': 'refusal', 'tool_use': 'tool_use'}
+_OPENAI_STOP = {'stop': 'end', 'length': 'max_tokens', 'content_filter': 'refusal',
+                'tool_calls': 'tool_use'}
 _STATUS_KIND = {400: 'bad_request', 401: 'auth', 403: 'permission', 404: 'not_found',
                 429: 'rate_limit'}
 
 _sleep = time.sleep  # 테스트에서 바꿔 끼운다
+
+
+@dataclass
+class ToolCall:
+    """모델이 요청한 도구 호출 하나. 도구를 실행하는 것은 모델이 아니라 이 요청을 받은 코드다."""
+    id: str                    # 호출 번호. 결과를 돌려줄 때 같은 번호를 붙인다
+    name: str                  # 도구 이름
+    arguments: dict            # 인자. 모델이 생성한 JSON을 파싱한 것
 
 
 @dataclass
@@ -51,9 +61,10 @@ class Reply:
     text: str                  # 응답 텍스트
     input_tokens: int | None   # 입력 토큰 수 (서버가 알려 주지 않으면 None)
     output_tokens: int | None  # 출력 토큰 수 (서버가 알려 주지 않으면 None)
-    stop_reason: str           # 'end' 정상 종료, 'max_tokens' 잘림, 'refusal' 거절, 'other'
+    stop_reason: str           # 'end' 정상 종료, 'max_tokens' 잘림, 'refusal' 거절, 'tool_use' 도구 호출, 'other'
     model: str                 # 실제로 답한 모델 이름
     seconds: float             # 걸린 시간(초)
+    tool_calls: list[ToolCall] = field(default_factory=list)   # 모델이 요청한 도구 호출 (tools를 줬을 때)
 
 
 class CallError(Exception):
@@ -157,14 +168,74 @@ def _to_call_error(error: Exception, sdk) -> CallError:
     return CallError('other', None, str(error))
 
 
+def assistant_turn(reply: Reply) -> dict:
+    """도구 호출이 든 응답을 대화 이력에 넣을 메시지로 바꾼다."""
+    return {'role': 'assistant', 'content': reply.text, 'tool_calls': list(reply.tool_calls)}
+
+
+def tool_result(call: ToolCall, content: str, is_error: bool = False) -> dict:
+    """도구를 실행한 결과를 대화 이력에 넣을 메시지로 만든다. call은 Reply.tool_calls의 항목이다."""
+    return {'role': 'tool', 'tool_call_id': call.id, 'content': content, 'is_error': is_error}
+
+
+def _anthropic_messages(messages: list[dict]) -> list[dict]:
+    """교재 형식의 도구 메시지를 Anthropic 형식(tool_use, tool_result 블록)으로 바꾼다."""
+    out = []
+    for message in messages:
+        if message['role'] == 'tool':
+            block = {'type': 'tool_result', 'tool_use_id': message['tool_call_id'],
+                     'content': message['content'], 'is_error': message.get('is_error', False)}
+            if out and out[-1]['role'] == 'user' and isinstance(out[-1]['content'], list):
+                out[-1]['content'].append(block)      # 연달아 온 결과는 user 메시지 하나에 모은다
+            else:
+                out.append({'role': 'user', 'content': [block]})
+        elif message.get('tool_calls'):
+            blocks = [{'type': 'text', 'text': message['content']}] if message['content'] else []
+            blocks += [{'type': 'tool_use', 'id': call.id, 'name': call.name, 'input': call.arguments}
+                       for call in message['tool_calls']]
+            out.append({'role': 'assistant', 'content': blocks})
+        else:
+            out.append({key: value for key, value in message.items() if key != 'tool_calls'})
+    return out
+
+
+def _openai_messages(messages: list[dict]) -> list[dict]:
+    """교재 형식의 도구 메시지를 OpenAI 호환 형식(tool_calls, role tool)으로 바꾼다."""
+    out = []
+    for message in messages:
+        if message['role'] == 'tool':
+            out.append({'role': 'tool', 'tool_call_id': message['tool_call_id'],
+                        'content': message['content']})
+        elif message.get('tool_calls'):
+            out.append({'role': 'assistant', 'content': message['content'] or None, 'tool_calls': [
+                {'id': call.id, 'type': 'function',
+                 'function': {'name': call.name, 'arguments': json.dumps(call.arguments, ensure_ascii=False)}}
+                for call in message['tool_calls']]})
+        else:
+            out.append({key: value for key, value in message.items() if key != 'tool_calls'})
+    return out
+
+
+def _openai_arguments(text: str) -> dict:
+    """OpenAI 호환 API는 인자를 JSON 문자열로 준다. 파싱하지 못하면 원문을 그대로 담아 돌려준다."""
+    try:
+        value = json.loads(text or '{}')
+    except json.JSONDecodeError:
+        return {'_파싱_오류': text}
+    return value if isinstance(value, dict) else {'_파싱_오류': text}
+
+
 def send(messages: list[dict], *, system: str | None = None, model: str = '기본',
          max_tokens: int = 1024, timeout: float = 60.0, api_key: str | None = None,
-         schema: dict | None = None) -> Reply:
+         schema: dict | None = None, tools: list[dict] | None = None) -> Reply:
     """메시지 목록을 한 번 보내고 Reply를 돌려준다. 실패하면 CallError를 낸다.
 
     messages는 [{'role': 'user'|'assistant', 'content': str}, ...]이고 user로 끝나야 한다.
+    도구를 쓰는 대화에서는 assistant_turn(), tool_result()가 만든 메시지도 넣을 수 있다.
     model은 별칭('소형', '기본', '대형')이나 실제 모델 이름이다.
     schema는 JSON 스키마(dict)다. 주면 구조화 출력으로 요청한다(structured_mode() 참고).
+    tools는 [{'name': ..., 'description': ..., 'input_schema': JSON 스키마}, ...]다(Anthropic 형식).
+    모델이 도구를 요청하면 stop_reason이 'tool_use'이고 Reply.tool_calls에 요청이 들어 있다.
     """
     sdk = _sdk()
     real_model = _resolve_model(model)
@@ -172,13 +243,17 @@ def send(messages: list[dict], *, system: str | None = None, model: str = '기�
     started = time.time()
     try:
         if provider() == 'anthropic':
-            request = dict(model=real_model, max_tokens=max_tokens, messages=messages)
+            request = dict(model=real_model, max_tokens=max_tokens, messages=_anthropic_messages(messages))
             if system:
                 request['system'] = system
             if schema:
                 request['output_config'] = {'format': {'type': 'json_schema', 'schema': schema}}
+            if tools:
+                request['tools'] = tools
             response = client.messages.create(**request)
             text = ''.join(block.text for block in response.content if block.type == 'text')
+            calls = [ToolCall(block.id, block.name, dict(block.input))
+                     for block in response.content if block.type == 'tool_use']
             result = (text, response.usage.input_tokens, response.usage.output_tokens,
                       _ANTHROPIC_STOP.get(response.stop_reason, 'other'), response.model)
         else:
@@ -191,11 +266,18 @@ def send(messages: list[dict], *, system: str | None = None, model: str = '기�
                 system = (system + '\n\n' if system else '') + schema_instruction(schema)
                 if structured_mode() == 'json_object':
                     options['response_format'] = {'type': 'json_object'}
+            if tools:
+                options['tools'] = [{'type': 'function', 'function': {
+                    'name': tool['name'], 'description': tool.get('description', ''),
+                    'parameters': tool['input_schema']}} for tool in tools]
+            messages = _openai_messages(messages)
             if system:
-                messages = [{'role': 'system', 'content': system}] + list(messages)
+                messages = [{'role': 'system', 'content': system}] + messages
             response = client.chat.completions.create(
                 model=real_model, max_tokens=max_tokens, messages=messages, **options)
             choice, usage = response.choices[0], response.usage
+            calls = [ToolCall(call.id, call.function.name, _openai_arguments(call.function.arguments))
+                     for call in (choice.message.tool_calls or [])]
             result = (choice.message.content or '',
                       usage.prompt_tokens if usage else None,
                       usage.completion_tokens if usage else None,
@@ -204,7 +286,24 @@ def send(messages: list[dict], *, system: str | None = None, model: str = '기�
                       else _OPENAI_STOP.get(choice.finish_reason, 'other'), response.model)
     except sdk.APIError as error:
         raise _to_call_error(error, sdk) from error
-    return Reply(*result, time.time() - started)
+    return Reply(*result, time.time() - started, calls)
+
+
+def ask_messages(messages: list[dict], *, system: str | None = None, model: str = '기본',
+                 max_tokens: int = 1024, timeout: float = 60.0, tries: int = 3,
+                 schema: dict | None = None, tools: list[dict] | None = None) -> Reply:
+    """메시지 목록을 보내고 Reply를 돌려준다. 재시도할 만한 오류는 ask()처럼 재시도한다.
+
+    도구 호출과 결과가 든 대화를 이어 갈 때 쓴다. 메시지 형식은 send()와 같다.
+    """
+    for attempt in range(tries):
+        try:
+            return send(messages, system=system, model=model, max_tokens=max_tokens,
+                        timeout=timeout, schema=schema, tools=tools)
+        except CallError as error:
+            if not error.retryable or attempt == tries - 1:
+                raise
+            _sleep(2 ** attempt)  # 1초, 2초, 4초 …
 
 
 def ask(prompt: str, *, system: str | None = None, history: list[dict] | None = None,
@@ -217,14 +316,8 @@ def ask(prompt: str, *, system: str | None = None, history: list[dict] | None = 
     시간을 늘려 가며 tries 번까지 보낸다. 그 밖의 오류와 마지막 실패는 예외를 그대로 다시 발생시킨다.
     """
     messages = list(history or []) + [{'role': 'user', 'content': prompt}]
-    for attempt in range(tries):
-        try:
-            return send(messages, system=system, model=model, max_tokens=max_tokens,
-                        timeout=timeout, schema=schema)
-        except CallError as error:
-            if not error.retryable or attempt == tries - 1:
-                raise
-            _sleep(2 ** attempt)  # 1초, 2초, 4초 …
+    return ask_messages(messages, system=system, model=model, max_tokens=max_tokens,
+                        timeout=timeout, tries=tries, schema=schema)
 
 
 def count_tokens(messages: list[dict], *, system: str | None = None,
