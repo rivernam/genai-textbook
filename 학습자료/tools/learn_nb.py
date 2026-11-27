@@ -289,7 +289,11 @@ def chapter_notebook(text, setup_text, outputs=None, html_name='', solution=Fals
 
 
 def project_notebook(step, steps, setup_text, outputs=None, solution=False):
-    """K단계 프로젝트 노트북. steps는 {단계 번호: (상자, HTML 이름)}이다. 앞 단계들의 풀이 코드에서 시작한다."""
+    """K단계 프로젝트 노트북. steps는 {단계 번호: (상자, HTML 이름)}이다. 앞 단계들의 풀이 코드에서 시작한다.
+
+    앞 단계마다 첫 풀이 셀(그 단계의 함수 정의)만 넣는다. 둘째 이후 풀이 셀은 그 단계의 배치 실행이나 평가처럼
+    결과를 확인하는 셀이라, 넣으면 뒤 단계 노트북을 열 때마다 API를 다시 부른다.
+    """
     box, html_name = steps[step]
     if solution:
         intro = f'# 관통 프로젝트 {step}단계 (풀이)\n\n검증용 풀이 노트북입니다. 공유하지 않습니다.'
@@ -299,7 +303,7 @@ def project_notebook(step, steps, setup_text, outputs=None, solution=False):
     cells = [new_markdown_cell(intro)] + setup_cells(setup_text)
     for earlier in sorted(number for number in steps if number < step):
         earlier_box = steps[earlier][0]
-        solved = [(index, source) for role, index, source in earlier_box['cells'] if role == '풀이']
+        solved = [(index, source) for role, index, source in earlier_box['cells'] if role == '풀이' and index == 0]
         if not solved:
             continue
         cells.append(new_markdown_cell(f'## 앞 단계의 코드: {earlier}단계 풀이'))

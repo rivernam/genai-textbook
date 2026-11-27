@@ -212,3 +212,13 @@ def test_setup_guide_covers_the_environment_chapter():
     errors = re.findall(r'^\| (`[^|]+`) \| ', chapter, flags=re.M)
     missing = [item for item in sorted(variables) + errors if item.strip('`') not in setup]
     assert not missing, f'준비.md에 없는 항목: {missing}'
+
+
+def test_project_notebook_takes_only_first_solution_cell_of_earlier_steps():
+    _, boxes = learn_nb.parse(MANUSCRIPT)
+    first = dict(boxes[2], cells=[('실습', 0, 'step1 = None'), ('풀이', 0, "step1 = 'ok'"),
+                                  ('실습', 1, 'run = None'), ('풀이', 1, 'run = step1  # 배치 실행')])
+    second = dict(first, code='P2', title='둘째 단계', cells=[('실습', 0, 'step2 = None'), ('풀이', 0, 'step2 = step1')])
+    steps = {1: (first, '01_시험.html'), 2: (second, '02_둘째.html')}
+    assert code_of(learn_nb.project_notebook(2, steps, SETUP)) == ['import llm', "step1 = 'ok'", 'step2 = None']
+    assert code_of(learn_nb.project_notebook(1, steps, SETUP, solution=True))[-2:] == ["step1 = 'ok'", 'run = step1  # 배치 실행']
