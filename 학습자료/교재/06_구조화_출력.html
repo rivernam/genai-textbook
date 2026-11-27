@@ -448,7 +448,7 @@ span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 
 <li>구조화 출력이 형식을 보장하는 원리(제약 디코딩)를 1장의 다음 토큰 확률 분포로 설명할 수 있습니다.</li>
 <li>구조화 출력이 보장하지 않는 것(내용의 정확성, 잘림과 거절)을 들고, 스키마 검증, 업무 규칙, 정답 라벨 비교로 확인하는 방법을 설명할 수 있습니다.</li>
 </ol>
-<p>예제 6-1과 6-3은 API(application programming interface)로 서비스 모델을 호출하고, 예제 6-2는 1장의 공개 LLM(large language model)을 PC에서 실행합니다. 모델의 응답과 확률은 실행할 때마다 교재와 다를 수 있습니다.</p>
+<p>예제 6-1과 6-3은 API(application programming interface)로 모델을 호출하고, 예제 6-2는 1장의 공개 LLM(large language model)을 PC에서 실행합니다. 모델의 응답과 확률은 실행할 때마다 교재와 다를 수 있습니다.</p>
 <h2 id="응답을-데이터로-받기">응답을 데이터로 받기</h2>
 <div class="gist">
 <p>프로그램이 응답을 쓰려면 응답 텍스트를 파싱해 파이썬의 dict 같은 자료 구조로 바꿔야 합니다. 프롬프트로 "JSON으로 답하라"고만 하면 모델이 대부분 따르지만, 설명 문장이나 코드 블록 표시가 붙거나 목록 밖의 값이 나오는 응답이 섞입니다.</p>
@@ -467,11 +467,11 @@ span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 
 <figcaption>응답 문자열은 파싱을 거쳐야 결과 테이블의 한 행이 됩니다.</figcaption>
 </figure>
 
-<p>프롬프트로만 형식을 요구하면 모델은 학습한 대로 그럴듯한 글을 이어 쓸 뿐이고(1장), 형식을 지키게 하는 장치는 없습니다. 그래서 다음과 같은 응답이 섞이고, 대부분 <span class="term" tabindex="0" data-def="응답을 정해진 형식(예: JSON)으로 읽지 못한 것">파싱 오류</span>(parsing error)가 납니다.</p>
+<p>프롬프트로만 형식을 요구하면 모델은 학습한 대로 그럴듯한 글을 이어 쓸 뿐입니다(1장). 프롬프트에는 형식을 강제하는 장치가 없습니다. 그래서 다음과 같은 응답이 섞이고, 대부분 <span class="term" tabindex="0" data-def="응답을 정해진 형식(예: JSON)으로 읽지 못한 것">파싱 오류</span>(parsing error)가 납니다.</p>
 <ul>
 <li>JSON 앞뒤에 "분류 결과입니다" 같은 설명 문장이 붙습니다.</li>
 <li>JSON을 코드 블록 표시(백틱 세 개와 json)로 감쌉니다.</li>
-<li>라벨 목록에 없는 값("설비 이상/안전")이나 다른 이름의 필드가 나옵니다. 이 경우는 파싱은 되지만 다음 코드에서 오류가 납니다.</li>
+<li>라벨 목록에 없는 값("설비 이상/안전")이나 다른 이름의 필드가 나옵니다. 파싱은 되지만, 다른 이름의 필드는 값을 꺼낼 때 <code>KeyError</code>가 나고, 목록 밖의 라벨은 오류 없이 저장되어 집계에서 빠집니다(5장의 조용한 실패).</li>
 <li>최대 출력 토큰에 닿아 닫는 괄호 전에 끊깁니다.</li>
 </ul>
 <h2 id="JSON-스키마">JSON 스키마</h2>
@@ -522,10 +522,10 @@ span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 
 </tbody>
 </table>
 <p><span class="term" tabindex="0" data-def="참과 거짓 두 값만 갖는 자료형. JSON에서는 <code>true</code>와 <code>false</code>, 파이썬에서는 <code>True</code>와 <code>False</code>로 적는다">불리언</span>(boolean)은 참과 거짓 두 값만 갖는 자료형이고, JSON에서는 <code>true</code>와 <code>false</code>로 적습니다. <span class="term" tabindex="0" data-def="필드가 가질 수 있는 값을 나열한 목록. 스키마에 적으면 정상 종료한 응답에서는 목록 밖의 값이 나오지 않는다(영문 값의 대소문자는 보장하지 않는다)">enum</span>은 고를 값이 정해진 필드에 씁니다. 라벨을 자유 문자열로 두면 "안전 문제", "안전(긴급)"처럼 같은 뜻의 다른 문자열이 나와 집계가 어려워집니다. 값이 없을 수 있는 필드는 자료형에 <code>null</code>을 함께 넣습니다. <span class="term" tabindex="0" data-def="JSON에서 값이 없음을 나타내는 값. 파이썬으로 파싱하면 None이 된다">null</span>은 JSON에서 값이 없음을 나타내는 값입니다. <code>null</code>을 허용하지 않으면 문의에 설비 번호가 없어도 모델은 문자열 하나를 채워야 하므로, 근거 없는 번호를 지어낼 수 있습니다(4장의 형식이 빈칸을 채우는 현상).</p>
-<p>필드 이름은 결과 테이블의 열 이름으로 그대로 쓰므로 짧은 영문으로 짓습니다. 스키마는 프롬프트보다 먼저 작성합니다. 결과 테이블에 어떤 열이 필요한지 정하고, 그 열을 채울 수 있게 프롬프트를 씁니다.</p>
+<p>필드 이름은 결과 테이블의 열 이름으로 그대로 쓰므로 짧은 영문으로 짓습니다. 스키마는 프롬프트보다 먼저 작성합니다. 결과 테이블에 어떤 열이 필요한지 정하고, 그 열을 채울 수 있게 프롬프트를 작성합니다.</p>
 <h2 id="구조화-출력">구조화 출력</h2>
 <div class="gist">
-<p>구조화 출력은 요청에 JSON 스키마를 넣어, 정상 종료한 응답이 반드시 그 스키마에 맞는 JSON이 되게 하는 API 기능입니다. Anthropic API와 OpenAI 호환 API 모두 지원하지만, 사내 서버가 지원하는지는 확인해야 합니다.</p>
+<p>구조화 출력은 요청에 JSON 스키마를 넣어, 정상 종료한 응답이 그 스키마에 맞는 JSON이 되게 하는 API 기능입니다(예외는 "잘림과 거절"에서 설명합니다). Anthropic API와 OpenAI 호환 API 모두 지원하지만, 사내 서버가 지원하는지는 확인해야 합니다.</p>
 </div>
 <p><span class="term" tabindex="0" data-def="JSON 스키마를 요청에 넣어, 모델이 그 스키마에 맞는 JSON만 생성하게 하는 API 기능">구조화 출력</span>(structured output)은 요청에 스키마를 함께 보내면 서버가 스키마에 맞는 JSON만 생성하는 기능입니다. 요청하는 방법은 API마다 다릅니다.</p>
 <table>
@@ -546,11 +546,42 @@ span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 
 </tr>
 </tbody>
 </table>
-<p><code>llm.send()</code>와 <code>llm.ask()</code>에 <code>schema=</code>로 스키마를 주면 이 값을 넣어 보냅니다. Anthropic API의 구조화 출력은 객체마다 <code>additionalProperties: false</code>를 요구하고, 숫자의 범위(<code>minimum</code>, <code>maximum</code>)나 문자열 길이(<code>minLength</code>) 같은 키워드는 지원하지 않습니다. 지원하지 않는 키워드를 넣으면 400 오류가 납니다(2026-11 확인). 이런 조건은 받은 뒤 코드로 검사합니다.</p>
-<p>OpenAI 호환 서버는 구현마다 지원 범위가 다릅니다. 서버가 <code>json_schema</code> 방식을 지원하지 않으면 환경 변수 <code>LLM_STRUCTURED</code>를 <code>json_object</code>(JSON 형식만 보장하고 스키마는 프롬프트에 적어 보냄)나 <code>prompt</code>(아무것도 보장하지 않고 스키마를 프롬프트에 적어 보내기만 함)로 설정합니다. 이 두 방식에서는 다음 절의 보장이 없으므로, 받은 응답을 반드시 스키마로 검사합니다.</p>
+<p><code>llm.send()</code>와 <code>llm.ask()</code>에 <code>schema=</code>로 스키마를 주면 이 값을 넣어 보냅니다. 두 API 모두 객체마다 <code>additionalProperties: false</code>를 요구하고, OpenAI는 스키마의 최상위가 객체여야 합니다. 그래서 예제 6-3은 배열을 <code>items</code> 필드 하나를 가진 객체로 감쌉니다. Anthropic API는 숫자의 범위(<code>minimum</code>, <code>maximum</code>)나 문자열 길이(<code>minLength</code>) 같은 키워드는 지원하지 않습니다. 지원하지 않는 키워드를 넣으면 400 오류가 납니다(2026-11 확인). 이런 조건은 받은 뒤 코드로 검사합니다.</p>
+<p>OpenAI 호환 서버 가운데는 <code>json_schema</code> 방식을 지원하는 서버도 있고, <code>json_object</code>만 지원하는 서버도 있습니다. 환경 변수 <code>LLM_STRUCTURED</code>로 방식을 고릅니다.</p>
+<table>
+<thead>
+<tr>
+<th><code>LLM_STRUCTURED</code></th>
+<th>서버가 보장하는 것</th>
+<th>스키마를 보내는 곳</th>
+<th>코드가 할 일</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>json_schema</code>(기본)</td>
+<td>스키마에 맞는 JSON</td>
+<td>요청의 형식 지정 값</td>
+<td>종료 이유 확인</td>
+</tr>
+<tr>
+<td><code>json_object</code></td>
+<td>JSON 형식만</td>
+<td>프롬프트</td>
+<td>종료 이유 확인, 스키마 검증</td>
+</tr>
+<tr>
+<td><code>prompt</code></td>
+<td>없음</td>
+<td>프롬프트</td>
+<td>종료 이유 확인, 파싱 오류 처리, 스키마 검증</td>
+</tr>
+</tbody>
+</table>
+<p><span class="term" tabindex="0" data-def="받은 값이 스키마에 맞는지 코드로 확인하는 것">스키마 검증</span>(schema validation)은 받은 데이터가 스키마에 맞는지 코드로 확인하는 것입니다. 요청에 넣은 스키마를 그대로 써서 <code>jsonschema</code> 패키지의 <code>jsonschema.validate(data, SCHEMA)</code>로 검사하면, 맞지 않을 때 <code>ValidationError</code>가 발생합니다.</p>
 <section class="box example" id="예제-6-1">
 <header><span class="box-no">예제 6-1</span><span class="box-title">프롬프트로만 요구할 때와 구조화 출력</span><span class="box-where">노트북 <code>06_구조화_출력.ipynb</code>의 <code>예제 6-1</code></span></header>
-<p>판단하기 어려운 문의 5건을 같은 프롬프트로 두 번씩 보냅니다. 한 번은 프롬프트에 형식만 적고, 한 번은 <code>schema=</code>로 구조화 출력을 요청합니다. 두 응답을 각각 <code>json.loads()</code>로 파싱해 보고, 어느 쪽에서 파싱 오류나 목록 밖의 라벨이 나오는지 봅니다. 이 셀은 API를 10번 호출합니다.</p>
+<p>판단하기 어려운 문의 5건을 같은 프롬프트로 두 번씩 보냅니다. <code>parsed()</code>는 준비 셀의 함수로, <code>json.loads()</code>에 실패하면 "파싱 오류"와 응답 앞부분을 돌려줍니다. 한 번은 프롬프트에 형식만 적고, 한 번은 <code>schema=</code>로 구조화 출력을 요청합니다. 두 응답을 각각 <code>json.loads()</code>로 파싱해 보고, 어느 쪽에서 파싱 오류나 목록 밖의 라벨이 나오는지 봅니다. 이 셀은 API를 10번 호출합니다.</p>
 <div class="codehilite"><pre><span></span><code><span class="n">SCHEMA</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'type'</span><span class="p">:</span> <span class="s1">'object'</span><span class="p">,</span>
           <span class="s1">'properties'</span><span class="p">:</span> <span class="p">{</span><span class="s1">'label'</span><span class="p">:</span> <span class="p">{</span><span class="s1">'type'</span><span class="p">:</span> <span class="s1">'string'</span><span class="p">,</span> <span class="s1">'enum'</span><span class="p">:</span> <span class="n">LABELS</span><span class="p">},</span> <span class="s1">'urgent'</span><span class="p">:</span> <span class="p">{</span><span class="s1">'type'</span><span class="p">:</span> <span class="s1">'boolean'</span><span class="p">}},</span>
           <span class="s1">'required'</span><span class="p">:</span> <span class="p">[</span><span class="s1">'label'</span><span class="p">,</span> <span class="s1">'urgent'</span><span class="p">],</span> <span class="s1">'additionalProperties'</span><span class="p">:</span> <span class="kc">False</span><span class="p">}</span>
@@ -566,19 +597,19 @@ span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 
 
 <div class="result">
 <div class="codehilite"><pre><span></span><code>Q41 정답 설비 이상
-  프롬프트로만: 파싱 오류: '**판단 이유:** 문의의 원인은 W-03 와이어 본더라는 특정 설비의 '
+  프롬프트로만: 파싱 오류: '**분류 이유:** 문의의 대상은 W-03 와이어 본더라는 특定 설비이며'
   구조화 출력: {'label': '설비 이상', 'urgent': True}
 Q42 정답 문서와 데이터 요청
-  프롬프트로만: 파싱 오류: '**판단 이유:** 기포 불량이 늘어났다는 품질 문제가 핵심입니다. 금형'
+  프롬프트로만: 파싱 오류: '**판단 이유:** 몰딩 제품에서 기포 불량이 늘었다는 것이 핵심 문제이'
   구조화 출력: {'label': '품질', 'urgent': False}
 Q43 정답 안전
-  프롬프트로만: 파싱 오류: '**판단 이유:** 다이싱 소 D-01에서 냉각수가 누출되는 것은 장비 '
+  프롬프트로만: 파싱 오류: '**판단 이유:** 다이싱 소(D-01)의 냉각수 누수는 장비 자체에서 '
   구조화 출력: {'label': '설비 이상', 'urgent': True}
 Q44 정답 안전
-  프롬프트로만: 파싱 오류: '**판단 이유:** 테스트 핸들러 H-03의 문이 닫히지 않은 상태에서 '
+  프롬프트로만: 파싱 오류: '**판단 이유:** 테스트 핸들러 H-03의 문이 닫히지 않은 상태로 가'
   구조화 출력: {'label': '안전', 'urgent': True}
 Q45 정답 문서와 데이터 요청
-  프롬프트로만: 파싱 오류: '**판단 이유:** 문의자는 수율 하락 원인을 분석하기 위해 지난 2주간'
+  프롬프트로만: 파싱 오류: '**판단 이유:** 수율 하락 원인 분석을 위해 지난 2주간의 알람 로그'
   구조화 출력: {'label': '문서와 데이터 요청', 'urgent': False}
 </code></pre></div>
 
@@ -587,16 +618,16 @@ Q45 정답 문서와 데이터 요청
 <p>교재의 실행에서 프롬프트로만 형식을 요구한 응답은 5건 모두 파싱 오류였습니다. 프롬프트가 판단 이유를 먼저 설명하라고 했으므로 응답이 설명 문장으로 시작했고, <code>json.loads()</code>는 첫 글자부터 JSON이 아니면 실패합니다. 구조화 출력은 5건 모두 파싱됐고 라벨도 목록 안에 있었습니다. 스키마에 이유를 적을 필드가 없으므로 이유는 빠졌습니다. 이유가 필요하면 스키마에 <code>reason</code> 같은 짧은 문자열 필드를 둡니다. 그런데 구조화 출력의 라벨도 Q42와 Q43은 정답과 달랐습니다. 이 차이는 "구조화 출력이 보장하지 않는 것" 절에서 설명합니다.</p>
 <h2 id="형식을-보장하는-원리">형식을 보장하는 원리</h2>
 <div class="gist">
-<p>구조화 출력은 모델이 다음 토큰을 고를 때마다 스키마에 어긋나는 토큰의 확률을 0으로 만들고 남은 토큰 중에서 고르게 합니다. 이를 제약 디코딩이라 하며, 모델을 바꾸지 않고 뽑는 단계만 제한하므로 형식은 보장되지만 내용을 고르는 것은 여전히 모델의 확률입니다.</p>
+<p>구조화 출력은 모델이 다음 토큰을 고를 때마다 스키마에 어긋나는 토큰의 확률을 0으로 만들고 남은 토큰 중에서 고르게 합니다. 이 방식을 제약 디코딩이라고 합니다. 모델은 그대로이고 토큰을 뽑는 단계만 제한하므로, 형식은 보장되지만 어느 값을 고를지는 여전히 모델의 확률이 정합니다.</p>
 </div>
-<p>1장에서 모델은 다음 토큰마다 어휘 전체에 확률을 매기고, 그중 하나를 샘플링해 붙이는 일을 되풀이했습니다. <span class="term" tabindex="0" data-def="모델이 다음 토큰을 고를 때 정해진 형식에 어긋나는 토큰을 후보에서 빼는 방식. 구조화 출력의 원리다">제약 디코딩</span>(constrained decoding)은 이 반복 사이에 단계 하나를 더합니다. 지금까지 생성한 글을 보고 스키마상 다음에 올 수 있는 토큰을 계산한 뒤, 그 밖의 토큰은 확률을 0으로 만들고 남은 확률을 합이 1이 되게 다시 나눕니다. 예를 들어 <code>{"label": "</code>까지 생성했다면 다음에는 enum 값의 첫 토큰만 올 수 있고, 라벨 문자열이 끝나면 닫는 따옴표만 올 수 있습니다.</p>
+<p>모델은 다음 토큰마다 어휘 전체에 확률을 매기고, 그중 하나를 샘플링해 붙이는 일을 되풀이합니다(1장). <span class="term" tabindex="0" data-def="모델이 다음 토큰을 고를 때 정해진 형식에 어긋나는 토큰을 후보에서 빼는 방식. 구조화 출력의 원리다">제약 디코딩</span>(constrained decoding)은 이 반복 사이에 단계 하나를 더합니다. 지금까지 생성한 글을 보고 스키마상 다음에 올 수 있는 토큰을 계산한 뒤, 그 밖의 토큰은 확률을 0으로 만들고 남은 확률을 합이 1이 되게 다시 나눕니다. 예를 들어 <code>{"label": "</code>까지 생성했다면 다음에는 enum 값의 첫 토큰만 올 수 있고, 라벨 문자열이 끝나면 닫는 따옴표만 올 수 있습니다.</p>
 <figure>
 <svg viewBox="0 0 680 220" role="img" aria-label="예제 6-2의 다음 토큰 확률. 응답이 {&quot;label&quot;: &quot;까지 생성된 뒤, 제약 없이 본 상위 5개는 문 16.2%, 설 10.5%, 질 5.3%, 물 3.9%, 비 3.0%이고 질, 물, 비는 어느 라벨의 첫 토큰도 아닙니다. 네 라벨의 첫 토큰만 남기고 다시 계산하면 문(문서와 데이터 요청) 56.6%, 설(설비 이상) 36.7%, 품(품질) 3.9%, 안(안전, 정답) 2.7%입니다."><text x="10" y="20" fill="var(--ink)" font-size="12" font-weight="700">생성한 글: {"label": "  다음 토큰은?</text><text x="10" y="46" fill="var(--ink)" font-size="12" font-weight="700">제약 없음(상위 5개)</text><text x="28" y="75" text-anchor="middle" fill="var(--ink)" font-size="13">문</text><rect x="44" y="60" width="130" height="20" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="180" y="75" fill="var(--ink)" font-size="11">16.2%</text><text x="222" y="75" fill="var(--ink-soft)" font-size="11">라벨 첫 토큰</text><text x="28" y="103" text-anchor="middle" fill="var(--ink)" font-size="13">설</text><rect x="44" y="88" width="84" height="20" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="134" y="103" fill="var(--ink)" font-size="11">10.5%</text><text x="176" y="103" fill="var(--ink-soft)" font-size="11">라벨 첫 토큰</text><text x="28" y="131" text-anchor="middle" fill="var(--ink)" font-size="13">질</text><rect x="44" y="116" width="42" height="20" fill="var(--amber-wash)" stroke="var(--amber)"/><text x="92" y="131" fill="var(--ink)" font-size="11">5.3%</text><text x="134" y="131" fill="var(--ink-soft)" font-size="11">라벨 아님</text><text x="28" y="159" text-anchor="middle" fill="var(--ink)" font-size="13">물</text><rect x="44" y="144" width="31" height="20" fill="var(--amber-wash)" stroke="var(--amber)"/><text x="81" y="159" fill="var(--ink)" font-size="11">3.9%</text><text x="123" y="159" fill="var(--ink-soft)" font-size="11">라벨 아님</text><text x="28" y="187" text-anchor="middle" fill="var(--ink)" font-size="13">비</text><rect x="44" y="172" width="24" height="20" fill="var(--amber-wash)" stroke="var(--amber)"/><text x="74" y="187" fill="var(--ink)" font-size="11">3.0%</text><text x="116" y="187" fill="var(--ink-soft)" font-size="11">라벨 아님</text><line x1="352" y1="40" x2="352" y2="200" stroke="var(--line)"/><text x="368" y="46" fill="var(--ink)" font-size="12" font-weight="700">라벨의 첫 토큰만 남긴 뒤</text><text x="380" y="75" text-anchor="middle" fill="var(--ink)" font-size="13">문</text><rect x="396" y="60" width="124" height="20" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="526" y="75" fill="var(--ink)" font-size="11">56.6% 문서와 데이터 요청</text><text x="380" y="103" text-anchor="middle" fill="var(--ink)" font-size="13">설</text><rect x="396" y="88" width="81" height="20" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="483" y="103" fill="var(--ink)" font-size="11">36.7% 설비 이상</text><text x="380" y="131" text-anchor="middle" fill="var(--ink)" font-size="13">품</text><rect x="396" y="116" width="8" height="20" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="410" y="131" fill="var(--ink)" font-size="11">3.9% 품질</text><text x="380" y="159" text-anchor="middle" fill="var(--ink)" font-size="13">안</text><rect x="396" y="144" width="6" height="20" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="408" y="159" fill="var(--ink)" font-size="11">2.7% 안전(정답)</text><text x="340" y="212" text-anchor="middle" fill="var(--ink-soft)" font-size="12">주황색 토큰은 확률이 0이 되고, 남은 네 토큰의 확률을 합이 1이 되게 다시 나눕니다</text>
 </svg>
 <figcaption>제약 디코딩은 허용하지 않는 토큰을 빼고 남은 토큰의 확률을 다시 나눌 뿐, 어느 라벨에 높은 확률을 줄지는 바꾸지 않습니다.</figcaption>
 </figure>
 
-<p>스키마에서 "다음에 올 수 있는 토큰"을 빠르게 계산하려고, 서버는 스키마를 문법(grammar)으로 컴파일해 둡니다. Anthropic API는 새 스키마를 처음 쓰는 요청에서 이 컴파일 때문에 응답이 늦고, 컴파일한 문법은 마지막 사용부터 24시간 동안 캐시합니다(2026-11 확인). Willard와 Louf(2023)는 정규 표현식이나 문법을 상태 기계로 바꿔 두면 생성 단계마다 허용 토큰을 빠르게 찾을 수 있다는 방법을 제안했습니다.</p>
+<p>스키마에서 "다음에 올 수 있는 토큰"을 빠르게 계산하려고, 서버는 스키마를 문법(grammar)으로 컴파일해 둡니다. Anthropic API는 새 스키마를 처음 쓰는 요청에서 이 컴파일 때문에 응답이 늦습니다. 컴파일한 문법은 마지막 사용부터 24시간 동안 캐시합니다(2026-11 확인). Willard와 Louf(2023)는 정규 표현식이나 문법을 유한 상태 기계(finite-state machine)로 바꿔 두면 생성 단계마다 허용 토큰을 빠르게 찾을 수 있다는 방법을 제안했습니다.</p>
 <section class="box example" id="예제-6-2">
 <header><span class="box-no">예제 6-2</span><span class="box-title">다음 토큰 후보 제한하기</span><span class="box-where">노트북 <code>06_구조화_출력.ipynb</code>의 <code>예제 6-2</code></span></header>
 <p>1장의 공개 LLM에 문의 하나를 분류하라고 하고, 응답이 <code>{"label": "</code>까지 생성됐다고 가정합니다. 제약 없이 본 다음 토큰의 상위 5개와, 네 라벨의 첫 토큰만 남기고 다시 계산한 확률을 비교합니다. 상위 후보에 라벨이 아닌 토큰이 있는지, 제약 뒤에 어느 라벨이 1위인지 봅니다. API를 호출하지 않습니다.</p>
@@ -626,36 +657,36 @@ Q45 정답 문서와 데이터 요청
 
 </div>
 </section>
-<p>교재의 실행에서 제약 없이 본 상위 5개 가운데 '질', '물', '비'는 어느 라벨의 첫 토큰도 아니었고, 이런 토큰이 뽑히면 목록 밖의 라벨이 나옵니다. 네 라벨의 첫 토큰만 남기자 '문'(문서와 데이터 요청)이 56.6%로 1위가 되었습니다. 정답 라벨인 안전의 첫 토큰 '안'은 2.7%였습니다. 제약 디코딩은 허용 범위만 좁히므로, 모델이 틀린 라벨에 높은 확률을 주면 틀린 라벨이 형식에 맞게 나옵니다. 이 예제는 첫 토큰 하나만 제한했습니다. '문'은 "문의"의 첫 토큰이기도 하므로, 실제 구현은 라벨 문자열을 끝까지 따라가며 토큰마다 허용 범위를 다시 계산합니다.</p>
+<p>교재의 실행에서 제약 없이 본 상위 5개 가운데 '질', '물', '비'는 어느 라벨의 첫 토큰도 아니었고, 이런 토큰이 뽑히면 목록 밖의 라벨이 나옵니다. 네 라벨의 첫 토큰만 남기자 '문'(문서와 데이터 요청)이 56.6%로 1위가 되었습니다. 정답 라벨인 안전의 첫 토큰 '안'은 2.7%였습니다. 제약 디코딩은 허용 범위만 좁히므로, 모델이 틀린 라벨에 높은 확률을 주면 틀린 라벨이 형식에 맞게 나옵니다. 이 예제는 첫 토큰 하나만 제한했습니다. '문'의 16.2%에는 "문의"처럼 라벨이 아닌 말을 시작하려던 확률도 들어 있습니다. 제약 디코딩은 이 확률을 그대로 문서와 데이터 요청 쪽으로 넘기므로, 56.6%를 모델이 이 라벨을 고른 확률로 읽으면 안 됩니다. 실제 구현은 '문' 다음에는 '서'만 허용하는 식으로 라벨 문자열을 끝까지 따라가며 토큰마다 허용 범위를 다시 계산합니다.</p>
 <h2 id="구조화-출력이-보장하지-않는-것">구조화 출력이 보장하지 않는 것</h2>
 <div class="gist">
 <p>구조화 출력은 정상 종료한 응답의 형식만 보장합니다. 잘림과 거절은 종료 이유로, 형식은 맞지만 업무에서 허용하지 않는 값은 업무 규칙으로, 틀린 내용은 표본의 정답 라벨 비교로 찾아냅니다.</p>
 </div>
-<p>제약 디코딩은 스키마에 맞는 토큰 가운데서 모델의 확률대로 고르게 할 뿐이므로, 고른 값이 맞는지는 보장하지 않습니다. 확인할 것은 네 단계로 나뉩니다.</p>
+<p>제약 디코딩은 스키마에 맞는 토큰 가운데서 모델의 확률대로 고르게 할 뿐이므로, 고른 값이 맞는지는 보장하지 않습니다. 확인할 것은 네 단계로 나뉘고, 표본은 두 번 실행해 재현성도 확인합니다.</p>
 <figure>
-<svg viewBox="0 0 680 176" role="img" aria-label="구조화 출력의 결과를 확인하는 네 단계. 1단계 종료 이유: max_tokens나 refusal이면 스키마에 맞지 않을 수 있으므로 실패 목록에 남깁니다. 2단계 스키마 검증: 서버가 지원하지 않는 키워드나 json_object, prompt 방식일 때 형식을 코드로 확인합니다. 3단계 업무 규칙: 안전인데 긴급이 아님처럼 형식은 맞지만 업무에서 허용하지 않는 조합을 사람 확인으로 보냅니다. 4단계 정답 라벨 비교: 표본 10~20건을 사람이 정한 정답과 비교해 정확도를 측정합니다. 1~3단계는 모든 건에, 4단계는 표본에 적용합니다.">
+<svg viewBox="0 0 680 176" role="img" aria-label="구조화 출력의 결과를 확인하는 네 단계. 1단계 종료 이유: max_tokens나 refusal이면 스키마에 맞지 않을 수 있으므로 실패 목록에 남깁니다. 2단계 스키마 검증: 서버가 지원하지 않는 키워드나 json_object, prompt 방식일 때 형식을 코드로 확인합니다. 3단계 업무 규칙: 안전인데 긴급이 아님처럼 형식은 맞지만 업무에서 허용하지 않는 조합을 사람 확인으로 보냅니다. 4단계 정답 라벨 비교: 표본을 사람이 정한 정답과 비교해 정확도를 측정합니다. 1~3단계는 모든 건에, 4단계는 표본에 적용합니다.">
 <rect x="10" y="20" width="155" height="120" rx="8" fill="var(--sheet)" stroke="var(--line)"/><text x="87" y="42" text-anchor="middle" fill="var(--ink)" font-size="13" font-weight="700">1. 종료 이유</text><text x="22" y="68" fill="var(--ink)" font-size="11">max_tokens, refusal이면</text><text x="22" y="86" fill="var(--ink)" font-size="11">스키마에 맞지 않을 수</text><text x="22" y="104" fill="var(--ink)" font-size="11">있음</text><text x="22" y="126" fill="var(--teal)" font-size="11" font-weight="700">→ 실패 목록</text>
 <rect x="178" y="20" width="155" height="120" rx="8" fill="var(--sheet)" stroke="var(--line)"/><text x="255" y="42" text-anchor="middle" fill="var(--ink)" font-size="13" font-weight="700">2. 스키마 검증</text><text x="190" y="68" fill="var(--ink)" font-size="11">지원하지 않는 키워드,</text><text x="190" y="86" fill="var(--ink)" font-size="11">json_object, prompt</text><text x="190" y="104" fill="var(--ink)" font-size="11">방식일 때 형식 확인</text><text x="190" y="126" fill="var(--teal)" font-size="11" font-weight="700">→ 실패 목록</text>
 <rect x="346" y="20" width="155" height="120" rx="8" fill="var(--amber-wash)" stroke="var(--amber)"/><text x="423" y="42" text-anchor="middle" fill="var(--ink)" font-size="13" font-weight="700">3. 업무 규칙</text><text x="358" y="68" fill="var(--ink)" font-size="11">형식은 맞지만 허용하지</text><text x="358" y="86" fill="var(--ink)" font-size="11">않는 조합</text><text x="358" y="104" fill="var(--ink)" font-size="11">예: 안전인데 긴급 아님</text><text x="358" y="126" fill="var(--teal)" font-size="11" font-weight="700">→ 사람 확인</text>
-<rect x="514" y="20" width="156" height="120" rx="8" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="592" y="42" text-anchor="middle" fill="var(--ink)" font-size="13" font-weight="700">4. 정답 라벨 비교</text><text x="526" y="68" fill="var(--ink)" font-size="11">표본 10~20건을 사람이</text><text x="526" y="86" fill="var(--ink)" font-size="11">정한 정답과 비교</text><text x="526" y="104" fill="var(--ink)" font-size="11">틀린 내용을 찾음</text><text x="526" y="126" fill="var(--teal)" font-size="11" font-weight="700">→ 정확도</text>
+<rect x="514" y="20" width="156" height="120" rx="8" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="592" y="42" text-anchor="middle" fill="var(--ink)" font-size="13" font-weight="700">4. 정답 라벨 비교</text><text x="526" y="68" fill="var(--ink)" font-size="11">표본을 사람이</text><text x="526" y="86" fill="var(--ink)" font-size="11">정한 정답과 비교</text><text x="526" y="104" fill="var(--ink)" font-size="11">틀린 내용을 찾음</text><text x="526" y="126" fill="var(--teal)" font-size="11" font-weight="700">→ 정확도</text>
 <text x="340" y="164" text-anchor="middle" fill="var(--ink-soft)" font-size="12">1~3단계는 모든 건에, 4단계는 표본에 적용합니다</text>
 </svg>
 <figcaption>형식이 보장돼도 종료 이유, 업무 규칙, 정확도는 따로 확인합니다.</figcaption>
 </figure>
 
 <h3 id="잘림과-거절">잘림과 거절</h3>
-<p>구조화 출력의 보장은 정상 종료한 응답에만 적용됩니다. 최대 출력 토큰에 닿아 <code>max_tokens</code>로 끝나면 JSON이 중간에 끊기고, 안전 기준에 따라 <code>refusal</code>로 끝나면 거절 문장이 스키마보다 우선합니다. 두 경우 모두 HTTP 상태는 200이고 생성한 토큰에 요금이 붙습니다(2026-11 확인). 그래서 파싱하기 전에 종료 이유부터 확인합니다(5장). thinking 토큰도 최대 출력 토큰 안에 들어가므로 <code>max_tokens</code>는 JSON 길이보다 넉넉하게 둡니다.</p>
-<p>Anthropic API의 문서는 이 밖에 두 가지 예외를 적고 있습니다. enum 값의 대소문자는 보장하지 않아, 영문 값이면 띄어 쓴 단어의 첫 글자가 대문자로 바뀌어 나올 수 있습니다. 필드는 스키마에 적은 순서로 나오지만, 필수 필드가 선택 필드보다 앞에 옵니다(2026-11 확인).</p>
+<p>구조화 출력의 보장은 정상 종료한 응답에만 적용됩니다. 최대 출력 토큰에 닿아 <code>max_tokens</code>(OpenAI 호환은 <code>length</code>)로 끝나면 JSON이 중간에 끊깁니다. Anthropic API에서 안전 기준에 따라 <code>refusal</code>로 끝나면 거절 문장이 스키마보다 우선합니다. OpenAI 호환 API는 거절 문장을 응답의 <code>refusal</code> 필드에 담고, <code>llm.py</code>는 두 경우 모두 <code>refusal</code>로 돌려줍니다. 두 경우 모두 <span class="term" tabindex="0" data-def="서버가 요청 결과를 알리는 세 자리 숫자. 2xx는 성공, 4xx는 요청 쪽 문제, 5xx는 서버 쪽 문제다">상태 코드</span>는 200이고 생성한 토큰에 요금이 붙습니다(2026-11 확인). 그래서 파싱하기 전에 종료 이유부터 확인합니다(5장). thinking 토큰도 최대 출력 토큰 안에 들어가므로 <code>max_tokens</code>는 JSON 길이보다 넉넉하게 둡니다.</p>
+<p>Anthropic API 문서에는 예외가 두 가지 더 있습니다. enum 값의 대소문자는 보장하지 않아, 영문 값이면 띄어 쓴 단어의 첫 글자가 대문자로 바뀌어 나올 수 있습니다. 필드는 스키마에 적은 순서로 나오지만, 필수 필드가 선택 필드보다 앞에 옵니다(2026-11 확인).</p>
 <h3 id="형식은-맞지만-틀린-내용">형식은 맞지만 틀린 내용</h3>
 <p>스키마는 <code>label</code>이 네 라벨 중 하나라는 것만 정할 뿐, 어느 라벨이 맞는지는 정하지 않습니다. 형식이 맞는 데이터 안에서 다음 두 가지를 따로 확인합니다.</p>
 <ul>
-<li><span class="term" tabindex="0" data-def="형식과 별개로 업무에서 값이 지켜야 하는 조건. 예: 분류가 긴급이면 urgent는 true여야 한다">업무 규칙</span>(business rule)은 형식과 별개로 업무에서 값이 지켜야 하는 조건입니다. 예를 들어 "라벨이 안전이면 긴급 여부를 사람이 확인한다"처럼 필드 사이의 조합을 검사합니다. 규칙에 걸린 건은 버리지 않고 <span class="term" tabindex="0" data-def="자동으로 처리하지 않고 사람이 보고 판단하도록 따로 모으는 것">사람 확인</span>(human review)으로 보냅니다.</li>
-<li><span class="term" tabindex="0" data-def="정답 라벨과 결과가 일치한 건의 비율">정확도</span>(accuracy)는 정답 라벨과 결과가 일치한 건의 비율입니다. 모든 건의 정답을 알 수는 없으므로, 표본 10~20건에 사람이 정답 라벨을 붙여 비교합니다.</li>
+<li><span class="term" tabindex="0" data-def="형식과 별개로 업무에서 값이 지켜야 하는 조건. 예: 분류가 안전이면 urgent는 true여야 한다">업무 규칙</span>(business rule)은 형식과 별개로 업무에서 값이 지켜야 하는 조건입니다. 예를 들어 "라벨이 안전인데 <code>urgent</code>가 false이면 사람이 확인한다"처럼 필드 사이의 조합을 검사합니다. 규칙에 걸린 건은 버리지 않고 <span class="term" tabindex="0" data-def="자동으로 처리하지 않고 사람이 보고 판단하도록 따로 모으는 것">사람 확인</span>(human review)으로 보냅니다.</li>
+<li><span class="term" tabindex="0" data-def="정답 라벨과 결과가 일치한 건의 비율">정확도</span>(accuracy)는 <span class="term" tabindex="0" data-def="사람이 미리 정해 둔 정답. 모델의 결과와 비교해 정확도를 계산하는 기준이다">정답 라벨</span>(4장, 사람이 미리 정해 둔 정답)과 결과가 일치한 건의 비율입니다. 모든 건의 정답을 알 수는 없으므로, 표본에 사람이 정답 라벨을 붙여 비교합니다. 표본이 15건이면 한 건이 약 7%p를 차지하므로, 모델이나 프롬프트를 정할 때는 표본을 늘립니다(5장).</li>
 </ul>
-<p>같은 문의를 다시 보내도 결과가 같은지도 확인합니다. 구조화 출력은 샘플링을 없애지 않으므로, 확률이 비슷한 라벨 사이에서는 실행마다 다른 라벨이 나올 수 있습니다(1장). 다시 실행했을 때 같은 결과가 나오는 정도를 <span class="term" tabindex="0" data-def="같은 입력으로 다시 실행했을 때 같은 결과가 나오는 정도">재현성</span>(reproducibility)이라고 하고, 두 번 실행해 결과가 다른 건은 판단이 어려운 문의이므로 사람 확인으로 보냅니다.</p>
+<p>같은 문의를 다시 보내도 결과가 같은지도 확인합니다. 구조화 출력은 샘플링을 없애지 않으므로, 확률이 비슷한 라벨 사이에서는 실행마다 다른 라벨이 나올 수 있습니다(1장). 다시 실행했을 때 같은 결과가 나오는 정도를 <span class="term" tabindex="0" data-def="같은 입력으로 다시 실행했을 때 같은 결과가 나오는 정도">재현성</span>(reproducibility)이라고 합니다. 두 번 실행해 결과가 다른 건은 판단이 어려운 문의이므로 사람 확인으로 보냅니다.</p>
 <section class="box example" id="예제-6-3">
 <header><span class="box-no">예제 6-3</span><span class="box-title">형식은 맞지만 틀린 라벨</span><span class="box-where">노트북 <code>06_구조화_출력.ipynb</code>의 <code>예제 6-3</code></span></header>
-<p>판단하기 어려운 문의 15건(Q41~Q55)을 배열 스키마의 구조화 출력으로 한 요청에 보내고, 같은 요청을 한 번 더 보냅니다. 형식이 맞은 건수, 정답 라벨과 비교한 정확도, 업무 규칙(안전인데 긴급 아님)에 걸린 건, 두 실행에서 라벨이 다른 건을 봅니다. 이 셀은 API를 2번 호출합니다.</p>
+<p>판단하기 어려운 문의 15건(Q41~Q55)을 배열 스키마의 구조화 출력으로 한 요청에 보내고, 같은 요청을 한 번 더 보냅니다. 돌려받은 건수, 정답 라벨과 비교한 정확도, 업무 규칙(안전인데 긴급 아님)에 걸린 건, 두 실행에서 라벨이 다른 건을 봅니다. 이 셀은 API를 2번 호출합니다.</p>
 <div class="codehilite"><pre><span></span><code><span class="n">hard</span> <span class="o">=</span> <span class="n">inquiries</span><span class="p">[</span><span class="mi">40</span><span class="p">:</span><span class="mi">55</span><span class="p">]</span>
 <span class="n">ITEMS</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'type'</span><span class="p">:</span> <span class="s1">'object'</span><span class="p">,</span> <span class="s1">'additionalProperties'</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s1">'required'</span><span class="p">:</span> <span class="p">[</span><span class="s1">'items'</span><span class="p">],</span> <span class="s1">'properties'</span><span class="p">:</span> <span class="p">{</span><span class="s1">'items'</span><span class="p">:</span> <span class="p">{</span><span class="s1">'type'</span><span class="p">:</span> <span class="s1">'array'</span><span class="p">,</span> <span class="s1">'items'</span><span class="p">:</span> <span class="p">{</span>
     <span class="s1">'type'</span><span class="p">:</span> <span class="s1">'object'</span><span class="p">,</span> <span class="s1">'additionalProperties'</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s1">'required'</span><span class="p">:</span> <span class="p">[</span><span class="s1">'id'</span><span class="p">,</span> <span class="s1">'label'</span><span class="p">,</span> <span class="s1">'urgent'</span><span class="p">],</span>
@@ -664,30 +695,32 @@ Q45 정답 문서와 데이터 요청
 <span class="n">runs</span> <span class="o">=</span> <span class="p">[]</span>
 <span class="k">for</span> <span class="n">run</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>
     <span class="n">reply</span> <span class="o">=</span> <span class="n">llm</span><span class="o">.</span><span class="n">ask</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s1">'소형'</span><span class="p">,</span> <span class="n">max_tokens</span><span class="o">=</span><span class="mi">8000</span><span class="p">,</span> <span class="n">schema</span><span class="o">=</span><span class="n">ITEMS</span><span class="p">)</span>
-    <span class="n">runs</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="n">row</span><span class="p">[</span><span class="s1">'id'</span><span class="p">]:</span> <span class="n">row</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">reply</span><span class="o">.</span><span class="n">text</span><span class="p">)[</span><span class="s1">'items'</span><span class="p">]})</span>       <span class="c1"># 종료 이유가 end일 때만 파싱합니다</span>
+    <span class="k">if</span> <span class="n">reply</span><span class="o">.</span><span class="n">stop_reason</span> <span class="o">!=</span> <span class="s1">'end'</span><span class="p">:</span>                                               <span class="c1"># 잘렸거나 거절했으면 파싱하지 않습니다</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">run</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s1">회차: 종료 이유 </span><span class="si">{</span><span class="n">reply</span><span class="o">.</span><span class="n">stop_reason</span><span class="si">}</span><span class="s1">'</span><span class="p">);</span> <span class="n">runs</span><span class="o">.</span><span class="n">append</span><span class="p">({});</span> <span class="k">continue</span>
+    <span class="n">runs</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="n">row</span><span class="p">[</span><span class="s1">'id'</span><span class="p">]:</span> <span class="n">row</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">reply</span><span class="o">.</span><span class="n">text</span><span class="p">)[</span><span class="s1">'items'</span><span class="p">]})</span>
     <span class="n">rows</span> <span class="o">=</span> <span class="n">runs</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
     <span class="n">correct</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">rows</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="s1">'번호'</span><span class="p">],</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'label'</span><span class="p">)</span> <span class="o">==</span> <span class="n">item</span><span class="p">[</span><span class="s1">'라벨'</span><span class="p">]</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">hard</span><span class="p">)</span>
     <span class="n">rule</span> <span class="o">=</span> <span class="p">[</span><span class="n">key</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">row</span><span class="p">[</span><span class="s1">'label'</span><span class="p">]</span> <span class="o">==</span> <span class="s1">'안전'</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">row</span><span class="p">[</span><span class="s1">'urgent'</span><span class="p">]]</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">run</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s1">회차: 종료 이유 </span><span class="si">{</span><span class="n">reply</span><span class="o">.</span><span class="n">stop_reason</span><span class="si">}</span><span class="s1">, 형식이 맞은 건 </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">rows</span><span class="p">)</span><span class="si">}</span><span class="s1">/</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">hard</span><span class="p">)</span><span class="si">}</span><span class="s1">, '</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">run</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s1">회차: 종료 이유 </span><span class="si">{</span><span class="n">reply</span><span class="o">.</span><span class="n">stop_reason</span><span class="si">}</span><span class="s1">, 돌려받은 건 </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">rows</span><span class="p">)</span><span class="si">}</span><span class="s1">/</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">hard</span><span class="p">)</span><span class="si">}</span><span class="s1">, '</span>
           <span class="sa">f</span><span class="s1">'정확도 </span><span class="si">{</span><span class="n">correct</span><span class="si">}</span><span class="s1">/</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">hard</span><span class="p">)</span><span class="si">}</span><span class="s1">, 업무 규칙에 걸린 건 </span><span class="si">{</span><span class="n">rule</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
 <span class="n">changed</span> <span class="o">=</span> <span class="p">[</span><span class="n">key</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">runs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">runs</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">key</span><span class="p">][</span><span class="s1">'label'</span><span class="p">]</span> <span class="o">!=</span> <span class="n">runs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'label'</span><span class="p">)]</span>
 <span class="nb">print</span><span class="p">(</span><span class="s1">'두 실행에서 라벨이 다른 건:'</span><span class="p">,</span> <span class="n">changed</span><span class="p">)</span>
 </code></pre></div>
 
 <div class="result">
-<div class="codehilite"><pre><span></span><code>1회차: 종료 이유 end, 형식이 맞은 건 15/15, 정확도 11/15, 업무 규칙에 걸린 건 []
-2회차: 종료 이유 end, 형식이 맞은 건 15/15, 정확도 11/15, 업무 규칙에 걸린 건 []
-두 실행에서 라벨이 다른 건: []
+<div class="codehilite"><pre><span></span><code>1회차: 종료 이유 end, 돌려받은 건 15/15, 정확도 11/15, 업무 규칙에 걸린 건 []
+2회차: 종료 이유 end, 돌려받은 건 15/15, 정확도 11/15, 업무 규칙에 걸린 건 []
+두 실행에서 라벨이 다른 건: ['Q42', 'Q43']
 </code></pre></div>
 
 </div>
 </section>
-<p>교재의 실행에서 두 실행 모두 15건이 스키마에 맞았지만, 정확도는 1회차 9건, 2회차 12건이었습니다. 이번 프롬프트에는 예제 5-2와 달리 판정 기준을 넣지 않았습니다. 업무 규칙에 걸린 건은 없었고, Q41, Q42, Q43은 두 실행의 라벨이 달랐습니다. 형식만 검사했다면 두 실행 모두 문제없는 결과로 보였을 것입니다. 정답 라벨과 비교하고 두 번 실행해야 이런 차이가 드러납니다.</p>
+<p>교재의 실행에서 두 실행 모두 15건을 돌려받았고, 정확도는 두 번 모두 15건 가운데 11건이었습니다. 이번 프롬프트에는 예제 5-2와 달리 판정 기준을 넣지 않았습니다. 업무 규칙에 걸린 건은 없었고, Q42와 Q43은 두 실행의 라벨이 달랐습니다. 형식 검사와 업무 규칙만으로는 틀린 4건을 하나도 찾지 못합니다. 틀린 건은 정답 라벨과 비교해야 드러나고, 두 실행의 라벨이 다른 건은 다시 실행해 비교해야 드러납니다. 어느 건의 라벨이 바뀌는지는 실행마다 다릅니다.</p>
 <h2 id="개념-확인-실습">개념 확인 실습</h2>
 <p>실습은 장 노트북의 빈칸을 채워 실행합니다. 코드를 실행하기 전에 결과를 먼저 예측해 적고, 실행한 뒤 예측과 다른 부분을 이 장의 원리로 설명해 봅니다.</p>
 <section class="box practice" id="실습-6-1">
 <header><span class="box-no">실습 6-1</span><span class="box-title">없는 값은 null로</span><span class="box-where">노트북 <code>06_구조화_출력.ipynb</code>의 <code>실습 6-1</code></span></header>
-<p>문의에서 설비 번호와 현상을 뽑는 스키마 <code>EXTRACT_SCHEMA</code>를 작성합니다. 설비 번호(<code>equipment_id</code>)는 문의에 없을 수 있으므로 문자열 또는 <code>null</code>을 허용하고, 현상(<code>symptom</code>)은 문자열로 둡니다. 두 필드 모두 필수입니다. 문의 5건 가운데 <code>equipment_id</code>가 <code>null</code>로 나올 건수를 먼저 <code>my_guess</code>에 적고 실행합니다. 결과에서 뽑은 번호가 문의에 그대로 들어 있는지 확인하고, 스키마가 형식만 보장한다는 것을 이 결과로 설명하면 끝납니다. 이 셀은 API를 5번 호출합니다.</p>
+<p>문의에서 설비 번호와 현상을 뽑는 스키마 <code>EXTRACT_SCHEMA</code>를 작성합니다. 설비 번호(<code>equipment_id</code>)는 문의에 없을 수 있으므로 문자열 또는 <code>null</code>을 허용하고, 현상(<code>symptom</code>)은 문자열로 둡니다. 두 필드 모두 필수입니다. 문의 5건 가운데 <code>equipment_id</code>가 <code>null</code>로 나올 건수를 먼저 <code>my_guess</code>에 적고 실행합니다. 결과에서 뽑은 번호가 문의에 그대로 들어 있는지 확인하고, 모든 번호가 문의에 있었더라도, 스키마가 무엇을 보장하고 무엇을 보장하지 않는지 설명하면 끝납니다. 이 셀은 API를 5번 호출합니다.</p>
 <div class="codehilite"><pre><span></span><code><span class="n">EXTRACT_SCHEMA</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># TODO: equipment_id(문자열 또는 null), symptom(문자열). 둘 다 필수, additionalProperties는 False</span>
 
 <span class="n">my_guess</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># TODO: 다섯 건 가운데 equipment_id가 null로 나올 건수</span>
@@ -695,7 +728,7 @@ Q45 정답 문서와 데이터 요청
     <span class="n">reply</span> <span class="o">=</span> <span class="n">llm</span><span class="o">.</span><span class="n">ask</span><span class="p">(</span><span class="s1">'문의에서 설비 번호와 현상을 뽑아 주세요. 설비 번호가 문의에 없으면 null로 둡니다.</span><span class="se">\n</span><span class="s1">문의: '</span> <span class="o">+</span> <span class="n">item</span><span class="p">[</span><span class="s1">'문의'</span><span class="p">],</span>
                     <span class="n">model</span><span class="o">=</span><span class="s1">'소형'</span><span class="p">,</span> <span class="n">max_tokens</span><span class="o">=</span><span class="mi">2000</span><span class="p">,</span> <span class="n">schema</span><span class="o">=</span><span class="n">EXTRACT_SCHEMA</span><span class="p">)</span>
     <span class="n">data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">reply</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
-    <span class="n">found</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">'equipment_id'</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">data</span><span class="p">[</span><span class="s1">'equipment_id'</span><span class="p">]</span> <span class="ow">in</span> <span class="n">item</span><span class="p">[</span><span class="s1">'문의'</span><span class="p">]</span>   <span class="c1"># 뽑은 번호가 문의에 그대로 있는지</span>
+    <span class="n">found</span> <span class="o">=</span> <span class="s1">'해당 없음'</span> <span class="k">if</span> <span class="n">data</span><span class="p">[</span><span class="s1">'equipment_id'</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">data</span><span class="p">[</span><span class="s1">'equipment_id'</span><span class="p">]</span> <span class="ow">in</span> <span class="n">item</span><span class="p">[</span><span class="s1">'문의'</span><span class="p">]</span>   <span class="c1"># 뽑은 번호가 문의에 그대로 있는지</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">item</span><span class="p">[</span><span class="s1">'번호'</span><span class="p">]</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">item</span><span class="p">[</span><span class="s1">'문의'</span><span class="p">]</span><span class="si">}</span><span class="se">\n</span><span class="s2">  → </span><span class="si">{</span><span class="n">data</span><span class="si">}</span><span class="s2">, 문의에 있는 번호인지: </span><span class="si">{</span><span class="n">found</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="s1">'예측:'</span><span class="p">,</span> <span class="n">my_guess</span><span class="p">)</span>
 </code></pre></div>
@@ -711,7 +744,7 @@ Q45 정답 문서와 데이터 요청
     <span class="n">reply</span> <span class="o">=</span> <span class="n">llm</span><span class="o">.</span><span class="n">ask</span><span class="p">(</span><span class="s1">'문의에서 설비 번호와 현상을 뽑아 주세요. 설비 번호가 문의에 없으면 null로 둡니다.</span><span class="se">\n</span><span class="s1">문의: '</span> <span class="o">+</span> <span class="n">item</span><span class="p">[</span><span class="s1">'문의'</span><span class="p">],</span>
                     <span class="n">model</span><span class="o">=</span><span class="s1">'소형'</span><span class="p">,</span> <span class="n">max_tokens</span><span class="o">=</span><span class="mi">2000</span><span class="p">,</span> <span class="n">schema</span><span class="o">=</span><span class="n">EXTRACT_SCHEMA</span><span class="p">)</span>
     <span class="n">data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">reply</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
-    <span class="n">found</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">'equipment_id'</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">data</span><span class="p">[</span><span class="s1">'equipment_id'</span><span class="p">]</span> <span class="ow">in</span> <span class="n">item</span><span class="p">[</span><span class="s1">'문의'</span><span class="p">]</span>   <span class="c1"># 뽑은 번호가 문의에 그대로 있는지</span>
+    <span class="n">found</span> <span class="o">=</span> <span class="s1">'해당 없음'</span> <span class="k">if</span> <span class="n">data</span><span class="p">[</span><span class="s1">'equipment_id'</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">data</span><span class="p">[</span><span class="s1">'equipment_id'</span><span class="p">]</span> <span class="ow">in</span> <span class="n">item</span><span class="p">[</span><span class="s1">'문의'</span><span class="p">]</span>   <span class="c1"># 뽑은 번호가 문의에 그대로 있는지</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">item</span><span class="p">[</span><span class="s1">'번호'</span><span class="p">]</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">item</span><span class="p">[</span><span class="s1">'문의'</span><span class="p">]</span><span class="si">}</span><span class="se">\n</span><span class="s2">  → </span><span class="si">{</span><span class="n">data</span><span class="si">}</span><span class="s2">, 문의에 있는 번호인지: </span><span class="si">{</span><span class="n">found</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="s1">'예측:'</span><span class="p">,</span> <span class="n">my_guess</span><span class="p">)</span>
 </code></pre></div>
@@ -722,11 +755,11 @@ Q45 정답 문서와 데이터 요청
 Q41 W-03 와이어 본더의 본딩 강도가 낮게 나와 불량이 늘고 있습니다.
   → {'equipment_id': 'W-03', 'symptom': '본딩 강도가 낮게 나와 불량이 늘고 있음'}, 문의에 있는 번호인지: True
 Q56 본더 한 대가 또 멈췄습니다.
-  → {'equipment_id': None, 'symptom': '본더 한 대가 또 멈춤'}, 문의에 있는 번호인지: True
+  → {'equipment_id': None, 'symptom': '본더 한 대가 또 멈췄습니다.'}, 문의에 있는 번호인지: 해당 없음
 Q57 불량이 갑자기 늘었습니다. 확인 부탁드립니다.
-  → {'equipment_id': None, 'symptom': '불량이 갑자기 늘었습니다.'}, 문의에 있는 번호인지: True
+  → {'equipment_id': None, 'symptom': '불량이 갑자기 늘었음'}, 문의에 있는 번호인지: 해당 없음
 Q60 설비 알람이 계속 울립니다.
-  → {'equipment_id': None, 'symptom': '설비 알람이 계속 울림'}, 문의에 있는 번호인지: True
+  → {'equipment_id': None, 'symptom': '설비 알람이 계속 울림'}, 문의에 있는 번호인지: 해당 없음
 예측: 3
 </code></pre></div>
 
@@ -738,15 +771,15 @@ Q60 설비 알람이 계속 울립니다.
 <p>1단계의 <code>answer()</code>는 답을 문장으로 돌려줬습니다. 2단계에서는 답과 함께 문의의 분류, 긴급 여부, 사내 문서가 필요한지를 구조화된 데이터로 받습니다. 사내 문서가 필요한지(<code>needs_document</code>)는 8장에서 문서를 검색할지 정하는 데 씁니다.</p>
 <section class="box practice" id="실습-P2">
 <header><span class="box-no">실습 P2</span><span class="box-title">답을 구조화된 데이터로 받기</span><span class="box-where">노트북 <code>프로젝트_2.ipynb</code></span></header>
-<p><code>ANSWER_SCHEMA</code>에 네 필드(<code>category</code>: 라벨 네 개 중 하나, <code>urgent</code>: 불리언, <code>needs_document</code>: 불리언, <code>answer</code>: 문자열)를 모두 필수로 적습니다. <code>answer_structured()</code>는 1단계의 <code>answer()</code>를 다시 쓰되, <code>send</code> 인자에 스키마를 넣은 <code>llm.send</code>를 넘깁니다. 상태가 "완료"인 응답만 파싱하고, <code>check()</code>로 업무 규칙 두 가지를 검사합니다. 규칙에 걸리면 "사람 확인", 걸리지 않으면 "자동 처리", 1단계에서 실패했거나 확인이 필요했으면 "실패"입니다. 문의 6건의 처리 상태와 사유가 출력되면 끝납니다. 이 셀은 API를 6번 호출합니다.</p>
+<p><code>ANSWER_SCHEMA</code>에 네 필드(<code>category</code>: 라벨 네 개 중 하나, <code>urgent</code>: 불리언, <code>needs_document</code>: 불리언, <code>answer</code>: 문자열)를 모두 필수로 적습니다. 업무 규칙은 두 가지입니다. 분류가 "문서와 데이터 요청"이면 <code>needs_document</code>가 참이어야 하고, 분류가 "안전"인데 <code>urgent</code>가 거짓이면 사람이 확인합니다. <code>answer_structured()</code>는 1단계의 <code>answer()</code>를 호출하되, <code>send</code> 인자에 스키마를 넣은 <code>llm.send</code>를 넘깁니다. 상태가 "완료"인 응답만 파싱하고, <code>check()</code>로 업무 규칙 두 가지를 검사합니다. 규칙에 걸리면 "사람 확인", 걸리지 않으면 "자동 처리", 1단계에서 실패했거나 확인이 필요했으면 "실패"입니다. 문의 6건의 처리 상태와 사유가 출력되면 끝납니다. 이 셀은 API를 6번 호출합니다.</p>
 <p>완료 기준</p>
 <ul>
-<li>업무 규칙: 분류가 "문서와 데이터 요청"이면 <code>needs_document</code>가 참이어야 합니다. 분류가 "안전"인데 <code>urgent</code>가 거짓이면 사람이 확인합니다.</li>
-<li>결과 dict에 1단계의 요금과 토큰 수가 그대로 남아 있습니다.</li>
+<li>6건의 처리 상태가 출력되고, 규칙에 걸린 건에는 사유가 나옵니다.</li>
+<li>출력에 1단계에서 계산한 요금이 그대로 나옵니다.</li>
 </ul>
 <details class="answer">
-<summary>정답 보기</summary>
-<p>힌트. <code>functools.partial(llm.send, schema=ANSWER_SCHEMA)</code>는 <code>schema</code>를 미리 채운 <code>llm.send</code>입니다. 이것을 <code>answer(question, send=...)</code>로 넘기면 재시도와 종료 이유 확인을 1단계 코드 그대로 씁니다.</p>
+<summary>힌트 보기</summary>
+<p><code>functools.partial(llm.send, schema=ANSWER_SCHEMA)</code>는 <code>schema</code>를 미리 채운 <code>llm.send</code>입니다. 이것을 <code>answer(question, send=...)</code>로 넘기면 재시도와 종료 이유 확인을 1단계 코드 그대로 씁니다.</p>
 </details>
 <div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">functools</span>
 
@@ -765,7 +798,7 @@ Q60 설비 알람이 계속 울립니다.
 
 <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="p">[</span><span class="n">item</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">inquiries</span> <span class="k">if</span> <span class="n">item</span><span class="p">[</span><span class="s1">'번호'</span><span class="p">]</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">'Q21'</span><span class="p">,</span> <span class="s1">'Q24'</span><span class="p">,</span> <span class="s1">'Q31'</span><span class="p">,</span> <span class="s1">'Q43'</span><span class="p">,</span> <span class="s1">'Q49'</span><span class="p">,</span> <span class="s1">'Q56'</span><span class="p">)]:</span>
     <span class="n">result</span> <span class="o">=</span> <span class="n">answer_structured</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="s1">'문의'</span><span class="p">])</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">'status'</span><span class="p">]</span><span class="si">}</span><span class="s2">] </span><span class="si">{</span><span class="n">item</span><span class="p">[</span><span class="s1">'번호'</span><span class="p">]</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">item</span><span class="p">[</span><span class="s1">'문의'</span><span class="p">]</span><span class="si">}</span><span class="se">\n</span><span class="s2">  → </span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">'data'</span><span class="p">]</span><span class="si">}</span><span class="s2">, 사유: </span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">'reason'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">'status'</span><span class="p">]</span><span class="si">}</span><span class="s2">] </span><span class="si">{</span><span class="n">item</span><span class="p">[</span><span class="s1">'번호'</span><span class="p">]</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">item</span><span class="p">[</span><span class="s1">'문의'</span><span class="p">]</span><span class="si">}</span><span class="se">\n</span><span class="s2">  → </span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">'data'</span><span class="p">]</span><span class="si">}</span><span class="s2">, 사유: </span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">'reason'</span><span class="p">]</span><span class="si">}</span><span class="s2">, 요금 </span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">'cost'</span><span class="p">]</span><span class="si">:</span><span class="s2">.5f</span><span class="si">}</span><span class="s2">달러"</span><span class="p">)</span>
 </code></pre></div>
 
 <details class="answer">
@@ -803,26 +836,26 @@ Q60 설비 알람이 계속 울립니다.
 
 <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="p">[</span><span class="n">item</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">inquiries</span> <span class="k">if</span> <span class="n">item</span><span class="p">[</span><span class="s1">'번호'</span><span class="p">]</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">'Q21'</span><span class="p">,</span> <span class="s1">'Q24'</span><span class="p">,</span> <span class="s1">'Q31'</span><span class="p">,</span> <span class="s1">'Q43'</span><span class="p">,</span> <span class="s1">'Q49'</span><span class="p">,</span> <span class="s1">'Q56'</span><span class="p">)]:</span>
     <span class="n">result</span> <span class="o">=</span> <span class="n">answer_structured</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="s1">'문의'</span><span class="p">])</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">'status'</span><span class="p">]</span><span class="si">}</span><span class="s2">] </span><span class="si">{</span><span class="n">item</span><span class="p">[</span><span class="s1">'번호'</span><span class="p">]</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">item</span><span class="p">[</span><span class="s1">'문의'</span><span class="p">]</span><span class="si">}</span><span class="se">\n</span><span class="s2">  → </span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">'data'</span><span class="p">]</span><span class="si">}</span><span class="s2">, 사유: </span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">'reason'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">'status'</span><span class="p">]</span><span class="si">}</span><span class="s2">] </span><span class="si">{</span><span class="n">item</span><span class="p">[</span><span class="s1">'번호'</span><span class="p">]</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">item</span><span class="p">[</span><span class="s1">'문의'</span><span class="p">]</span><span class="si">}</span><span class="se">\n</span><span class="s2">  → </span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">'data'</span><span class="p">]</span><span class="si">}</span><span class="s2">, 사유: </span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">'reason'</span><span class="p">]</span><span class="si">}</span><span class="s2">, 요금 </span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">'cost'</span><span class="p">]</span><span class="si">:</span><span class="s2">.5f</span><span class="si">}</span><span class="s2">달러"</span><span class="p">)</span>
 </code></pre></div>
 
 <div class="result">
 <div class="codehilite"><pre><span></span><code>[자동 처리] Q21 클린룸 B구역 바닥에 약품이 흘러 있는데 무슨 약품인지 모르겠습니다.
-  → {'category': '안전', 'urgent': True, 'needs_document': False, 'answer': '클린룸 B구역에서 정체를 알 수 없는 약품이 흘러 있다면 즉시 작업을 멈추고 주변 접근을 통제하십시오. 흘러나온 액체를 직접 만지거나 맡지 말고, 호흡기 자극이나 피부 접촉이 의심되면 바로 보호장비를 착용한 담당자에게 알리십시오. 약품 종류는 제가 확인할 수 없으므로 주변 용기 라벨이나 MSDS(물질안전보건자료)를 먼저 확인하고, 안전관리 담당자와 설비/공정 책임자에게 즉시 연락하여 누출 처리 절차에 따라 조치하시기 바랍니다. 사내 비상 연락처와 누출 대응 절차는 제가 알지 못하므로 안전팀에 확인해 주십시오.'}, 사유: 
+  → {'category': '안전', 'urgent': True, 'needs_document': False, 'answer': '즉시 작업을 멈추고 해당 구역 접근을 제한한 뒤 주변 작업자를 대피시키십시오. 약품 종류를 확인하지 않은 상태에서 직접 닦거나 만지지 마시고, 호흡기 보호구 없이 접근하지 마십시오. 즉시 현장 안전 담당자 또는 설비/환경안전 팀에 알리고, 가능하면 용기나 라벨 사진을 멀리서 확보해 전달하십시오. 몸에 묻거나 증상(눈 자극, 기침, 어지러움 등)이 있으면 바로 응급 조치와 의료 확인을 받으십시오. 약품 종류와 정확한 처리 절차는 사내 MSDS(물질안전보건자료)와 안전 담당자 지침을 따르시기 바랍니다. 사내 세부 절차는 제가 알지 못하므로 담당자 확인이 필요합니다.'}, 사유: , 요금 0.00023달러
 [자동 처리] Q24 비상구 앞에 자재 카트가 쌓여 통로가 막혔습니다.
-  → {'category': '안전', 'urgent': True, 'needs_document': False, 'answer': '비상구 앞 통로가 막힌 것은 화재나 비상 시 대피를 방해하는 위험 상황이므로 즉시 조치가 필요합니다. 카트를 안전하게 옮겨 비상구 앞 통로를 확보하고, 주변 작업자에게 해당 구역 접근을 자제하도록 알려주세요. 같은 상황이 반복되지 않도록 자재 적치 위치를 재정비하고, 담당 안전 관리자 또는 현장 책임자에게 즉시 보고하세요. 사내 보고 절차와 담당자 연락처는 제가 알지 못하니 현장 안전 담당 부서에 확인하시기 바랍니다.'}, 사유: 
+  → {'category': '안전', 'urgent': True, 'needs_document': False, 'answer': '비상구 앞 통로가 막혀 있으면 즉시 위험 요소입니다. 카트를 바로 치우고 비상구와 통로를 비워 주시고, 같은 상황이 반복되지 않도록 현장 관리자나 안전 담당자에게 바로 알려 주세요. 사내 세부 절차는 제가 알지 못하니 담당 부서의 안내를 따라 주시기 바랍니다.'}, 사유: , 요금 0.00014달러
 [자동 처리] Q31 와이어 본딩 작업 표준 최신본은 어디에 있나요?
-  → {'category': '문서와 데이터 요청', 'urgent': False, 'needs_document': True, 'answer': '와이어 본딩 작업 표준의 최신본 위치는 제가 확인할 수 없습니다. 사내 문서 관리 시스템(품질 또는 기술 문서 관리 부서)이나 담당 엔지니어에게 문의해 최신 승인본을 확인해 주세요.'}, 사유: 
+  → {'category': '문서와 데이터 요청', 'urgent': False, 'needs_document': True, 'answer': "와이어 본딩 작업 표준의 최신본 위치는 제가 사내 문서 시스템에 접근할 수 없어 확인할 수 없습니다. 품질문서 관리 부서 또는 담당 엔지니어에게 문의하시거나, 사내 문서관리 시스템에서 '와이어 본딩 작업 표준'으로 검색해 최신 승인본(개정 번호와 승인 일자 확인)을 찾아 주시기 바랍니다."}, 사유: , 요금 0.00015달러
 [자동 처리] Q43 다이싱 소 D-01 근처에서 냉각수가 바닥으로 새고 있습니다.
-  → {'category': '안전', 'urgent': True, 'needs_document': False, 'answer': '다이싱 소 D-01 주변 냉각수 누수는 감전과 미끄럼 사고 위험이 있으므로 즉시 조치가 필요합니다. 가능하면 장비 전원을 차단하고 누수 구역에 출입을 통제하며, 바닥을 정리하거나 흡수재로 닦아 미끄럼을 방지하세요. 누수 원인이 확실하지 않다면 임의로 배관이나 밸브를 조작하지 말고 설비 담당자 또는 현장 관리자에게 즉시 연락하십시오. 사내 비상 연락처와 세부 절차는 제가 알지 못하니 현장 안전 매뉴얼이나 관리자에게 확인해 주세요.'}, 사유: 
+  → {'category': '안전', 'urgent': True, 'needs_document': False, 'answer': '냉각수 누수는 미끄럼 사고와 전기 안전 문제로 이어질 수 있으니 즉시 조치가 필요합니다. 우선 D-01 주변 접근을 통제하고 누수 구역에 경고 표지를 설치하세요. 장비 전원을 차단할 수 있다면 가동을 중지하고, 누수가 전기 패널이나 콘센트 근처로 번지지 않는지 확인하세요. 누수가 계속되면 흡수재나 흡착포로 임시 차단하고, 담당 설비 엔지니어와 현장 안전 담당자에게 즉시 보고하세요. 다만 사내 비상 절차, 연락처, 누수 처리 표준 절차는 제가 알지 못하므로 해당 문서나 담당 부서의 지침을 따르시기 바랍니다.'}, 사유: , 요금 0.00021달러
 [자동 처리] Q49 마킹 불량 제품이 출하 박스에 섞였는지 확인할 출하 기록이 필요합니다.
-  → {'category': '문서와 데이터 요청', 'urgent': True, 'needs_document': True, 'answer': '마킹 불량 제품이 출하 박스에 섞였는지 확인하려면 해당 출하 로트의 출하 기록이 필요합니다. 출하 박스 번호, 로트 번호, 출하 일자, 검사 및 마킹 공정 이력을 함께 확인하는 것이 좋습니다. 다만 사내 시스템이나 기록 보관 위치는 제가 알 수 없으므로, 품질 또는 출하 담당 부서에 요청해 주십시오. 출하 전 박스 전수 재검사 여부도 해당 부서와 함께 결정하시기 바랍니다.'}, 사유: 
+  → {'category': '문서와 데이터 요청', 'urgent': True, 'needs_document': True, 'answer': '마킹 불량 제품이 출하 박스에 섞였는지 확인하려면 해당 출하 로트의 출하 기록(박스 번호, 로트 번호, 시리얼 번호, 검사 결과, 출하 일시)이 필요합니다. 제가 사내 출하 기록에 직접 접근할 수 없으므로, 품질 또는 출하 관리 담당자에게 해당 로트/박스 기록과 마킹 검사 결과를 요청하시기 바랍니다. 출하 전 검사 기록이 있다면 함께 확인하는 것이 좋습니다.'}, 사유: , 요금 0.00017달러
 [자동 처리] Q56 본더 한 대가 또 멈췄습니다.
-  → {'category': '설비 이상', 'urgent': True, 'needs_document': False, 'answer': '본더가 다시 멈춘 것으로 보여 설비 이상으로 분류했고, 생산 영향이 있을 수 있어 긴급으로 판단했습니다. 현재 에러 코드, 알람 메시지, 멈춘 시점, 해당 본더 호기 번호, 직전에 진행 중이던 공정이나 레시피를 알려주시면 원인 확인에 도움을 드릴 수 있습니다. 다만 사내 설비 점검 이력이나 장비별 매뉴얼 내용은 제가 알지 못하니, 확인이 필요하면 담당 설비 엔지니어에게 바로 연결하시는 것을 권장합니다. 안전에 관련된 상황(연기, 이상 발열, 가스 누출 등)이 있다면 즉시 전원을 차단하고 현장 안전 담당자에게 알려주세요.'}, 사유: 
+  → {'category': '설비 이상', 'urgent': True, 'needs_document': False, 'answer': '본더 정지는 라인 생산에 직접 영향을 주므로 긴급 대응이 필요합니다. 먼저 알람 코드와 정지 시점, 직전 작업 조건을 확인해 주세요. 현재 사내 매뉴얼이나 장비 이력 정보는 제가 알 수 없으니, 담당 설비 엔지니어 또는 해당 본더 점검 절차서에 따라 조치하시고, 같은 현상이 반복된다면 이력 기록을 함께 남겨 원인 분석이 가능하도록 해주세요.'}, 사유: , 요금 0.00016달러
 </code></pre></div>
 
 </div>
-<p>교재의 실행에서 6건 모두 "자동 처리"였고 업무 규칙에 걸린 건은 없었습니다. Q31과 Q49는 문서와 데이터 요청으로 분류되었고 <code>needs_document</code>가 참이었습니다. 규칙에 걸린 건이 없다고 분류가 모두 맞은 것은 아닙니다. Q24는 문의 데이터의 정답에서 긴급이 아니지만 모델은 긴급으로 답했습니다. 업무 규칙은 필드 사이의 모순만 찾아내고, 값이 맞는지는 정답 라벨과 비교해야 알 수 있습니다.</p>
+<p>교재의 실행에서 6건 모두 "자동 처리"였고, Q56을 뺀 5건은 분류와 긴급 여부가 문의 데이터의 정답과 같았습니다(Q56은 정보가 빠진 문의라 정답 라벨이 없습니다). Q31과 Q49는 문서와 데이터 요청으로 분류되었고 <code>needs_document</code>가 참이었습니다. 그래도 규칙에 걸리지 않았다는 것이 값이 맞다는 보장은 아닙니다. 예제 6-3에서는 업무 규칙에 걸린 건이 없었지만 15건 가운데 4건의 라벨이 틀렸습니다. 업무 규칙은 필드 사이의 모순만 찾아내고, 값이 맞는지는 정답 라벨과 비교해야 알 수 있습니다.</p>
 </details>
 </section>
 <h2 id="자가점검">자가점검</h2>
@@ -839,7 +872,7 @@ Q60 설비 알람이 계속 울립니다.
 <p><strong>3.</strong> 구조화 출력은 모델을 다시 학습시키지 않고 어떻게 스키마에 맞는 JSON만 나오게 합니까? 다음 토큰의 확률 분포로 설명해 보세요.</p>
 <details class="answer">
 <summary>정답 보기</summary>
-<p>모델은 평소처럼 어휘 전체에 확률을 매깁니다. 서버는 지금까지 생성한 글과 스키마를 보고 다음에 올 수 있는 토큰을 계산해, 그 밖의 토큰의 확률을 0으로 만들고 남은 토큰의 확률을 다시 나눈 뒤 그 안에서 뽑습니다(제약 디코딩). 모든 단계에서 스키마에 맞는 토큰만 뽑히므로 정상 종료한 응답은 스키마에 맞습니다.</p>
+<p>모델은 평소처럼 어휘 전체에 확률을 매깁니다. 서버는 지금까지 생성한 글과 스키마를 보고 다음에 올 수 있는 토큰을 계산해, 그 밖의 토큰의 확률을 0으로 만들고 남은 토큰의 확률을 다시 나눈 뒤 그 안에서 뽑습니다(제약 디코딩). 모든 단계에서 스키마에 맞는 토큰만 뽑히므로 정상 종료한 응답은 스키마에 맞습니다. 영문 enum 값의 대소문자만 예외입니다.</p>
 </details>
 <p><strong>4.</strong> 구조화 출력으로 받은 분류 결과가 모두 스키마에 맞았습니다. 이 결과를 그대로 현업에 넘겨도 됩니까? 무엇을 더 확인합니까?</p>
 <details class="answer">

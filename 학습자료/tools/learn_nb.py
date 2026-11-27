@@ -168,7 +168,7 @@ def to_notebook_markdown(text):
             body = stripped[3:].strip()
             if not body:
                 kind = stack.pop() if stack else ''
-                out += ['', '</details>', ''] if kind == '정답' else ['']
+                out += ['', '</details>', ''] if kind in ('정답', '힌트') else ['']
                 continue
             kind, _, rest = body.partition(' ')
             stack.append(kind)
@@ -176,6 +176,8 @@ def to_notebook_markdown(text):
                 out += ['', f'**{rest}**', '']
             elif kind == '정답':
                 out += ['', '<details><summary>정답 보기</summary>', '']
+            elif kind == '힌트':
+                out += ['', '<details><summary>힌트 보기</summary>', '']
             elif kind in QUOTED:
                 out += ['', f'> **{kind}**', '>']
             else:
