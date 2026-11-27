@@ -41,4 +41,9 @@ def mean_loss(model):
     return total / len(sentences)
 
 
+# 소형 모델의 100만 토큰당 단가(달러). 5장 "LLM API"의 표, `llm.py`가 쓰는 Anthropic 모델 기준(2026-11 확인)
+# 사내 API를 쓰면 사내 안내의 단가로 바꿉니다
+PRICES = {'input': 0.10, 'output': 0.50}
+
+
 print(f'PC에서 실행하는 모델: {MODEL}, 알람 {len(alarms)}건')
