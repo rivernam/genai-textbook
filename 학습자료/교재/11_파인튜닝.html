@@ -1,0 +1,1048 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>11장 파인튜닝 | 생성형 AI 교재</title>
+<style>
+/* 복습 교재 화면. 외부 글꼴과 이미지를 쓰지 않는다. */
+:root {
+  --paper: #f6f8f8;        /* 본문 바탕 */
+  --sheet: #ffffff;        /* 상자 바탕 */
+  --ink: #16252b;          /* 본문 글자 */
+  --ink-soft: #55676e;     /* 보조 글자 */
+  --line: #d3dcde;         /* 선 */
+  --teal: #0b5a66;         /* 제목, 링크, 예제 */
+  --teal-wash: #e3eff0;
+  --amber: #8a5a00;        /* 주의, 실습 */
+  --amber-wash: #fbf1d8;
+  --code-bg: #eef2f3;
+  --body-font: "Pretendard", "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --code-font: "D2Coding", "Cascadia Mono", "Consolas", "Menlo", "Malgun Gothic", "Apple SD Gothic Neo", monospace;
+  --measure: 50rem;        /* 본문 한 줄 약 50자. 표와 코드가 좁아지지 않는 폭 */
+}
+/* "넓게 보기"를 켜면 본문 폭을 넓힌다. 표와 코드가 많은 절을 볼 때 쓴다 */
+:root[data-width="wide"] { --measure: 74rem; }
+:root[data-theme="dark"] {
+  --paper: #10191c;
+  --sheet: #17242a;
+  --ink: #dde7e9;
+  --ink-soft: #94a8ae;
+  --line: #2c3f46;
+  --teal: #6fc7d2;
+  --teal-wash: #1b3238;
+  --amber: #e6b656;
+  --amber-wash: #322a16;
+  --code-bg: #1c2b31;
+}
+
+* { box-sizing: border-box; }
+html { scroll-padding-top: 4.5rem; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--body-font);
+  font-size: 1.0625rem;
+  line-height: 1.8;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+a { color: var(--teal); text-underline-offset: 0.2em; }
+:focus-visible { outline: 3px solid var(--teal); outline-offset: 2px; }
+.skip { position: absolute; left: -999rem; }
+.skip:focus { left: 1rem; top: 1rem; z-index: 30; background: var(--sheet); padding: 0.5rem 1rem; }
+
+/* 위쪽 띠 */
+.top {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; align-items: center; gap: 1rem;
+  height: 3.5rem; padding: 0 1.25rem;
+  background: var(--sheet); border-bottom: 1px solid var(--line);
+}
+.top .site { font-weight: 700; white-space: nowrap; }
+.top .days { display: flex; gap: 0.25rem; margin-right: auto; overflow-x: auto; }
+.top .days a { padding: 0.25rem 0.7rem; border-radius: 999px; text-decoration: none; color: var(--ink-soft); white-space: nowrap; }
+.top .days a.here { background: var(--teal); color: var(--sheet); }
+.top button {
+  font: inherit; font-size: 0.9rem; color: var(--ink);
+  background: none; border: 1px solid var(--line); border-radius: 6px;
+  padding: 0.3rem 0.8rem; cursor: pointer; white-space: nowrap;
+}
+.top .menu { display: none; }
+
+/* 배치: 왼쪽 목차, 가운데 본문 */
+.layout { display: grid; grid-template-columns: 18rem minmax(0, 1fr); }
+.side {
+  position: sticky; top: 3.5rem; align-self: start;
+  height: calc(100vh - 3.5rem); overflow-y: auto;
+  padding: 1.25rem 1rem 3rem 1.25rem;
+  border-right: 1px solid var(--line);
+  font-size: 0.92rem; line-height: 1.5;
+}
+.search span { display: block; color: var(--ink-soft); margin-bottom: 0.3rem; }
+.search input {
+  width: 100%; font: inherit; color: var(--ink);
+  background: var(--sheet); border: 1px solid var(--line); border-radius: 6px; padding: 0.45rem 0.6rem;
+}
+.hits { margin-top: 0.75rem; }
+.hits p { color: var(--ink-soft); margin: 0.5rem 0; }
+.hits a { display: block; padding: 0.4rem 0; text-decoration: none; border-bottom: 1px solid var(--line); }
+.hits small { display: block; color: var(--ink-soft); }
+.toc ul { list-style: none; margin: 1rem 0 0; padding: 0; }
+.toc a { display: block; padding: 0.22rem 0.5rem; border-left: 3px solid transparent; color: var(--ink-soft); text-decoration: none; }
+.toc a:hover { color: var(--ink); }
+.toc a.now { border-left-color: var(--teal); color: var(--ink); font-weight: 600; }
+.toc .l1 a { margin-top: 0.9rem; color: var(--ink); font-weight: 700; }
+.toc .l3 a { padding-left: 1.4rem; font-size: 0.88rem; }
+
+main { min-width: 0; padding: 2.5rem clamp(1.25rem, 5vw, 4.5rem) 4rem; }
+/* 본문은 남는 공간의 가운데에 둔다. 넓은 화면에서 한쪽에만 여백이 몰리지 않는다 */
+.part { max-width: var(--measure); margin: 0 auto 5rem; }
+.part > * { max-width: 100%; }
+
+/* 제목. 원본 쪽수는 제목 줄 오른쪽에 작은 표로 붙는다 */
+h1, h2, h3 { line-height: 1.35; letter-spacing: -0.01em; }
+h1 { font-size: 2.15rem; margin: 0 0 1.5rem; padding-bottom: 1rem; border-bottom: 3px solid var(--teal); }
+h2 { font-size: 1.5rem; margin: 3.5rem 0 1rem; }
+h3 { font-size: 1.15rem; margin: 2.25rem 0 0.75rem; }
+.source {
+  display: inline-block; vertical-align: middle; margin-left: 0.5rem;
+  font-size: 0.72rem; font-weight: 500; letter-spacing: 0;
+  color: var(--ink-soft); border: 1px solid var(--line); border-radius: 4px; padding: 0.05rem 0.4rem;
+}
+.source.added { color: var(--amber); border-color: currentColor; }
+
+p { margin: 0 0 1.1rem; }
+ul, ol { padding-left: 1.4rem; margin: 0 0 1.1rem; }
+li { margin-bottom: 0.3rem; }
+strong { font-weight: 700; }
+
+/* 용어: 점선 밑줄, 올리거나 초점이 가면 정의가 뜬다 */
+.term { position: relative; border-bottom: 1.5px dotted var(--teal); cursor: help; }
+.term:hover::after, .term:focus::after {
+  content: attr(data-def);
+  position: absolute; left: 0; top: 1.9em; z-index: 10;
+  width: max-content; max-width: min(22rem, 80vw);
+  background: var(--ink); color: var(--paper);
+  font-size: 0.86rem; font-weight: 400; line-height: 1.55;
+  padding: 0.55rem 0.75rem; border-radius: 6px;
+}
+
+/* 코드 */
+code { font-family: var(--code-font); font-size: 0.9em; background: var(--code-bg); padding: 0.1em 0.35em; border-radius: 4px; }
+/* 표 안의 짧은 코드(함수 이름, 패키지 이름)는 낱말 중간에서 끊지 않는다 */
+td code, th code { white-space: nowrap; }
+td, th { overflow-wrap: break-word; }
+pre { margin: 0; padding: 0.9rem 1rem; overflow-x: auto; font-size: 0.88rem; line-height: 1.65; }
+pre code { background: none; padding: 0; font-size: inherit; }
+.codehilite, .part > pre { position: relative; background: var(--code-bg); border-radius: 8px; margin: 0 0 1.1rem; }
+.codehilite pre { background: none; }
+.copy {
+  position: absolute; top: 0.4rem; right: 0.4rem;
+  font: inherit; font-size: 0.75rem; color: var(--ink-soft);
+  background: var(--sheet); border: 1px solid var(--line); border-radius: 5px; padding: 0.1rem 0.5rem; cursor: pointer;
+}
+
+/* 표 */
+table { border-collapse: collapse; width: 100%; margin: 0 0 1.25rem; font-size: 0.95rem; line-height: 1.6; }
+th, td { text-align: left; vertical-align: top; padding: 0.5rem 0.7rem; border-bottom: 1px solid var(--line); }
+thead th { border-bottom: 2px solid var(--ink); font-weight: 700; }
+.glossary th { white-space: nowrap; font-weight: 600; }
+
+/* 예제와 실습 상자. 번호는 노트북 셀 번호와 같다 */
+.box { background: var(--sheet); border: 1px solid var(--line); border-radius: 10px; margin: 1.75rem 0; overflow: hidden; }
+.box > header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 0.75rem; padding: 0.7rem 1.1rem; border-bottom: 1px solid var(--line); }
+.box-no { font-weight: 700; color: var(--teal); white-space: nowrap; }
+.box-title { font-weight: 600; }
+.box-where { margin-left: auto; font-size: 0.8rem; color: var(--ink-soft); }
+.box.example > header { background: var(--teal-wash); }
+.box.practice > header { background: var(--amber-wash); }
+.box.practice .box-no { color: var(--amber); }
+.box > :not(header) { margin-left: 1.1rem; margin-right: 1.1rem; }
+.box > header + * { margin-top: 1rem; }
+
+/* 탭 */
+.tabs { margin: 0 0 1.1rem; }
+.tablist { display: flex; gap: 0.25rem; }
+.tablist button {
+  font: inherit; font-size: 0.85rem; color: var(--ink-soft);
+  background: none; border: 1px solid var(--line); border-bottom: none; border-radius: 6px 6px 0 0;
+  padding: 0.25rem 0.8rem; cursor: pointer;
+}
+.tablist button[aria-selected="true"] { background: var(--code-bg); color: var(--ink); font-weight: 600; }
+.tabs .tab .codehilite { border-top-left-radius: 0; margin-bottom: 0; }
+.tab[hidden] { display: none; }
+/* 스크립트가 꺼져 있으면 탭 이름을 붙여 차례로 보여 준다 */
+.tab:not(.ready)::before { content: attr(data-tab); display: block; font-size: 0.85rem; font-weight: 600; color: var(--ink-soft); margin-bottom: 0.3rem; }
+
+.result { margin: 0 0 1.1rem; border-left: 4px solid var(--teal); }
+.result::before { content: "실행 결과"; display: block; font-size: 0.8rem; font-weight: 600; color: var(--teal); padding: 0 0 0.25rem 0.8rem; }
+.result .codehilite, .result > pre { margin: 0; border-radius: 0 8px 8px 0; background: none; }
+.result pre { padding-top: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+details.more-result summary { cursor: pointer; font-size: 0.85rem; font-weight: 600; color: var(--teal); padding: 0.2rem 0 0.4rem 1rem; }
+
+/* 절 첫머리의 요점 */
+.gist { margin: 0 0 1.4rem; padding: 0.1rem 0 0.1rem 1rem; border-left: 4px solid var(--teal); font-weight: 600; }
+.gist p { margin: 0.4rem 0; }
+
+.callout { margin: 1.5rem 0; padding: 0.9rem 1.1rem 0.1rem; border-radius: 8px; }
+.callout::before { display: block; font-weight: 700; font-size: 0.9rem; margin-bottom: 0.3rem; }
+.callout.warn { background: var(--amber-wash); }
+.callout.warn::before { content: "주의"; color: var(--amber); }
+.callout.more { background: var(--teal-wash); }
+.callout.more::before { content: "보충"; color: var(--teal); }
+
+details.answer { margin: 0 0 1.25rem; border: 1px dashed var(--line); border-radius: 8px; padding: 0.6rem 1rem; }
+details.answer summary { cursor: pointer; font-weight: 600; color: var(--teal); }
+details.answer[open] summary { margin-bottom: 0.6rem; }
+
+.day { margin: 2rem 0; }
+.day h2 { margin: 0 0 0.5rem; }
+.foot { max-width: var(--measure); margin: 4rem auto 0; padding-top: 1rem; border-top: 1px solid var(--line); font-size: 0.85rem; color: var(--ink-soft); }
+svg { max-width: 100%; height: auto; }
+figure { margin: 1.5rem 0; }
+figcaption { font-size: 0.88rem; color: var(--ink-soft); margin-top: 0.4rem; }
+
+@media (max-width: 60rem) {
+  .layout { display: block; }
+  .top .width { display: none; }
+  .top .menu { display: block; }
+  .top .site { display: none; }
+  .side {
+    position: fixed; top: 3.5rem; left: 0; z-index: 15; width: min(20rem, 88vw);
+    background: var(--paper); transform: translateX(-100%);
+  }
+  .side.open { transform: none; box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.35); }
+  .box-where { margin-left: 0; width: 100%; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .side { transition: transform 0.18s ease; }
+}
+@media print {
+  .top, .side, .copy, .tablist { display: none !important; }
+  .layout { display: block; }
+  body { background: #fff; font-size: 10.5pt; }
+  .tab[hidden] { display: block; }
+  .tab::before { content: attr(data-tab) !important; display: block; font-weight: 600; }
+  details.answer:not([open]) > *:not(summary) { display: block; }
+  details.more-result:not([open]) > *:not(summary) { display: block; }
+  .box, .callout, .codehilite { break-inside: avoid; }
+}
+
+pre { line-height: 125%; }
+td.linenos .normal { color: #666666; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+span.linenos { color: #666666; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+td.linenos .special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+.codehilite .hll { background-color: #ffffcc }
+.codehilite { background: #f0f0f0; }
+.codehilite .c { color: #60A0B0; font-style: italic } /* Comment */
+.codehilite .err { border: 1px solid #F00 } /* Error */
+.codehilite .k { color: #007020; font-weight: bold } /* Keyword */
+.codehilite .o { color: #666 } /* Operator */
+.codehilite .ch { color: #60A0B0; font-style: italic } /* Comment.Hashbang */
+.codehilite .cm { color: #60A0B0; font-style: italic } /* Comment.Multiline */
+.codehilite .cp { color: #007020 } /* Comment.Preproc */
+.codehilite .cpf { color: #60A0B0; font-style: italic } /* Comment.PreprocFile */
+.codehilite .c1 { color: #60A0B0; font-style: italic } /* Comment.Single */
+.codehilite .cs { color: #60A0B0; background-color: #FFF0F0 } /* Comment.Special */
+.codehilite .gd { color: #A00000 } /* Generic.Deleted */
+.codehilite .ge { font-style: italic } /* Generic.Emph */
+.codehilite .ges { font-weight: bold; font-style: italic } /* Generic.EmphStrong */
+.codehilite .gr { color: #F00 } /* Generic.Error */
+.codehilite .gh { color: #000080; font-weight: bold } /* Generic.Heading */
+.codehilite .gi { color: #00A000 } /* Generic.Inserted */
+.codehilite .go { color: #888 } /* Generic.Output */
+.codehilite .gp { color: #C65D09; font-weight: bold } /* Generic.Prompt */
+.codehilite .gs { font-weight: bold } /* Generic.Strong */
+.codehilite .gu { color: #800080; font-weight: bold } /* Generic.Subheading */
+.codehilite .gt { color: #04D } /* Generic.Traceback */
+.codehilite .kc { color: #007020; font-weight: bold } /* Keyword.Constant */
+.codehilite .kd { color: #007020; font-weight: bold } /* Keyword.Declaration */
+.codehilite .kn { color: #007020; font-weight: bold } /* Keyword.Namespace */
+.codehilite .kp { color: #007020 } /* Keyword.Pseudo */
+.codehilite .kr { color: #007020; font-weight: bold } /* Keyword.Reserved */
+.codehilite .kt { color: #902000 } /* Keyword.Type */
+.codehilite .m { color: #40A070 } /* Literal.Number */
+.codehilite .s { color: #4070A0 } /* Literal.String */
+.codehilite .na { color: #4070A0 } /* Name.Attribute */
+.codehilite .nb { color: #007020 } /* Name.Builtin */
+.codehilite .nc { color: #0E84B5; font-weight: bold } /* Name.Class */
+.codehilite .no { color: #60ADD5 } /* Name.Constant */
+.codehilite .nd { color: #555; font-weight: bold } /* Name.Decorator */
+.codehilite .ni { color: #D55537; font-weight: bold } /* Name.Entity */
+.codehilite .ne { color: #007020 } /* Name.Exception */
+.codehilite .nf { color: #06287E } /* Name.Function */
+.codehilite .nl { color: #002070; font-weight: bold } /* Name.Label */
+.codehilite .nn { color: #0E84B5; font-weight: bold } /* Name.Namespace */
+.codehilite .nt { color: #062873; font-weight: bold } /* Name.Tag */
+.codehilite .nv { color: #BB60D5 } /* Name.Variable */
+.codehilite .ow { color: #007020; font-weight: bold } /* Operator.Word */
+.codehilite .w { color: #BBB } /* Text.Whitespace */
+.codehilite .mb { color: #40A070 } /* Literal.Number.Bin */
+.codehilite .mf { color: #40A070 } /* Literal.Number.Float */
+.codehilite .mh { color: #40A070 } /* Literal.Number.Hex */
+.codehilite .mi { color: #40A070 } /* Literal.Number.Integer */
+.codehilite .mo { color: #40A070 } /* Literal.Number.Oct */
+.codehilite .sa { color: #4070A0 } /* Literal.String.Affix */
+.codehilite .sb { color: #4070A0 } /* Literal.String.Backtick */
+.codehilite .sc { color: #4070A0 } /* Literal.String.Char */
+.codehilite .dl { color: #4070A0 } /* Literal.String.Delimiter */
+.codehilite .sd { color: #4070A0; font-style: italic } /* Literal.String.Doc */
+.codehilite .s2 { color: #4070A0 } /* Literal.String.Double */
+.codehilite .se { color: #4070A0; font-weight: bold } /* Literal.String.Escape */
+.codehilite .sh { color: #4070A0 } /* Literal.String.Heredoc */
+.codehilite .si { color: #70A0D0; font-style: italic } /* Literal.String.Interpol */
+.codehilite .sx { color: #C65D09 } /* Literal.String.Other */
+.codehilite .sr { color: #235388 } /* Literal.String.Regex */
+.codehilite .s1 { color: #4070A0 } /* Literal.String.Single */
+.codehilite .ss { color: #517918 } /* Literal.String.Symbol */
+.codehilite .bp { color: #007020 } /* Name.Builtin.Pseudo */
+.codehilite .fm { color: #06287E } /* Name.Function.Magic */
+.codehilite .vc { color: #BB60D5 } /* Name.Variable.Class */
+.codehilite .vg { color: #BB60D5 } /* Name.Variable.Global */
+.codehilite .vi { color: #BB60D5 } /* Name.Variable.Instance */
+.codehilite .vm { color: #BB60D5 } /* Name.Variable.Magic */
+.codehilite .il { color: #40A070 } /* Literal.Number.Integer.Long */
+pre { line-height: 125%; }
+td.linenos .normal { color: #D8DEE9; background-color: #242933; padding-left: 5px; padding-right: 5px; }
+span.linenos { color: #D8DEE9; background-color: #242933; padding-left: 5px; padding-right: 5px; }
+td.linenos .special { color: #242933; background-color: #D8DEE9; padding-left: 5px; padding-right: 5px; }
+span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 5px; padding-right: 5px; }
+:root[data-theme="dark"] .codehilite .hll { background-color: #3B4252 }
+:root[data-theme="dark"] .codehilite { background: #2E3440; color: #D8DEE9 }
+:root[data-theme="dark"] .codehilite .c { color: #616E87; font-style: italic } /* Comment */
+:root[data-theme="dark"] .codehilite .err { color: #BF616A } /* Error */
+:root[data-theme="dark"] .codehilite .esc { color: #D8DEE9 } /* Escape */
+:root[data-theme="dark"] .codehilite .g { color: #D8DEE9 } /* Generic */
+:root[data-theme="dark"] .codehilite .k { color: #81A1C1; font-weight: bold } /* Keyword */
+:root[data-theme="dark"] .codehilite .l { color: #D8DEE9 } /* Literal */
+:root[data-theme="dark"] .codehilite .n { color: #D8DEE9 } /* Name */
+:root[data-theme="dark"] .codehilite .o { color: #81A1C1; font-weight: bold } /* Operator */
+:root[data-theme="dark"] .codehilite .x { color: #D8DEE9 } /* Other */
+:root[data-theme="dark"] .codehilite .p { color: #ECEFF4 } /* Punctuation */
+:root[data-theme="dark"] .codehilite .ch { color: #616E87; font-style: italic } /* Comment.Hashbang */
+:root[data-theme="dark"] .codehilite .cm { color: #616E87; font-style: italic } /* Comment.Multiline */
+:root[data-theme="dark"] .codehilite .cp { color: #5E81AC; font-style: italic } /* Comment.Preproc */
+:root[data-theme="dark"] .codehilite .cpf { color: #616E87; font-style: italic } /* Comment.PreprocFile */
+:root[data-theme="dark"] .codehilite .c1 { color: #616E87; font-style: italic } /* Comment.Single */
+:root[data-theme="dark"] .codehilite .cs { color: #616E87; font-style: italic } /* Comment.Special */
+:root[data-theme="dark"] .codehilite .gd { color: #BF616A } /* Generic.Deleted */
+:root[data-theme="dark"] .codehilite .ge { color: #D8DEE9; font-style: italic } /* Generic.Emph */
+:root[data-theme="dark"] .codehilite .ges { color: #D8DEE9; font-weight: bold; font-style: italic } /* Generic.EmphStrong */
+:root[data-theme="dark"] .codehilite .gr { color: #BF616A } /* Generic.Error */
+:root[data-theme="dark"] .codehilite .gh { color: #88C0D0; font-weight: bold } /* Generic.Heading */
+:root[data-theme="dark"] .codehilite .gi { color: #A3BE8C } /* Generic.Inserted */
+:root[data-theme="dark"] .codehilite .go { color: #D8DEE9 } /* Generic.Output */
+:root[data-theme="dark"] .codehilite .gp { color: #616E88; font-weight: bold } /* Generic.Prompt */
+:root[data-theme="dark"] .codehilite .gs { color: #D8DEE9; font-weight: bold } /* Generic.Strong */
+:root[data-theme="dark"] .codehilite .gu { color: #88C0D0; font-weight: bold } /* Generic.Subheading */
+:root[data-theme="dark"] .codehilite .gt { color: #BF616A } /* Generic.Traceback */
+:root[data-theme="dark"] .codehilite .kc { color: #81A1C1; font-weight: bold } /* Keyword.Constant */
+:root[data-theme="dark"] .codehilite .kd { color: #81A1C1; font-weight: bold } /* Keyword.Declaration */
+:root[data-theme="dark"] .codehilite .kn { color: #81A1C1; font-weight: bold } /* Keyword.Namespace */
+:root[data-theme="dark"] .codehilite .kp { color: #81A1C1 } /* Keyword.Pseudo */
+:root[data-theme="dark"] .codehilite .kr { color: #81A1C1; font-weight: bold } /* Keyword.Reserved */
+:root[data-theme="dark"] .codehilite .kt { color: #81A1C1 } /* Keyword.Type */
+:root[data-theme="dark"] .codehilite .ld { color: #D8DEE9 } /* Literal.Date */
+:root[data-theme="dark"] .codehilite .m { color: #B48EAD } /* Literal.Number */
+:root[data-theme="dark"] .codehilite .s { color: #A3BE8C } /* Literal.String */
+:root[data-theme="dark"] .codehilite .na { color: #8FBCBB } /* Name.Attribute */
+:root[data-theme="dark"] .codehilite .nb { color: #81A1C1 } /* Name.Builtin */
+:root[data-theme="dark"] .codehilite .nc { color: #8FBCBB } /* Name.Class */
+:root[data-theme="dark"] .codehilite .no { color: #8FBCBB } /* Name.Constant */
+:root[data-theme="dark"] .codehilite .nd { color: #D08770 } /* Name.Decorator */
+:root[data-theme="dark"] .codehilite .ni { color: #D08770 } /* Name.Entity */
+:root[data-theme="dark"] .codehilite .ne { color: #BF616A } /* Name.Exception */
+:root[data-theme="dark"] .codehilite .nf { color: #88C0D0 } /* Name.Function */
+:root[data-theme="dark"] .codehilite .nl { color: #D8DEE9 } /* Name.Label */
+:root[data-theme="dark"] .codehilite .nn { color: #8FBCBB } /* Name.Namespace */
+:root[data-theme="dark"] .codehilite .nx { color: #D8DEE9 } /* Name.Other */
+:root[data-theme="dark"] .codehilite .py { color: #D8DEE9 } /* Name.Property */
+:root[data-theme="dark"] .codehilite .nt { color: #81A1C1 } /* Name.Tag */
+:root[data-theme="dark"] .codehilite .nv { color: #D8DEE9 } /* Name.Variable */
+:root[data-theme="dark"] .codehilite .ow { color: #81A1C1; font-weight: bold } /* Operator.Word */
+:root[data-theme="dark"] .codehilite .pm { color: #ECEFF4 } /* Punctuation.Marker */
+:root[data-theme="dark"] .codehilite .w { color: #D8DEE9 } /* Text.Whitespace */
+:root[data-theme="dark"] .codehilite .mb { color: #B48EAD } /* Literal.Number.Bin */
+:root[data-theme="dark"] .codehilite .mf { color: #B48EAD } /* Literal.Number.Float */
+:root[data-theme="dark"] .codehilite .mh { color: #B48EAD } /* Literal.Number.Hex */
+:root[data-theme="dark"] .codehilite .mi { color: #B48EAD } /* Literal.Number.Integer */
+:root[data-theme="dark"] .codehilite .mo { color: #B48EAD } /* Literal.Number.Oct */
+:root[data-theme="dark"] .codehilite .sa { color: #A3BE8C } /* Literal.String.Affix */
+:root[data-theme="dark"] .codehilite .sb { color: #A3BE8C } /* Literal.String.Backtick */
+:root[data-theme="dark"] .codehilite .sc { color: #A3BE8C } /* Literal.String.Char */
+:root[data-theme="dark"] .codehilite .dl { color: #A3BE8C } /* Literal.String.Delimiter */
+:root[data-theme="dark"] .codehilite .sd { color: #616E87 } /* Literal.String.Doc */
+:root[data-theme="dark"] .codehilite .s2 { color: #A3BE8C } /* Literal.String.Double */
+:root[data-theme="dark"] .codehilite .se { color: #EBCB8B } /* Literal.String.Escape */
+:root[data-theme="dark"] .codehilite .sh { color: #A3BE8C } /* Literal.String.Heredoc */
+:root[data-theme="dark"] .codehilite .si { color: #A3BE8C } /* Literal.String.Interpol */
+:root[data-theme="dark"] .codehilite .sx { color: #A3BE8C } /* Literal.String.Other */
+:root[data-theme="dark"] .codehilite .sr { color: #EBCB8B } /* Literal.String.Regex */
+:root[data-theme="dark"] .codehilite .s1 { color: #A3BE8C } /* Literal.String.Single */
+:root[data-theme="dark"] .codehilite .ss { color: #A3BE8C } /* Literal.String.Symbol */
+:root[data-theme="dark"] .codehilite .bp { color: #81A1C1 } /* Name.Builtin.Pseudo */
+:root[data-theme="dark"] .codehilite .fm { color: #88C0D0 } /* Name.Function.Magic */
+:root[data-theme="dark"] .codehilite .vc { color: #D8DEE9 } /* Name.Variable.Class */
+:root[data-theme="dark"] .codehilite .vg { color: #D8DEE9 } /* Name.Variable.Global */
+:root[data-theme="dark"] .codehilite .vi { color: #D8DEE9 } /* Name.Variable.Instance */
+:root[data-theme="dark"] .codehilite .vm { color: #D8DEE9 } /* Name.Variable.Magic */
+:root[data-theme="dark"] .codehilite .il { color: #B48EAD } /* Literal.Number.Integer.Long */
+</style>
+</head>
+<body>
+<a class="skip" href="#main">본문으로 건너뛰기</a>
+<header class="top">
+  <button class="menu" type="button" aria-controls="side" aria-expanded="false">목차</button>
+  <span class="site">생성형 AI 교재</span>
+  <nav class="days" aria-label="일자">
+<a href="index.html">차례</a>
+<a href="01_LLM은_어떻게_글을_만드는가.html">1장</a>
+<a href="02_모델은_어떻게_만들어지는가.html">2장</a>
+<a href="03_컨텍스트.html">3장</a>
+<a href="04_프롬프트_설계.html">4장</a>
+<a href="05_LLM_API.html">5장</a>
+<a href="06_구조화_출력.html">6장</a>
+<a href="11_파인튜닝.html" class="here">11장</a>
+<a href="12_경량화와_배포.html">12장</a>
+<a href="14_코딩_에이전트와_멀티_에이전트.html">14장</a>
+<a href="15_보안과_거버넌스.html">15장</a>
+  </nav>
+  <button class="width" type="button">넓게 보기</button>
+  <button class="theme" type="button">어두운 화면</button>
+</header>
+<div class="layout">
+  <aside class="side" id="side">
+    <label class="search">
+      <span>이 쪽에서 찾기</span>
+      <input type="search" placeholder="예: 토큰, 재시도" autocomplete="off">
+    </label>
+    <div class="hits" hidden></div>
+    <nav class="toc" aria-label="목차">
+<ul>
+<li class="l1"><a href="#11장-파인튜닝">11장 파인튜닝</a></li>
+<li class="l2"><a href="#학습-목표">학습 목표</a></li>
+<li class="l2"><a href="#프롬프트-RAG-파인튜닝">프롬프트, RAG, 파인튜닝</a></li>
+<li class="l2"><a href="#학습-데이터가-배치가-되기까지">학습 데이터가 배치가 되기까지</a></li>
+<li class="l2"><a href="#경사-하강법과-학습률">경사 하강법과 학습률</a></li>
+<li class="l2"><a href="#배치-에포크-과적합">배치, 에포크, 과적합</a></li>
+<li class="l2"><a href="#전체-파인튜닝과-LoRA">전체 파인튜닝과 LoRA</a></li>
+<li class="l2"><a href="#CPU에서-LoRA-학습하기">CPU에서 LoRA 학습하기</a></li>
+<li class="l2"><a href="#학습한-모델에서-점검할-것">학습한 모델에서 점검할 것</a></li>
+<li class="l3"><a href="#평가셋">평가셋</a></li>
+<li class="l3"><a href="#망각">망각</a></li>
+<li class="l3"><a href="#환각">환각</a></li>
+<li class="l2"><a href="#개념-확인-실습">개념 확인 실습</a></li>
+<li class="l2"><a href="#자가점검">자가점검</a></li>
+<li class="l2"><a href="#참고-문헌">참고 문헌</a></li>
+</ul>
+    </nav>
+  </aside>
+  <main id="main">
+<article class="part">
+<h1 id="11장-파인튜닝">11장 파인튜닝</h1>
+<p>강의 6일차 파트 1과 파트 3에 해당합니다.</p>
+<p>프롬프트와 RAG(retrieval-augmented generation)는 모델에 보내는 입력을 바꿉니다. 파인튜닝은 모델의 파라미터 자체를 바꿉니다. 이 장은 언제 파라미터를 바꿔야 하는지, 학습이 파라미터를 어떻게 고치는지, 적은 메모리로 고치는 방법인 LoRA(low-rank adaptation)가 어떻게 동작하는지, 학습한 모델에서 무엇을 점검해야 하는지를 설명합니다.</p>
+<h2 id="학습-목표">학습 목표</h2>
+<ol>
+<li>프롬프트, RAG, 파인튜닝이 각각 무엇을 바꾸는지 설명하고, 모델이 모르는 사실이 문제인지 형식과 판단 기준을 따르지 않는 것이 문제인지로 셋 중 하나를 고를 수 있습니다.</li>
+<li>학습 데이터가 채팅 템플릿, 최대 길이, 패딩을 거쳐 배치가 되고, 손실은 답 부분에서만 계산된다는 것을 설명할 수 있습니다.</li>
+<li>경사 하강법이 파라미터를 고치는 과정과 학습률, 배치, 에포크의 뜻을 설명하고, 학습 데이터와 평가셋의 결과로 과적합을 알아볼 수 있습니다.</li>
+<li>LoRA가 원래 행렬을 고정하고 작은 행렬 두 개만 학습하는 원리를 설명하고, 학습하는 파라미터 수를 계산할 수 있습니다.</li>
+<li>파인튜닝한 모델을 평가셋, 망각, 환각의 세 가지로 점검하고, 파인튜닝해도 환각이 없어지지 않는 이유를 설명할 수 있습니다.</li>
+</ol>
+<p>예제 11-1~11-3과 실습 11-1, 11-2는 PC의 CPU(central processing unit)에서 1장의 공개 LLM(large language model)인 Qwen2.5-0.5B-Instruct를 학습하고 실행합니다. 예제 11-3의 학습은 몇 분 걸립니다. 실습 11-3은 GPU(graphics processing unit)가 있는 환경에서 실행합니다. 이 장은 준비 셀의 연결 확인 말고는 API(application programming interface)를 호출하지 않습니다. 손실, 걸린 시간, 학습한 모델의 답은 PC, 라이브러리 버전, 실행할 때마다 교재와 다를 수 있습니다.</p>
+<h2 id="프롬프트-RAG-파인튜닝">프롬프트, RAG, 파인튜닝</h2>
+<div class="gist">
+<p>프롬프트와 RAG는 요청마다 보내는 입력을 바꾸고, 파인튜닝은 모델의 파라미터를 바꿉니다. 모델이 모르는 사실이 필요하면 RAG를, 프롬프트에 적어도 형식이나 판단 기준을 지키지 않으면 파인튜닝을 검토합니다.</p>
+</div>
+<p><span class="term" tabindex="0" data-def="사전 학습을 마친 모델을 특정한 목적의 데이터로 추가로 학습시키는 것">파인튜닝</span>(fine-tuning)은 사전 학습을 마친 모델을 특정한 목적의 데이터로 더 학습시키는 것입니다. 방법은 2장의 SFT(supervised fine-tuning)와 같습니다. 입력과 모범 답의 쌍을 넣고, 모범 답에 높은 확률을 주도록 파라미터를 고칩니다. SFT와 다른 것은 데이터입니다. 모델 회사는 온갖 주제의 대화로 학습시키고, 파인튜닝은 우리 업무의 입력과 답으로 학습시킵니다.</p>
+<figure>
+<svg viewBox="0 0 680 222" role="img" aria-label="프롬프트와 RAG는 요청마다 보내는 입력(지시와 예시, 검색한 문서, 질문)에 들어가 모델에 전달됩니다. 파인튜닝은 학습 데이터로 모델의 파라미터를 고치므로, 학습한 뒤에는 그 모델로 보내는 모든 요청에 적용됩니다.">
+<rect x="10" y="14" width="236" height="150" rx="8" fill="none" stroke="var(--teal)" stroke-dasharray="6 4"/><text x="128" y="34" text-anchor="middle" fill="var(--teal)" font-size="12" font-weight="700">입력: 요청마다 보냄</text><rect x="24" y="46" width="208" height="30" rx="6" fill="var(--sheet)" stroke="var(--line)"/><text x="128" y="66" text-anchor="middle" fill="var(--ink)" font-size="12">프롬프트: 지시와 예시</text><rect x="24" y="84" width="208" height="30" rx="6" fill="var(--sheet)" stroke="var(--line)"/><text x="128" y="104" text-anchor="middle" fill="var(--ink)" font-size="12">RAG: 검색한 문서</text><rect x="24" y="122" width="208" height="30" rx="6" fill="var(--sheet)" stroke="var(--line)"/><text x="128" y="142" text-anchor="middle" fill="var(--ink)" font-size="12">질문</text><line x1="250" y1="89" x2="290.0" y2="89.0" stroke="var(--teal)" stroke-width="2"/><polygon points="290.0,94.0 298,89 290.0,84.0" fill="var(--teal)"/><rect x="300" y="54" width="170" height="70" rx="8" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="385" y="84" text-anchor="middle" fill="var(--ink)" font-size="13" font-weight="700">모델</text><text x="385" y="104" text-anchor="middle" fill="var(--ink-soft)" font-size="11">파라미터 약 4.9억 개</text><line x1="474" y1="89" x2="514.0" y2="89.0" stroke="var(--teal)" stroke-width="2"/><polygon points="514.0,94.0 522,89 514.0,84.0" fill="var(--teal)"/><rect x="524" y="66" width="146" height="46" rx="6" fill="var(--sheet)" stroke="var(--line)"/><text x="597" y="94" text-anchor="middle" fill="var(--ink)" font-size="12">응답</text><rect x="300" y="170" width="170" height="40" rx="6" fill="var(--amber-wash)" stroke="var(--amber)"/><text x="385" y="195" text-anchor="middle" fill="var(--ink)" font-size="12">파인튜닝: 학습 데이터</text><line x1="385" y1="168" x2="385.0" y2="136.0" stroke="var(--amber)" stroke-width="2"/><polygon points="390.0,136.0 385,128 380.0,136.0" fill="var(--amber)"/><text x="396" y="152" fill="var(--amber)" font-size="12" font-weight="700">파라미터를 고침</text><text x="490" y="195" fill="var(--ink-soft)" font-size="12">학습한 뒤 모든 요청에 적용</text>
+</svg>
+<figcaption>프롬프트와 RAG는 입력을 바꾸고, 파인튜닝은 모델의 파라미터를 바꿉니다.</figcaption>
+</figure>
+
+<p>세 방법 가운데 무엇을 쓸지는 지금 겪는 문제가 무엇인지로 정합니다.</p>
+<ul>
+<li>지시를 프롬프트에 적어서 원하는 결과가 나오면 프롬프트로 끝냅니다. 학습 데이터를 만들 필요도, 학습한 모델을 따로 운영할 필요도 없습니다.</li>
+<li>모델이 모르는 사실(사내 기준값, 최근 개정 내용)이 필요하면 RAG를 씁니다. 사실은 문서에 있으므로, 문서가 바뀌면 인덱스만 다시 만들면 됩니다. 사실을 파인튜닝으로 넣으면 문서가 바뀔 때마다 다시 학습해야 하고, 학습한 사실을 모델이 정확히 꺼낸다는 보장도 없습니다("학습한 모델에서 점검할 것" 절).</li>
+<li>프롬프트에 규칙을 적어도 모델이 형식이나 판단 기준을 지키지 않으면 파인튜닝을 검토합니다. 사내 표준 형식, 글로 다 적기 어려운 분류 기준, 정해진 말투가 여기에 해당합니다. 이런 것은 규칙을 글로 설명하는 것보다 입력과 답의 예 수십~수백 건으로 보여 주는 편이 모델에 잘 전달됩니다.</li>
+<li>요청마다 긴 지시와 예시를 넣고 있으면 파인튜닝으로 그 입력을 줄일 수 있습니다. 작은 모델을 파인튜닝해 큰 모델 대신 쓰면 비용도 줄어듭니다(12장).</li>
+</ul>
+<p>두 방법을 함께 쓸 수도 있습니다. 사실은 RAG로 찾아 넣고, 답하는 형식은 파인튜닝으로 익히게 하는 구성입니다.</p>
+<p>이 장의 예제는 설비 알람을 사내 표준 형식 "설비코드 | 분류 | 담당"으로 바꾸는 과제를 씁니다. 예를 들어 "3호기 와이어 본더 본딩 강도 기준 미달 로트 발생"은 "WB-03 | 품질 | 품질팀"이 됩니다. 설비코드는 설비 종류의 약어(와이어 본더는 WB)에 호기를 붙인 것이고, 분류는 안전, 품질, 설비 중 하나이며, 담당은 분류에 따라 정해집니다. 모델이 모르는 사실이 아니라 회사가 정한 형식과 기준을 따르는 과제이므로 파인튜닝을 검토할 만한 과제입니다. 알람은 학습 데이터 64건과 평가셋 32건으로 나눠 두었습니다(<code>노트북/data/알람.csv</code>).</p>
+<h2 id="학습-데이터가-배치가-되기까지">학습 데이터가 배치가 되기까지</h2>
+<div class="gist">
+<p>학습 데이터 한 건은 채팅 템플릿을 거쳐 토큰 ID의 나열이 됩니다. 여러 건을 한 번에 계산하려고 패딩으로 길이를 맞추고, 손실은 모델이 생성해야 할 답 부분에서만 계산합니다.</p>
+</div>
+<p>학습 데이터 한 건은 알람(입력)과 표준 형식(모범 답)의 쌍입니다. 모델이 받는 것은 토큰 ID의 나열 하나뿐이므로, 학습 코드는 이 쌍을 다음 순서로 바꿉니다.</p>
+<ol>
+<li>채팅 템플릿(3장)으로 시스템 프롬프트, 알람, 답을 글 한 덩어리로 잇습니다. 학습한 모델을 쓸 때도 같은 템플릿으로 입력해야 합니다. 템플릿이 다르면 모델이 학습한 형식과 실제 입력이 달라 학습한 대로 답하지 않습니다.</li>
+<li>토크나이저로 토큰 ID의 나열로 바꿉니다. 이때 <span class="term" tabindex="0" data-def="학습이나 토큰화에서 한 건의 토큰 수 상한. 넘는 뒤쪽은 잘린다. 모델의 컨텍스트 윈도우와 별개로 학습 코드가 정한다">최대 길이</span>(max length)를 넘는 뒤쪽은 잘라 냅니다. 학습에 드는 메모리와 시간은 토큰 수에 따라 늘어나므로 상한을 둡니다.</li>
+<li>여러 건을 묶어 한 번에 계산합니다. 묶은 단위를 <span class="term" tabindex="0" data-def="학습에서 파라미터를 한 번 고치는 데 쓰는 학습 데이터 묶음. 여러 건을 행렬 하나로 한꺼번에 계산한다. 배치 처리와 다른 말이다">배치</span>(batch)라고 합니다. 배치는 행렬 하나로 계산하므로 모든 행의 길이가 같아야 합니다. 그래서 짧은 행의 뒤에 <span class="term" tabindex="0" data-def="배치 안의 길이를 맞추려고 짧은 행의 뒤에 채우는 토큰. 계산과 손실에서 뺀다">패딩</span>(padding) 토큰을 채웁니다. 함께 만드는 <span class="term" tabindex="0" data-def="위치마다 실제 토큰이면 1, 패딩이면 0을 적은 목록. 모델은 0인 위치를 계산에 쓰지 않는다">어텐션 마스크</span>(attention mask)는 위치마다 실제 토큰이면 1, 패딩이면 0이고, 모델은 0인 위치를 계산에 쓰지 않습니다.</li>
+<li>손실을 계산할 위치를 정합니다. 위치마다 정답 토큰을 적은 목록(<code>labels</code>)에서 프롬프트와 패딩 위치는 -100으로 바꿉니다. -100인 위치는 손실 계산에서 빠집니다.</li>
+</ol>
+<figure>
+<svg viewBox="0 0 680 178" role="img" aria-label="학습 데이터 3건으로 만든 배치. 알람 1은 프롬프트 50토큰과 답 16토큰으로 66토큰이고, 알람 2는 프롬프트 51토큰, 답 12토큰에 패딩 3토큰, 알람 3은 프롬프트 46토큰, 답 12토큰에 패딩 8토큰을 붙여 모두 66토큰으로 맞춥니다. 손실은 답 부분에서만 계산하고, 프롬프트와 패딩은 뺍니다.">
+<text x="110" y="16" fill="var(--ink-soft)" font-size="11">토큰 66개(가장 긴 알람에 맞춤)</text><text x="10" y="45" fill="var(--ink)" font-size="12">알람 1 (66토큰)</text><rect x="110" y="26" width="350" height="28" rx="0" fill="var(--sheet)" stroke="var(--line)"/><text x="285" y="45" text-anchor="middle" fill="var(--ink)" font-size="11">프롬프트 50토큰</text><rect x="460" y="26" width="112" height="28" rx="0" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="516" y="45" text-anchor="middle" fill="var(--ink)" font-size="11">답 16</text><text x="10" y="83" fill="var(--ink)" font-size="12">알람 2 (63토큰)</text><rect x="110" y="64" width="357" height="28" rx="0" fill="var(--sheet)" stroke="var(--line)"/><text x="288.5" y="83" text-anchor="middle" fill="var(--ink)" font-size="11">프롬프트 51토큰</text><rect x="467" y="64" width="84" height="28" rx="0" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="509" y="83" text-anchor="middle" fill="var(--ink)" font-size="11">답 12</text><rect x="551" y="64" width="21" height="28" rx="0" fill="var(--amber-wash)" stroke="var(--amber)" stroke-dasharray="4 3"/><text x="10" y="121" fill="var(--ink)" font-size="12">알람 3 (58토큰)</text><rect x="110" y="102" width="322" height="28" rx="0" fill="var(--sheet)" stroke="var(--line)"/><text x="271" y="121" text-anchor="middle" fill="var(--ink)" font-size="11">프롬프트 46토큰</text><rect x="432" y="102" width="84" height="28" rx="0" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="474" y="121" text-anchor="middle" fill="var(--ink)" font-size="11">답 12</text><rect x="516" y="102" width="56" height="28" rx="0" fill="var(--amber-wash)" stroke="var(--amber)" stroke-dasharray="4 3"/><text x="544" y="121" text-anchor="middle" fill="var(--ink)" font-size="11">패딩 8</text><rect x="110" y="152" width="16" height="14" rx="0" fill="var(--sheet)" stroke="var(--line)"/><text x="132" y="164" fill="var(--ink)" font-size="11">손실에서 뺌(labels -100)</text><rect x="290" y="152" width="16" height="14" rx="0" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="312" y="164" fill="var(--ink)" font-size="11">손실을 계산하는 답</text><rect x="450" y="152" width="16" height="14" rx="0" fill="var(--amber-wash)" stroke="var(--amber)" stroke-dasharray="4 3"/><text x="472" y="164" fill="var(--ink)" font-size="11">패딩(마스크 0, 손실에서 뺌)</text>
+</svg>
+<figcaption>세 건의 길이를 패딩으로 맞추고, 손실은 답 부분에서만 계산합니다(예제 11-1).</figcaption>
+</figure>
+
+<p>손실을 답 부분에서만 계산하는 이유는 가르치려는 것이 "알람이 주어지면 표준 형식으로 답하기"이기 때문입니다. 프롬프트까지 손실에 넣으면 모델은 시스템 프롬프트와 알람 글을 이어 쓰는 법도 함께 학습합니다. 최대 길이가 프롬프트보다 짧으면 답이 모두 잘려 손실을 계산할 위치가 하나도 남지 않으므로, 최대 길이는 가장 긴 학습 데이터의 토큰 수를 세어 정합니다.</p>
+<section class="box example" id="예제-11-1">
+<header><span class="box-no">예제 11-1</span><span class="box-title">패딩과 손실을 계산하는 위치</span><span class="box-where">노트북 <code>11_파인튜닝.ipynb</code>의 <code>예제 11-1</code></span></header>
+<p>학습 데이터 세 건을 배치 하나로 만들고, 건마다 실제 토큰, 패딩, 손실을 계산하는 토큰의 개수와 손실을 계산하는 부분의 글을 출력합니다. 마지막 줄에서는 최대 길이를 40토큰으로 줄였을 때 손실을 계산하는 부분에 무엇이 남는지 봅니다. <code>make_batch()</code>는 준비 셀에 있는 함수로, 이 절의 네 단계를 실행합니다.</p>
+<div class="codehilite"><pre><span></span><code><span class="n">batch</span> <span class="o">=</span> <span class="n">make_batch</span><span class="p">(</span><span class="n">train_rows</span><span class="p">[:</span><span class="mi">3</span><span class="p">])</span>                  <span class="c1"># 학습 데이터 3건을 배치 하나로 만듭니다</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'배치의 크기(건수, 토큰 수):'</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">batch</span><span class="p">[</span><span class="s1">'input_ids'</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span>
+<span class="k">for</span> <span class="n">row</span><span class="p">,</span> <span class="n">ids</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">labels</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">train_rows</span><span class="p">[:</span><span class="mi">3</span><span class="p">],</span> <span class="n">batch</span><span class="p">[</span><span class="s1">'input_ids'</span><span class="p">],</span> <span class="n">batch</span><span class="p">[</span><span class="s1">'attention_mask'</span><span class="p">],</span> <span class="n">batch</span><span class="p">[</span><span class="s1">'labels'</span><span class="p">]):</span>
+    <span class="n">real</span><span class="p">,</span> <span class="n">padding</span><span class="p">,</span> <span class="n">scored</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">mask</span><span class="o">.</span><span class="n">sum</span><span class="p">()),</span> <span class="nb">int</span><span class="p">((</span><span class="n">mask</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()),</span> <span class="nb">int</span><span class="p">((</span><span class="n">labels</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">100</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="si">{</span><span class="n">row</span><span class="p">[</span><span class="s1">'알람'</span><span class="p">]</span><span class="si">}</span><span class="se">\n</span><span class="s2">  실제 토큰 </span><span class="si">{</span><span class="n">real</span><span class="si">}</span><span class="s2">개, 패딩 </span><span class="si">{</span><span class="n">padding</span><span class="si">}</span><span class="s2">개, 손실을 계산하는 토큰 </span><span class="si">{</span><span class="n">scored</span><span class="si">}</span><span class="s2">개"</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">'  마지막 6토큰:'</span><span class="p">,</span> <span class="nb">repr</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">ids</span><span class="p">[</span><span class="o">-</span><span class="mi">6</span><span class="p">:])))</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">'  손실을 계산하는 부분:'</span><span class="p">,</span> <span class="nb">repr</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">labels</span><span class="p">[</span><span class="n">labels</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">100</span><span class="p">])))</span>
+
+<span class="n">short</span> <span class="o">=</span> <span class="n">make_batch</span><span class="p">(</span><span class="n">train_rows</span><span class="p">[:</span><span class="mi">1</span><span class="p">],</span> <span class="n">max_length</span><span class="o">=</span><span class="mi">40</span><span class="p">)</span>   <span class="c1"># 최대 길이를 40토큰으로 줄이면</span>
+<span class="n">labels</span> <span class="o">=</span> <span class="n">short</span><span class="p">[</span><span class="s1">'labels'</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'</span><span class="se">\n</span><span class="s1">최대 길이 40토큰일 때 손실을 계산하는 부분:'</span><span class="p">,</span> <span class="nb">repr</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">labels</span><span class="p">[</span><span class="n">labels</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">100</span><span class="p">])))</span>
+</code></pre></div>
+
+<div class="result">
+<div class="codehilite"><pre><span></span><code>배치의 크기(건수, 토큰 수): (3, 66)
+
+3호기 와이어 본더 본딩 강도 기준 미달 로트 발생
+  실제 토큰 66개, 패딩 0개, 손실을 계산하는 토큰 16개
+  마지막 6토큰: ' 품질팀&lt;|im_end|&gt;'
+  손실을 계산하는 부분: 'WB-03 | 품질 | 품질팀&lt;|im_end|&gt;'
+
+다이싱 소 1호기 스핀들 회전수 알람으로 설비 정지
+  실제 토큰 63개, 패딩 3개, 손실을 계산하는 토큰 12개
+  마지막 6토큰: '전팀&lt;|im_end|&gt;&lt;|endoftext|&gt;&lt;|endoftext|&gt;&lt;|endoftext|&gt;'
+  손실을 계산하는 부분: 'DS-01 | 설비 | 보전팀&lt;|im_end|&gt;'
+
+마킹기 2번 레이저 출력 저하 알람
+  실제 토큰 58개, 패딩 8개, 손실을 계산하는 토큰 12개
+  마지막 6토큰: '&lt;|endoftext|&gt;&lt;|endoftext|&gt;&lt;|endoftext|&gt;&lt;|endoftext|&gt;&lt;|endoftext|&gt;&lt;|endoftext|&gt;'
+  손실을 계산하는 부분: 'MK-02 | 설비 | 보전팀&lt;|im_end|&gt;'
+
+최대 길이 40토큰일 때 손실을 계산하는 부분: ''
+</code></pre></div>
+
+</div>
+</section>
+<p>세 건 모두 가장 긴 66토큰에 맞춰졌고, 손실을 계산하는 부분은 답과 끝 표시 토큰 <code>&lt;|im_end|&gt;</code>뿐입니다. 끝 표시까지 학습하므로 학습한 모델은 답을 쓴 뒤 생성을 멈춥니다. 최대 길이를 40토큰으로 줄이자 손실을 계산하는 부분이 빈 글이 되었습니다.</p>
+<h2 id="경사-하강법과-학습률">경사 하강법과 학습률</h2>
+<div class="gist">
+<p>경사 하강법은 파라미터마다 기울기를 구하고, 기울기의 반대 방향으로 학습률만큼 파라미터를 옮기는 일을 되풀이합니다. 학습률이 너무 작으면 손실이 거의 줄지 않고, 너무 크면 최솟값을 지나쳐 손실이 오히려 커집니다.</p>
+</div>
+<p>2장에서 학습은 손실이 줄어드는 방향으로 파라미터를 조금씩 고치는 일이라고 했습니다. 그 방향을 정하는 값이 <span class="term" tabindex="0" data-def="파라미터를 아주 조금 늘렸을 때 손실이 얼마나 늘거나 주는지를 나타내는 값. 파라미터마다 하나씩 있다">기울기</span>(gradient)입니다. 기울기는 파라미터 하나를 아주 조금 늘렸을 때 손실이 얼마나 늘거나 주는지를 나타냅니다. 기울기가 음수면 파라미터를 늘릴 때 손실이 줄고, 양수면 파라미터를 줄일 때 손실이 줍니다. 그래서 <span class="term" tabindex="0" data-def="손실이 줄어드는 방향을 계산해 파라미터를 그 방향으로 조금씩 고치는 학습 방법">경사 하강법</span>(gradient descent)은 파라미터에서 기울기에 <span class="term" tabindex="0" data-def="경사 하강법에서 기울기에 곱해 파라미터를 한 번에 얼마나 고칠지 정하는 값">학습률</span>(learning rate)을 곱한 만큼을 뺍니다.</p>
+<blockquote>
+<p>새 파라미터 = 파라미터 - 학습률 × 기울기</p>
+</blockquote>
+<p>파라미터가 w 하나이고 손실이 (w - 3)²인 문제로 계산해 보면 다음과 같습니다. 손실이 가장 작은 곳은 w=3입니다. w=0에서 손실은 9이고, 기울기는 2 × (0 - 3) = -6입니다. 학습률이 0.1이면 w는 0 - 0.1 × (-6) = 0.6이 되고 손실은 5.76으로 줄어듭니다. 이 한 번의 수정을 <span class="term" tabindex="0" data-def="배치 하나로 기울기를 구해 파라미터를 한 번 고치는 것">스텝</span>(step)이라고 합니다.</p>
+<figure>
+<svg viewBox="0 0 680 220" role="img" aria-label="손실이 (w - 3)²인 파라미터 w 하나에 학습률 0.1로 경사 하강법을 적용한 그림. w=0에서 손실 9, 기울기 -6이고, 한 스텝 뒤 w는 0.6(손실 5.76), 다섯 스텝 뒤 2.02(손실 0.97)로 최솟값 w=3에 다가갑니다. 최솟값에 가까울수록 기울기가 작아져 한 스텝에 움직이는 거리도 줄어듭니다.">
+<line x1="60" y1="196" x2="630" y2="196" stroke="var(--line)"/><line x1="60" y1="20" x2="60" y2="196" stroke="var(--line)"/><polyline points="60.0,28.0 67.0,36.3 74.0,44.4 81.0,52.3 88.0,59.9 95.0,67.4 102.0,74.6 109.0,81.7 116.0,88.5 123.0,95.1 130.0,101.5 137.0,107.7 144.0,113.7 151.0,119.5 158.0,125.0 165.0,130.4 172.0,135.5 179.0,140.5 186.0,145.2 193.0,149.7 200.0,154.0 207.0,158.1 214.0,162.0 221.0,165.7 228.0,169.1 235.0,172.4 242.0,175.4 249.0,178.3 256.0,180.9 263.0,183.3 270.0,185.5 277.0,187.5 284.0,189.3 291.0,190.9 298.0,192.2 305.0,193.4 312.0,194.3 319.0,195.1 326.0,195.6 333.0,195.9 340.0,196.0 347.0,195.9 354.0,195.6 361.0,195.1 368.0,194.3 375.0,193.4 382.0,192.2 389.0,190.9 396.0,189.3 403.0,187.5 410.0,185.5 417.0,183.3 424.0,180.9 431.0,178.3 438.0,175.4 445.0,172.4 452.0,169.1 459.0,165.7 466.0,162.0 473.0,158.1 480.0,154.0 487.0,149.7 494.0,145.2 501.0,140.5 508.0,135.5 515.0,130.4 522.0,125.0 529.0,119.5 536.0,113.7 543.0,107.7 550.0,101.5 557.0,95.1 564.0,88.5 571.0,81.7 578.0,74.6 585.0,67.4 592.0,59.9 599.0,52.3 606.0,44.4 613.0,36.3 620.0,28.0" fill="none" stroke="var(--ink-soft)" stroke-width="1.5"/><text x="640" y="200" fill="var(--ink-soft)" font-size="12">w</text><text x="66" y="18" fill="var(--ink-soft)" font-size="12">손실 (w - 3)²</text><text x="130" y="212" text-anchor="middle" fill="var(--ink-soft)" font-size="11">0</text><text x="550" y="212" text-anchor="middle" fill="var(--ink-soft)" font-size="11">6</text><circle cx="130.0" cy="101.5" r="4" fill="var(--teal)"/><line x1="130.0" y1="101.5" x2="172.0" y2="135.5" stroke="var(--teal)" stroke-width="1.5" stroke-dasharray="3 3"/><circle cx="172.0" cy="135.5" r="4" fill="var(--teal)"/><line x1="172.0" y1="135.5" x2="205.6" y2="157.3" stroke="var(--teal)" stroke-width="1.5" stroke-dasharray="3 3"/><circle cx="205.6" cy="157.3" r="4" fill="var(--teal)"/><line x1="205.6" y1="157.3" x2="232.5" y2="171.2" stroke="var(--teal)" stroke-width="1.5" stroke-dasharray="3 3"/><circle cx="232.5" cy="171.2" r="4" fill="var(--teal)"/><line x1="232.5" y1="171.2" x2="254.0" y2="180.1" stroke="var(--teal)" stroke-width="1.5" stroke-dasharray="3 3"/><circle cx="254.0" cy="180.1" r="4" fill="var(--teal)"/><line x1="254.0" y1="180.1" x2="271.2" y2="185.9" stroke="var(--teal)" stroke-width="1.5" stroke-dasharray="3 3"/><circle cx="271.2" cy="185.9" r="4" fill="var(--teal)"/><text x="138" y="95.5" fill="var(--ink)" font-size="11">시작 w=0, 손실 9, 기울기 -6</text><text x="182" y="139.52" fill="var(--ink)" font-size="11">1스텝 뒤 w=0.6, 손실 5.76</text><line x1="275.2" y1="181.8" x2="318" y2="140" stroke="var(--ink-soft)"/><text x="320" y="138" fill="var(--ink)" font-size="11">5스텝 뒤 w=2.02, 손실 0.97</text><circle cx="340" cy="196" r="4" fill="none" stroke="var(--amber)" stroke-width="2"/><text x="340" y="212" text-anchor="middle" fill="var(--amber)" font-size="11" font-weight="700">최솟값 w=3</text>
+</svg>
+<figcaption>학습률 0.1로 다섯 스텝을 진행하면 w가 0에서 2.02로 다가갑니다.</figcaption>
+</figure>
+
+<p>실제 모델의 파라미터는 수억 개이고, 손실은 그 전부에 걸린 함수입니다. 학습 코드는 손실을 계산한 뒤 <code>loss.backward()</code>를 호출해 모든 파라미터의 기울기를 한 번에 구합니다. 출력 쪽 층에서 입력 쪽 층으로 거슬러 가며 미분을 계산하므로 이 계산을 <span class="term" tabindex="0" data-def="손실에서 출발해 출력 쪽 층부터 입력 쪽 층으로 거슬러 가며 모든 파라미터의 기울기를 구하는 계산">역전파</span>(backpropagation)라고 합니다. 이어서 <span class="term" tabindex="0" data-def="기울기로 파라미터를 고치는 규칙을 구현한 것. AdamW는 파라미터마다 최근 기울기의 평균과 크기를 기억해 스텝의 폭을 조절한다">옵티마이저</span>(optimizer)가 기울기로 파라미터를 고칩니다. 예제가 쓰는 AdamW는 파라미터마다 최근 기울기의 평균과 크기를 기억해 두고 스텝의 폭을 파라미터마다 조절하는 옵티마이저이며, 학습률은 그 폭 전체의 크기를 정합니다.</p>
+<p>학습률은 사람이 정하는 값입니다. 너무 작으면 스텝마다 조금씩만 움직여 같은 횟수를 학습해도 손실이 거의 줄지 않습니다. 너무 크면 최솟값을 지나쳐 반대편으로 넘어가고, 넘어간 거리가 처음보다 멀면 스텝마다 손실이 커집니다. 학습 중에 손실이 오르내리거나 갑자기 커지면 학습률을 의심합니다. 여러 학습률의 결과는 실습 11-1에서 계산합니다.</p>
+<h2 id="배치-에포크-과적합">배치, 에포크, 과적합</h2>
+<div class="gist">
+<p>배치 하나로 파라미터를 한 번 고치는 것이 스텝이고, 학습 데이터 전체를 한 번 다 쓰는 것이 에포크입니다. 학습 데이터의 손실만 보면 과적합을 알 수 없으므로, 학습에 쓰지 않은 평가셋으로 함께 측정합니다.</p>
+</div>
+<p>기울기는 배치 하나의 평균 손실로 계산합니다. 한 건씩 고치면 그 건에만 맞춰 방향이 매번 바뀌고, 데이터 전체로 한 번에 계산하면 메모리가 부족하기 때문입니다. 배치가 클수록 기울기가 안정되지만 메모리가 더 듭니다. 학습 데이터 전체를 한 번 다 쓰는 단위를 <span class="term" tabindex="0" data-def="학습 데이터 전체를 한 번 다 쓰는 학습 단위">에포크</span>(epoch)라고 합니다.</p>
+<figure>
+<svg viewBox="0 0 680 112" role="img" aria-label="학습 데이터 64건을 8건씩 배치 8개로 나눕니다. 배치마다 파라미터를 한 번 고치는 것이 스텝이고, 배치 8개를 모두 한 번 쓰면 1에포크(8스텝)입니다. 예제 11-3은 3에포크, 모두 24스텝을 학습합니다.">
+<rect x="20" y="30" width="50" height="34" rx="6" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="45" y="52" text-anchor="middle" fill="var(--ink)" font-size="11">배치 1</text><rect x="78" y="30" width="50" height="34" rx="6" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="103" y="52" text-anchor="middle" fill="var(--ink)" font-size="11">배치 2</text><rect x="136" y="30" width="50" height="34" rx="6" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="161" y="52" text-anchor="middle" fill="var(--ink)" font-size="11">배치 3</text><rect x="194" y="30" width="50" height="34" rx="6" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="219" y="52" text-anchor="middle" fill="var(--ink)" font-size="11">배치 4</text><rect x="252" y="30" width="50" height="34" rx="6" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="277" y="52" text-anchor="middle" fill="var(--ink)" font-size="11">배치 5</text><rect x="310" y="30" width="50" height="34" rx="6" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="335" y="52" text-anchor="middle" fill="var(--ink)" font-size="11">배치 6</text><rect x="368" y="30" width="50" height="34" rx="6" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="393" y="52" text-anchor="middle" fill="var(--ink)" font-size="11">배치 7</text><rect x="426" y="30" width="50" height="34" rx="6" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="451" y="52" text-anchor="middle" fill="var(--ink)" font-size="11">배치 8</text><text x="20" y="20" fill="var(--ink)" font-size="12" font-weight="700">학습 데이터 64건을 8건씩 나눈 배치 8개</text><path d="M20 74 L20 82 L484 82 L484 74" fill="none" stroke="var(--ink-soft)"/><text x="252" y="100" text-anchor="middle" fill="var(--ink)" font-size="12">1에포크 = 8스텝(배치마다 파라미터를 한 번 고침)</text><rect x="510" y="30" width="160" height="70" rx="6" fill="var(--amber-wash)" stroke="var(--amber)"/><text x="590" y="58" text-anchor="middle" fill="var(--ink)" font-size="12" font-weight="700">3에포크</text><text x="590" y="80" text-anchor="middle" fill="var(--ink)" font-size="12">8스텝 × 3 = 24스텝</text>
+</svg>
+<figcaption>배치 하나가 스텝 하나이고, 학습 데이터를 한 번 다 쓰면 1에포크입니다(예제 11-3).</figcaption>
+</figure>
+
+<p>에포크를 늘리면 학습 데이터의 손실은 계속 내려갑니다. 그러다 모델이 학습 데이터의 문장 자체를 외우기 시작하면, 처음 보는 입력에서는 오히려 결과가 나빠집니다. 이 상태를 <span class="term" tabindex="0" data-def="모델이 학습 데이터에만 맞춰져, 학습 데이터의 결과는 좋아지는데 처음 보는 입력의 결과는 나빠지는 상태">과적합</span>(overfitting)이라고 합니다. 2장의 예제 2-1에서 문장 30개로 1,000번 학습한 작은 모델이 학습한 문장을 거의 그대로 외운 것도 과적합입니다.</p>
+<p>과적합은 학습 데이터만으로는 알 수 없습니다. 그래서 학습을 시작하기 전에 데이터의 일부를 <span class="term" tabindex="0" data-def="결과를 측정하려고 따로 떼어 둔 입력과 정답의 묶음. 학습이나 프롬프트 수정에 쓰지 않는다">평가셋</span>(evaluation set)으로 떼어 두고, 학습에는 쓰지 않습니다. 평가셋의 손실이나 정확도가 좋아지다가 나빠지기 시작하면 그 앞에서 학습을 멈추고, 학습 데이터를 늘리거나 에포크를 줄입니다.</p>
+<figure>
+<svg viewBox="0 0 680 194" role="img" aria-label="에포크에 따른 두 손실의 개념도. 학습 데이터의 손실(청록색)은 에포크가 늘수록 계속 내려갑니다. 평가셋의 손실(주황색)은 처음에는 함께 내려가다가 어느 에포크부터 다시 올라갑니다. 다시 오르기 시작한 뒤가 과적합이고, 평가셋 손실이 가장 낮은 곳에서 학습을 멈춥니다.">
+<line x1="60" y1="170" x2="630" y2="170" stroke="var(--line)"/><line x1="60" y1="20" x2="60" y2="170" stroke="var(--line)"/><text x="620" y="188" text-anchor="middle" fill="var(--ink-soft)" font-size="11">에포크</text><text x="66" y="16" fill="var(--ink-soft)" font-size="11">손실</text><polyline points="60,30.0 71,40.0 82,49.2 93,57.7 104,65.6 115,72.9 126,79.6 137,85.7 148,91.5 159,96.7 170,101.6 181,106.1 192,110.2 203,114.1 214,117.6 225,120.8 236,123.9 247,126.6 258,129.2 269,131.6 280,133.8 291,135.8 302,137.6 313,139.4 324,140.9 335,142.4 346,143.8 357,145.0 368,146.2 379,147.2 390,148.2 401,149.1 412,150.0 423,150.7 434,151.4 445,152.1 456,152.7 467,153.3 478,153.8 489,154.3 500,154.7 511,155.1 522,155.5 533,155.8 544,156.2 555,156.4 566,156.7 577,157.0 588,157.2 599,157.4 610,157.6" fill="none" stroke="var(--teal)" stroke-width="2"/><polyline points="60,30.0 71,40.5 82,49.9 93,58.5 104,66.3 115,73.3 126,79.6 137,85.4 148,90.6 159,95.3 170,99.5 181,103.4 192,106.9 203,110.0 214,112.9 225,115.5 236,117.8 247,119.9 258,121.7 269,123.2 280,124.3 291,125.2 302,125.9 313,126.4 324,126.7 335,126.9 346,126.9 357,126.8 368,126.6 379,126.2 390,125.8 401,125.2 412,124.6 423,123.9 434,123.1 445,122.2 456,121.2 467,120.2 478,119.2 489,118.0 500,116.9 511,115.6 522,114.3 533,113.0 544,111.6 555,110.2 566,108.8 577,107.3 588,105.7 599,104.2 610,102.6" fill="none" stroke="var(--amber)" stroke-width="2"/><line x1="346" y1="24" x2="346" y2="170" stroke="var(--ink-soft)" stroke-dasharray="4 4"/><text x="354" y="36" fill="var(--ink-soft)" font-size="11">평가셋 손실이 가장 낮은 곳에서 멈춤</text><text x="600" y="100" text-anchor="end" fill="var(--amber)" font-size="12" font-weight="700">평가셋 손실: 다시 오름</text><text x="600" y="150" text-anchor="end" fill="var(--teal)" font-size="12" font-weight="700">학습 데이터 손실: 계속 내려감</text>
+</svg>
+<figcaption>학습 데이터의 손실은 계속 내려가는데 평가셋의 손실이 오르기 시작하면 과적합입니다(개념도).</figcaption>
+</figure>
+
+<h2 id="전체-파인튜닝과-LoRA">전체 파인튜닝과 LoRA</h2>
+<div class="gist">
+<p>전체 파인튜닝은 모든 파라미터를 고치므로 기울기와 옵티마이저 상태까지 파라미터 수만큼 메모리가 듭니다. LoRA는 원래 행렬을 고정하고 옆에 붙인 작은 행렬 두 개만 학습해, 학습하는 파라미터를 1% 아래로 줄입니다.</p>
+</div>
+<p>모든 파라미터를 고치는 <span class="term" tabindex="0" data-def="모델의 모든 파라미터를 고치는 파인튜닝. 파라미터마다 기울기와 옵티마이저 상태를 메모리에 둔다">전체 파인튜닝</span>(full fine-tuning)은 파라미터마다 기울기와 옵티마이저 상태(AdamW는 값 두 개)를 메모리에 둡니다. 파라미터 70억 개 모델이면 이것만으로 GPU 한 장의 메모리를 넘습니다(12장에서 계산합니다). 학습이 끝나면 모델 전체의 사본이 하나 생기므로, 과제가 열 개면 사본도 열 개입니다.</p>
+<p><span class="term" tabindex="0" data-def="원래 행렬을 고정하고, 옆에 붙인 작은 행렬 두 개(A, B)만 학습하는 파인튜닝 방법. 두 행렬의 곱을 원래 행렬의 결과에 더한다">LoRA</span>(low-rank adaptation)는 원래 행렬 W를 고정하고, 옆에 작은 행렬 두 개 A와 B를 붙여 그것만 학습합니다(Hu 외, 2021). W가 d × k 행렬일 때 A는 r × k, B는 d × r이고, 둘을 곱한 BA는 W와 크기가 같은 d × k 행렬입니다. r을 <span class="term" tabindex="0" data-def="LoRA에서 작은 행렬 A와 B의 안쪽 크기 r. 클수록 학습하는 값이 많아진다">rank</span>라고 하며 보통 4~64로 작게 둡니다. 출력은 원래 행렬의 결과에 BA의 결과를 더한 것입니다. 더할 때 곱하는 α / r에서 α(<code>lora_alpha</code>)는 BA의 효과를 얼마나 크게 반영할지 정하는 값입니다.</p>
+<figure>
+<svg viewBox="0 0 680 204" role="img" aria-label="LoRA의 구조. 입력 x는 원래 행렬 W(896 × 896, 802,816개, 고정)를 지나는 길과, 작은 행렬 A(8 × 896)와 B(896 × 8)를 차례로 지나는 길로 나뉘고, 두 결과를 더한 Wx + (α / r) × BAx가 출력입니다. 학습하는 것은 A와 B의 14,336개뿐으로 W의 1.8%입니다. B는 0에서 시작하므로 학습 전에는 원래 모델과 출력이 같습니다.">
+<rect x="10" y="70" width="70" height="40" rx="6" fill="var(--sheet)" stroke="var(--line)"/><text x="45" y="95" text-anchor="middle" fill="var(--ink)" font-size="12">입력 x</text><line x1="80" y1="90" x2="123.8" y2="55.0" stroke="var(--ink-soft)" stroke-width="2"/><polygon points="126.9,58.9 130,50 120.6,51.1" fill="var(--ink-soft)"/><line x1="80" y1="90" x2="124.3" y2="134.3" stroke="var(--teal)" stroke-width="2"/><polygon points="120.8,137.9 130,140 127.9,130.8" fill="var(--teal)"/><rect x="132" y="22" width="250" height="56" rx="6" fill="var(--sheet)" stroke="var(--line)"/><text x="257" y="44" text-anchor="middle" fill="var(--ink)" font-size="12" font-weight="700">W: 896 × 896 (고정)</text><text x="257" y="64" text-anchor="middle" fill="var(--ink-soft)" font-size="11">802,816개, 학습하지 않음</text><rect x="132" y="112" width="118" height="56" rx="6" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="191" y="134" text-anchor="middle" fill="var(--ink)" font-size="12" font-weight="700">A: 8 × 896</text><text x="191" y="154" text-anchor="middle" fill="var(--ink)" font-size="11">7,168개</text><line x1="250" y1="140" x2="254.0" y2="140.0" stroke="var(--teal)" stroke-width="2"/><polygon points="254.0,145.0 262,140 254.0,135.0" fill="var(--teal)"/><rect x="264" y="112" width="118" height="56" rx="6" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="323" y="134" text-anchor="middle" fill="var(--ink)" font-size="12" font-weight="700">B: 896 × 8</text><text x="323" y="154" text-anchor="middle" fill="var(--ink)" font-size="11">7,168개, 0에서 시작</text><text x="257" y="190" text-anchor="middle" fill="var(--teal)" font-size="12" font-weight="700">학습하는 행렬: 14,336개(W의 1.8%)</text><line x1="382" y1="50" x2="423.7" y2="83.0" stroke="var(--ink-soft)" stroke-width="2"/><polygon points="420.6,87.0 430,88 426.8,79.1" fill="var(--ink-soft)"/><line x1="382" y1="140" x2="424.0" y2="103.3" stroke="var(--teal)" stroke-width="2"/><polygon points="427.3,107.0 430,98 420.7,99.5" fill="var(--teal)"/><circle cx="446" cy="93" r="14" fill="var(--paper)" stroke="var(--ink)"/><text x="446" y="98" text-anchor="middle" fill="var(--ink)" font-size="16" font-weight="700">+</text><line x1="460" y1="93" x2="484.0" y2="93.0" stroke="var(--ink-soft)" stroke-width="2"/><polygon points="484.0,98.0 492,93 484.0,88.0" fill="var(--ink-soft)"/><rect x="494" y="64" width="176" height="58" rx="6" fill="var(--sheet)" stroke="var(--line)"/><text x="582" y="88" text-anchor="middle" fill="var(--ink)" font-size="12" font-weight="700">출력</text><text x="582" y="108" text-anchor="middle" fill="var(--ink)" font-size="12">Wx + (α / r) × BAx</text>
+</svg>
+<figcaption>원래 행렬 W는 고정하고, 옆에 붙인 작은 행렬 A와 B만 학습합니다(rank r=8, q_proj 하나).</figcaption>
+</figure>
+
+<p>이 방식이 통하는 이유와 특징은 다음과 같습니다.</p>
+<ul>
+<li>BA는 크기가 W와 같지만 rank가 r 이하인 행렬이므로, LoRA는 W에 더할 변화를 이런 단순한 행렬로 제한합니다. Hu 외(2021)는 GPT-3 175B에서 r을 1~8 정도로 작게 두어도 전체 파인튜닝과 비슷하거나 나은 성능이 나왔고, 학습하는 파라미터는 1만분의 1로, 학습에 필요한 GPU 메모리는 3분의 1로 줄었다고 보고했습니다. 파인튜닝으로 생기는 변화가 그만큼 단순한 경우가 많다는 뜻입니다.</li>
+<li>B를 0으로 시작하므로 학습 전에는 BA가 0이고, 모델의 출력이 원래 모델과 같습니다. 학습은 원래 모델에서 출발합니다.</li>
+<li>학습한 A와 B만 따로 저장한 파일을 <span class="term" tabindex="0" data-def="LoRA로 학습한 행렬만 따로 저장한 것. 원래 모델에 붙이거나 떼어 쓴다">어댑터</span>(adapter)라고 합니다. 원래 모델 하나에 과제마다 어댑터를 바꿔 붙일 수 있고, 어댑터를 떼면 원래 모델로 돌아갑니다.</li>
+<li>학습한 뒤 BA를 W에 더해 행렬 하나로 합치면 생성 속도가 원래 모델과 같습니다(Hu 외, 2021).</li>
+<li>Biderman 외(2024)는 같은 과제에서 LoRA가 전체 파인튜닝보다 목표 과제를 덜 학습하는 대신, 학습하지 않은 과제의 능력을 덜 잃었다고 보고했습니다. 잃는 능력은 "학습한 모델에서 점검할 것" 절에서 다룹니다.</li>
+</ul>
+<p>LoRA처럼 파라미터의 일부만 학습하는 방법을 묶어 PEFT(parameter-efficient fine-tuning)라고 부르며, Hugging Face의 <code>peft</code> 라이브러리가 이런 방법들을 구현합니다.</p>
+<section class="box example" id="예제-11-2">
+<header><span class="box-no">예제 11-2</span><span class="box-title">LoRA가 학습하는 파라미터 수</span><span class="box-where">노트북 <code>11_파인튜닝.ipynb</code>의 <code>예제 11-2</code></span></header>
+<p>0번 층 어텐션의 <code>q_proj</code> 행렬 하나에 rank를 바꿔 LoRA를 붙일 때 학습하는 값의 수를 계산하고, 24개 층의 <code>q_proj</code>와 <code>v_proj</code>에 r=8로 LoRA를 붙인 모델에서 학습하는 파라미터의 비율을 셉니다. 행렬이 클수록 LoRA가 학습하는 비율이 작아지는 것을 봅니다.</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">peft</span><span class="w"> </span><span class="kn">import</span> <span class="n">LoraConfig</span><span class="p">,</span> <span class="n">get_peft_model</span>
+
+<span class="n">q_proj</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">layers</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">self_attn</span><span class="o">.</span><span class="n">q_proj</span>     <span class="c1"># 0번 층 어텐션의 행렬 하나</span>
+<span class="n">d_out</span><span class="p">,</span> <span class="n">d_in</span> <span class="o">=</span> <span class="n">q_proj</span><span class="o">.</span><span class="n">weight</span><span class="o">.</span><span class="n">shape</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'q_proj 행렬 </span><span class="si">{</span><span class="n">d_out</span><span class="si">}</span><span class="s1">×</span><span class="si">{</span><span class="n">d_in</span><span class="si">}</span><span class="s1">: </span><span class="si">{</span><span class="n">q_proj</span><span class="o">.</span><span class="n">weight</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span><span class="si">:</span><span class="s1">,</span><span class="si">}</span><span class="s1">개'</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">rank</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">64</span><span class="p">]:</span>
+    <span class="n">lora_count</span> <span class="o">=</span> <span class="n">rank</span> <span class="o">*</span> <span class="p">(</span><span class="n">d_out</span> <span class="o">+</span> <span class="n">d_in</span><span class="p">)</span>              <span class="c1"># B(d_out×r)와 A(r×d_in)의 값의 수</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'  r=</span><span class="si">{</span><span class="n">rank</span><span class="si">}</span><span class="s1">: B와 A </span><span class="si">{</span><span class="n">lora_count</span><span class="si">:</span><span class="s1">,</span><span class="si">}</span><span class="s1">개 (</span><span class="si">{</span><span class="n">lora_count</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">q_proj</span><span class="o">.</span><span class="n">weight</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span><span class="si">:</span><span class="s1">.1%</span><span class="si">}</span><span class="s1">)'</span><span class="p">)</span>
+
+<span class="c1"># target_modules: LoRA를 붙일 행렬의 이름. 24개 층마다 q_proj와 v_proj에 붙입니다</span>
+<span class="n">config</span> <span class="o">=</span> <span class="n">LoraConfig</span><span class="p">(</span><span class="n">r</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">lora_alpha</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span> <span class="n">target_modules</span><span class="o">=</span><span class="p">[</span><span class="s1">'q_proj'</span><span class="p">,</span> <span class="s1">'v_proj'</span><span class="p">],</span> <span class="n">task_type</span><span class="o">=</span><span class="s1">'CAUSAL_LM'</span><span class="p">)</span>
+<span class="n">lora_model</span> <span class="o">=</span> <span class="n">get_peft_model</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>          <span class="c1"># 원래 파라미터는 고정하고 LoRA 행렬만 학습 대상으로 둡니다</span>
+<span class="n">trainable</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">lora_model</span><span class="o">.</span><span class="n">parameters</span><span class="p">()</span> <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">requires_grad</span><span class="p">)</span>
+<span class="n">total</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">lora_model</span><span class="o">.</span><span class="n">parameters</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'</span><span class="se">\n</span><span class="s1">학습하는 파라미터 </span><span class="si">{</span><span class="n">trainable</span><span class="si">:</span><span class="s1">,</span><span class="si">}</span><span class="s1">개 / 전체 </span><span class="si">{</span><span class="n">total</span><span class="si">:</span><span class="s1">,</span><span class="si">}</span><span class="s1">개 = </span><span class="si">{</span><span class="n">trainable</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">total</span><span class="si">:</span><span class="s1">.2%</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
+</code></pre></div>
+
+<div class="result">
+<div class="codehilite"><pre><span></span><code>q_proj 행렬 896×896: 802,816개
+  r=1: B와 A 1,792개 (0.2%)
+  r=8: B와 A 14,336개 (1.8%)
+  r=64: B와 A 114,688개 (14.3%)
+
+학습하는 파라미터 540,672개 / 전체 494,573,440개 = 0.11%
+</code></pre></div>
+
+</div>
+</section>
+<p><code>q_proj</code> 하나에서는 r=8이 1.8%이지만 모델 전체로는 0.11%입니다. LoRA를 붙이지 않은 임베딩과 다른 행렬이 파라미터의 대부분을 차지하기 때문입니다.</p>
+<h2 id="CPU에서-LoRA-학습하기">CPU에서 LoRA 학습하기</h2>
+<div class="gist">
+<p>학습 데이터 64건으로 3에포크를 학습하면, 처음에는 표준 형식을 모르던 모델이 처음 보는 알람에도 표준 형식으로 답합니다. 손실이 줄었다는 것은 학습 데이터에 맞춰졌다는 뜻일 뿐이므로, 판단 기준까지 익혔는지는 평가셋으로 따로 확인합니다.</p>
+</div>
+<section class="box example" id="예제-11-3">
+<header><span class="box-no">예제 11-3</span><span class="box-title">CPU에서 LoRA 학습</span><span class="box-where">노트북 <code>11_파인튜닝.ipynb</code>의 <code>예제 11-3</code></span></header>
+<p>예제 11-2에서 LoRA를 붙인 모델을 학습 데이터 64건으로 배치 8건씩, 3에포크(24스텝) 학습합니다. 에포크마다 평균 손실과 걸린 시간을 출력하고, 학습 전후에 평가셋의 알람 세 건에 대한 답을 비교합니다. CPU에서 몇 분 걸립니다.</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+
+<span class="n">optimizer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">AdamW</span><span class="p">([</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">lora_model</span><span class="o">.</span><span class="n">parameters</span><span class="p">()</span> <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">requires_grad</span><span class="p">],</span> <span class="n">lr</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">)</span>
+<span class="n">samples</span> <span class="o">=</span> <span class="n">eval_rows</span><span class="p">[:</span><span class="mi">3</span><span class="p">]</span>                                       <span class="c1"># 학습에 쓰지 않은 알람</span>
+<span class="n">before</span> <span class="o">=</span> <span class="p">[</span><span class="n">answer</span><span class="p">(</span><span class="n">lora_model</span><span class="p">,</span> <span class="n">row</span><span class="p">[</span><span class="s1">'알람'</span><span class="p">])</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">samples</span><span class="p">]</span>   <span class="c1"># B가 0이므로 원래 모델의 답과 같습니다</span>
+<span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
+    <span class="n">lora_model</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>
+    <span class="n">losses</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">train_rows</span><span class="p">),</span> <span class="mi">8</span><span class="p">):</span>                <span class="c1"># 배치 8건마다 한 스텝</span>
+        <span class="n">loss</span> <span class="o">=</span> <span class="n">lora_model</span><span class="p">(</span><span class="o">**</span><span class="n">make_batch</span><span class="p">(</span><span class="n">train_rows</span><span class="p">[</span><span class="n">index</span><span class="p">:</span><span class="n">index</span> <span class="o">+</span> <span class="mi">8</span><span class="p">]))</span><span class="o">.</span><span class="n">loss</span>
+        <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>                                       <span class="c1"># 기울기를 구하고</span>
+        <span class="n">optimizer</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>                                      <span class="c1"># 파라미터를 고친 뒤</span>
+        <span class="n">optimizer</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">()</span>                                 <span class="c1"># 다음 스텝을 위해 기울기를 비웁니다</span>
+        <span class="n">losses</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">loss</span><span class="o">.</span><span class="n">item</span><span class="p">())</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'에포크 </span><span class="si">{</span><span class="n">epoch</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s1">: 평균 손실 </span><span class="si">{</span><span class="nb">sum</span><span class="p">(</span><span class="n">losses</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nb">len</span><span class="p">(</span><span class="n">losses</span><span class="p">)</span><span class="si">:</span><span class="s1">.3f</span><span class="si">}</span><span class="s1">, 누적 </span><span class="si">{</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">start</span><span class="si">:</span><span class="s1">.0f</span><span class="si">}</span><span class="s1">초'</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">row</span><span class="p">,</span> <span class="n">old</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">samples</span><span class="p">,</span> <span class="n">before</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="si">{</span><span class="n">row</span><span class="p">[</span><span class="s1">'알람'</span><span class="p">]</span><span class="si">}</span><span class="se">\n</span><span class="s2">  학습 전: </span><span class="si">{</span><span class="n">old</span><span class="p">[:</span><span class="mi">45</span><span class="p">]</span><span class="si">}</span><span class="se">\n</span><span class="s2">  학습 후: </span><span class="si">{</span><span class="n">answer</span><span class="p">(</span><span class="n">lora_model</span><span class="p">,</span><span class="w"> </span><span class="n">row</span><span class="p">[</span><span class="s1">'알람'</span><span class="p">])</span><span class="si">}</span><span class="s2">  (정답 </span><span class="si">{</span><span class="n">row</span><span class="p">[</span><span class="s1">'표준'</span><span class="p">]</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
+</code></pre></div>
+
+<div class="result">
+<div class="codehilite"><pre><span></span><code>에포크 1: 평균 손실 2.333, 누적 120초
+에포크 2: 평균 손실 0.229, 누적 244초
+에포크 3: 평균 손실 0.092, 누적 364초
+
+몰딩기 4호기 금형 근처에서 작업자 손 끼임 위험 감지
+  학습 전: 물론입니다. 아래는 설비 알람을 사내 표준 형식으로 바꾸
+  학습 후: MD-04 | 안전 | 안전팀  (정답 MD-04 | 안전 | 안전팀)
+
+다이 본더 6호기 접착제 보이드 비율 기준 초과
+  학습 전: 다이 본더 6호기의 접착제 보이드 비율에 대한 정보
+  학습 후: BD-06 | 설비 | 보전팀  (정답 DB-06 | 품질 | 품질팀)
+
+7호기 다이싱 소 냉각수 누수로 바닥 미끄러움
+  학습 전: 죄송합니다, 하지만 현재 제게 제공된 정보에 따라 이 문제를 해결하는 방법은
+  학습 후: DS-07 | 안전 | 안전팀  (정답 DS-07 | 안전 | 안전팀)
+</code></pre></div>
+
+</div>
+</section>
+<p>교재의 실행에서 3에포크는 약 5분(319초) 걸렸고, 에포크마다 평균 손실이 2.333, 0.229, 0.092로 줄었습니다. 학습 전에는 세 알람 모두 표준 형식과 무관한 문장으로 답했고, 학습 후에는 모두 "설비코드 | 분류 | 담당" 형식으로 답했습니다. 그러나 다이 본더 알람은 설비코드를 BD-06으로, 분류를 설비로 답해 틀렸습니다. 64건으로 형식은 익혔지만 약어와 분류 기준을 모두 익혔다고 할 수는 없습니다.</p>
+<h2 id="학습한-모델에서-점검할-것">학습한 모델에서 점검할 것</h2>
+<div class="gist">
+<p>학습한 모델은 평가셋의 정확도, 학습과 무관한 질문에서 잃은 능력(망각), 모르는 것을 지어내는지(환각)의 세 가지로 점검합니다. 파인튜닝은 답하는 형식과 기준을 바꾸지만, 모델이 사실을 확인하게 만들지는 않습니다.</p>
+</div>
+<h3 id="평가셋">평가셋</h3>
+<p>학습 손실이 낮아도 처음 보는 입력에서 맞히는지는 알 수 없습니다. 학습에 쓰지 않은 평가셋으로 학습 전후의 정확도를 측정하고, 학습 전 모델은 규칙을 다 적은 프롬프트로 측정해 "프롬프트로 충분한가"와 비교합니다(실습 11-2). 평균 정확도만 보지 않고, 학습 전에는 맞히다가 학습 후에 틀린 건이 있는지도 봅니다.</p>
+<h3 id="망각">망각</h3>
+<p>새 과제를 학습하면서 원래 하던 일을 못 하게 되는 현상을 <span class="term" tabindex="0" data-def="새 과제를 학습하면서 원래 하던 일을 못 하게 되는 현상">망각</span>(catastrophic forgetting)이라고 합니다. 파인튜닝은 학습 데이터에 대한 손실만 줄이도록 파라미터를 고치고, 학습 데이터에 없는 일을 그대로 유지하라는 신호는 주지 않기 때문입니다. 학습 데이터가 한 가지 과제뿐이면, 모델은 어떤 입력에도 그 과제의 형식으로 답하는 쪽으로 학습될 수 있습니다. 학습과 무관한 질문 몇 개를 정해 두고 학습 전후의 답을 비교하면 망각을 확인할 수 있습니다. LoRA는 어댑터를 떼면 원래 모델로 돌아가므로, 같은 모델에서 전후를 바로 비교할 수 있습니다(실습 11-2).</p>
+<h3 id="환각">환각</h3>
+<p>파인튜닝으로 사실을 가르치면 모델이 그 사실을 믿을 만하게 답할 것 같지만, 그렇지 않습니다. Gekhman 외(2024)는 모델이 사전 학습에서 몰랐던 사실을 파인튜닝으로 학습시키는 실험에서, 모델이 그런 예를 이미 알던 사실보다 느리게 학습했고, 그런 예를 학습할수록 환각이 늘었다고 보고했습니다. 저자들은 모델이 사실을 주로 사전 학습에서 익히고, 파인튜닝에서는 이미 아는 것을 쓰는 방법을 익힌다고 해석했습니다. 모르던 사실을 억지로 학습시키면 자기 지식에 근거하지 않은 답을 생성하는 법도 함께 학습한다는 것입니다.</p>
+<p>2장에서 설명한 환각의 원인도 파인튜닝으로 사라지지 않습니다. 학습 목표는 여전히 모범 답의 토큰에 높은 확률을 주는 것이고, 모델이 답하기 전에 사실을 확인하는 단계는 생기지 않습니다. 그래서 문서에 있는 사실은 RAG로 찾아 넣고 근거를 표시하게 하며, 파인튜닝은 형식과 기준을 익히는 데 씁니다.</p>
+<h2 id="개념-확인-실습">개념 확인 실습</h2>
+<p>실습은 장 노트북의 빈칸을 채워 실행합니다. 코드를 실행하기 전에 결과를 먼저 예측해 적고, 실행한 뒤 예측과 다른 부분을 이 장의 원리로 설명해 봅니다. 실습 11-1은 바로 끝나고, 실습 11-2는 예제 11-3에서 학습한 모델을 쓰며 CPU에서 몇 분 걸립니다. 실습 11-3은 GPU가 있는 환경에서 실행합니다.</p>
+<section class="box practice" id="실습-11-1">
+<header><span class="box-no">실습 11-1</span><span class="box-title">학습률 바꾸기</span><span class="box-where">노트북 <code>11_파인튜닝.ipynb</code>의 <code>실습 11-1</code></span></header>
+<p>손실 (w - 3)²에서 w=0으로 시작해 경사 하강법을 다섯 스텝 진행하는 <code>descend()</code>를 작성합니다. 학습률 0.01, 0.5, 0.9, 1.1에서 다섯 스텝 뒤의 w가 최솟값 3에 가까워질지, 멀어질지 먼저 <code>my_guess</code>에 적습니다. 결과를 보고, 학습률 1.1에서 w가 어떻게 움직였는지 기울기로 설명하면 끝납니다.</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">descend</span><span class="p">(</span><span class="n">learning_rate</span><span class="p">,</span> <span class="n">steps</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">w</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""손실 (w - 3)²에 경사 하강법을 steps번 적용하고, 스텝마다의 w를 목록으로 돌려줍니다"""</span>
+    <span class="n">history</span> <span class="o">=</span> <span class="p">[</span><span class="n">w</span><span class="p">]</span>
+    <span class="c1"># TODO: 기울기 2 × (w - 3)을 구하고, w에서 학습률 × 기울기를 빼는 일을 steps번 되풀이합니다</span>
+    <span class="k">return</span> <span class="n">history</span>
+
+
+<span class="n">my_guess</span> <span class="o">=</span> <span class="p">{</span><span class="mf">0.01</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span> <span class="mf">1.1</span><span class="p">:</span> <span class="kc">None</span><span class="p">}</span>  <span class="c1"># TODO: '가까워짐' 또는 '멀어짐'</span>
+<span class="k">for</span> <span class="n">learning_rate</span> <span class="ow">in</span> <span class="p">[</span><span class="mf">0.01</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span> <span class="mf">1.1</span><span class="p">]:</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">descend</span><span class="p">(</span><span class="n">learning_rate</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"학습률 </span><span class="si">{</span><span class="n">learning_rate</span><span class="si">}</span><span class="s2">: w </span><span class="si">{</span><span class="s1">' → '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">w</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">'</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">w</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">path</span><span class="p">)</span><span class="si">}</span><span class="s2">, "</span>
+          <span class="sa">f</span><span class="s1">'손실 </span><span class="si">{</span><span class="p">(</span><span class="n">path</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span><span class="w"> </span><span class="o">**</span><span class="w"> </span><span class="mi">2</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1"> (예측 </span><span class="si">{</span><span class="n">my_guess</span><span class="p">[</span><span class="n">learning_rate</span><span class="p">]</span><span class="si">}</span><span class="s1">)'</span><span class="p">)</span>
+</code></pre></div>
+
+<details class="answer">
+<summary>풀이 보기</summary>
+<p>스텝마다 기울기를 구해 학습률을 곱한 만큼 w에서 뺍니다.</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">descend</span><span class="p">(</span><span class="n">learning_rate</span><span class="p">,</span> <span class="n">steps</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">w</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""손실 (w - 3)²에 경사 하강법을 steps번 적용하고, 스텝마다의 w를 목록으로 돌려줍니다"""</span>
+    <span class="n">history</span> <span class="o">=</span> <span class="p">[</span><span class="n">w</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">steps</span><span class="p">):</span>
+        <span class="n">gradient</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">w</span> <span class="o">-</span> <span class="mi">3</span><span class="p">)</span>
+        <span class="n">w</span> <span class="o">=</span> <span class="n">w</span> <span class="o">-</span> <span class="n">learning_rate</span> <span class="o">*</span> <span class="n">gradient</span>
+        <span class="n">history</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">w</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">history</span>
+
+
+<span class="n">my_guess</span> <span class="o">=</span> <span class="p">{</span><span class="mf">0.01</span><span class="p">:</span> <span class="s1">'가까워짐'</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">:</span> <span class="s1">'가까워짐'</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">:</span> <span class="s1">'가까워짐'</span><span class="p">,</span> <span class="mf">1.1</span><span class="p">:</span> <span class="s1">'멀어짐'</span><span class="p">}</span>
+<span class="k">for</span> <span class="n">learning_rate</span> <span class="ow">in</span> <span class="p">[</span><span class="mf">0.01</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span> <span class="mf">1.1</span><span class="p">]:</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">descend</span><span class="p">(</span><span class="n">learning_rate</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"학습률 </span><span class="si">{</span><span class="n">learning_rate</span><span class="si">}</span><span class="s2">: w </span><span class="si">{</span><span class="s1">' → '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">w</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">'</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">w</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">path</span><span class="p">)</span><span class="si">}</span><span class="s2">, "</span>
+          <span class="sa">f</span><span class="s1">'손실 </span><span class="si">{</span><span class="p">(</span><span class="n">path</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span><span class="w"> </span><span class="o">**</span><span class="w"> </span><span class="mi">2</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1"> (예측 </span><span class="si">{</span><span class="n">my_guess</span><span class="p">[</span><span class="n">learning_rate</span><span class="p">]</span><span class="si">}</span><span class="s1">)'</span><span class="p">)</span>
+</code></pre></div>
+
+<div class="result">
+<div class="codehilite"><pre><span></span><code>학습률 0.01: w 0.00 → 0.06 → 0.12 → 0.18 → 0.23 → 0.29, 손실 7.35 (예측 가까워짐)
+학습률 0.5: w 0.00 → 3.00 → 3.00 → 3.00 → 3.00 → 3.00, 손실 0.00 (예측 가까워짐)
+학습률 0.9: w 0.00 → 5.40 → 1.08 → 4.54 → 1.77 → 3.98, 손실 0.97 (예측 가까워짐)
+학습률 1.1: w 0.00 → 6.60 → -1.32 → 8.18 → -3.22 → 10.46, 손실 55.73 (예측 멀어짐)
+</code></pre></div>
+
+</div>
+<p>학습률 0.01은 다섯 스텝 뒤에도 w가 0.29로 거의 움직이지 않았고, 0.5는 첫 스텝에 정확히 3에 이르렀습니다. 0.9는 3을 지나쳐 양쪽을 오가면서 다가갔고, 1.1은 지나친 거리가 스텝마다 커져 w가 10.46까지 멀어졌습니다. 한 스텝 뒤의 w - 3은 스텝 전의 w - 3에 (1 - 2 × 학습률)을 곱한 값이므로, 학습률이 1을 넘으면 이 곱의 절댓값이 1보다 커져 스텝마다 멀어집니다.</p>
+</details>
+</section>
+<section class="box practice" id="실습-11-2">
+<header><span class="box-no">실습 11-2</span><span class="box-title">평가셋과 망각 점검</span><span class="box-where">노트북 <code>11_파인튜닝.ipynb</code>의 <code>실습 11-2</code></span></header>
+<p>평가셋 32건으로 두 가지 정확도를 측정합니다. 하나는 LoRA를 뗀 원래 모델에 규칙을 모두 적은 시스템 프롬프트(<code>RULES</code>)를 준 정확도이고, 다른 하나는 예제 11-3에서 학습한 모델에 짧은 지시만 준 정확도입니다. 이어서 학습과 무관한 질문 하나를 LoRA를 뗀 모델과 학습한 모델에 물어 답을 비교합니다. <code>accuracy()</code>를 작성하고 두 정확도를 먼저 <code>my_guess</code>에 적습니다. 결과를 보고, 프롬프트와 파인튜닝 중 이 과제에 무엇이 나은지, 학습한 모델이 무엇을 잃었는지 한 문장씩 설명하면 끝납니다. CPU에서 몇 분 걸립니다.</p>
+<div class="codehilite"><pre><span></span><code><span class="n">RULES</span> <span class="o">=</span> <span class="p">(</span><span class="s1">'설비 알람을 사내 표준 형식 "설비코드 | 분류 | 담당"으로 바꿔 답한다.</span><span class="se">\n</span><span class="s1">'</span>
+         <span class="s1">'설비코드: 다이싱 소 DS, 다이 본더 DB, 와이어 본더 WB, 몰딩기 MD, 마킹기 MK, 테스트 핸들러 TH 뒤에 '</span>
+         <span class="s1">'호기 두 자리를 붙인다. 예: 3호기 와이어 본더 → WB-03</span><span class="se">\n</span><span class="s1">'</span>
+         <span class="s1">'분류: 사람이 다치거나 다칠 위험이 있으면 안전, 제품의 측정값이나 외관이 기준을 벗어났으면 품질, '</span>
+         <span class="s1">'그 밖의 설비 동작 이상이면 설비</span><span class="se">\n</span><span class="s1">'</span>
+         <span class="s1">'담당: 설비는 보전팀, 품질은 품질팀, 안전은 안전팀</span><span class="se">\n</span><span class="s1">'</span>
+         <span class="s1">'예: 3호기 와이어 본더 본딩 강도 기준 미달 로트 발생 → WB-03 | 품질 | 품질팀'</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">accuracy</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">rows</span><span class="p">,</span> <span class="n">system</span><span class="o">=</span><span class="n">SYSTEM</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""rows의 알람마다 answer()로 답을 받아, 표준 열과 글자까지 같은 비율을 돌려줍니다"""</span>
+    <span class="k">return</span> <span class="mf">0.0</span>  <span class="c1"># TODO</span>
+
+
+<span class="n">my_guess</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'학습 전, 규칙 프롬프트'</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span> <span class="s1">'학습 후, 짧은 지시'</span><span class="p">:</span> <span class="kc">None</span><span class="p">}</span>  <span class="c1"># TODO: 평가셋 정확도를 0~1로 적습니다</span>
+<span class="k">with</span> <span class="n">lora_model</span><span class="o">.</span><span class="n">disable_adapter</span><span class="p">():</span>                  <span class="c1"># 이 블록 안에서는 LoRA를 뗀 원래 모델이 답합니다</span>
+    <span class="n">before</span> <span class="o">=</span> <span class="n">accuracy</span><span class="p">(</span><span class="n">lora_model</span><span class="p">,</span> <span class="n">eval_rows</span><span class="p">,</span> <span class="n">system</span><span class="o">=</span><span class="n">RULES</span><span class="p">)</span>
+<span class="n">after</span> <span class="o">=</span> <span class="n">accuracy</span><span class="p">(</span><span class="n">lora_model</span><span class="p">,</span> <span class="n">eval_rows</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'학습 전, 규칙 프롬프트: </span><span class="si">{</span><span class="n">before</span><span class="si">:</span><span class="s1">.0%</span><span class="si">}</span><span class="s1"> / 학습 후, 짧은 지시: </span><span class="si">{</span><span class="n">after</span><span class="si">:</span><span class="s1">.0%</span><span class="si">}</span><span class="s1"> (예측 </span><span class="si">{</span><span class="n">my_guess</span><span class="si">}</span><span class="s1">)'</span><span class="p">)</span>
+
+<span class="n">question</span> <span class="o">=</span> <span class="s1">'대한민국의 수도는 어디인가요?'</span>
+<span class="c1"># TODO: question을 system='질문에 한 문장으로 답한다.'로 LoRA를 뗀 모델과 학습한 모델에 각각 묻고 답을 출력합니다</span>
+</code></pre></div>
+
+<details class="answer">
+<summary>풀이 보기</summary>
+<p><code>answer()</code>의 결과를 표준 열과 비교해 맞은 건수를 셉니다. 망각 점검은 같은 질문을 <code>disable_adapter()</code> 블록 안과 밖에서 묻습니다.</p>
+<div class="codehilite"><pre><span></span><code><span class="n">RULES</span> <span class="o">=</span> <span class="p">(</span><span class="s1">'설비 알람을 사내 표준 형식 "설비코드 | 분류 | 담당"으로 바꿔 답한다.</span><span class="se">\n</span><span class="s1">'</span>
+         <span class="s1">'설비코드: 다이싱 소 DS, 다이 본더 DB, 와이어 본더 WB, 몰딩기 MD, 마킹기 MK, 테스트 핸들러 TH 뒤에 '</span>
+         <span class="s1">'호기 두 자리를 붙인다. 예: 3호기 와이어 본더 → WB-03</span><span class="se">\n</span><span class="s1">'</span>
+         <span class="s1">'분류: 사람이 다치거나 다칠 위험이 있으면 안전, 제품의 측정값이나 외관이 기준을 벗어났으면 품질, '</span>
+         <span class="s1">'그 밖의 설비 동작 이상이면 설비</span><span class="se">\n</span><span class="s1">'</span>
+         <span class="s1">'담당: 설비는 보전팀, 품질은 품질팀, 안전은 안전팀</span><span class="se">\n</span><span class="s1">'</span>
+         <span class="s1">'예: 3호기 와이어 본더 본딩 강도 기준 미달 로트 발생 → WB-03 | 품질 | 품질팀'</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">accuracy</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">rows</span><span class="p">,</span> <span class="n">system</span><span class="o">=</span><span class="n">SYSTEM</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""rows의 알람마다 answer()로 답을 받아, 표준 열과 글자까지 같은 비율을 돌려줍니다"""</span>
+    <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">answer</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">row</span><span class="p">[</span><span class="s1">'알람'</span><span class="p">],</span> <span class="n">system</span><span class="p">)</span> <span class="o">==</span> <span class="n">row</span><span class="p">[</span><span class="s1">'표준'</span><span class="p">]</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">rows</span><span class="p">)</span>
+
+
+<span class="n">my_guess</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'학습 전, 규칙 프롬프트'</span><span class="p">:</span> <span class="mf">0.3</span><span class="p">,</span> <span class="s1">'학습 후, 짧은 지시'</span><span class="p">:</span> <span class="mf">0.7</span><span class="p">}</span>
+<span class="k">with</span> <span class="n">lora_model</span><span class="o">.</span><span class="n">disable_adapter</span><span class="p">():</span>                  <span class="c1"># 이 블록 안에서는 LoRA를 뗀 원래 모델이 답합니다</span>
+    <span class="n">before</span> <span class="o">=</span> <span class="n">accuracy</span><span class="p">(</span><span class="n">lora_model</span><span class="p">,</span> <span class="n">eval_rows</span><span class="p">,</span> <span class="n">system</span><span class="o">=</span><span class="n">RULES</span><span class="p">)</span>
+<span class="n">after</span> <span class="o">=</span> <span class="n">accuracy</span><span class="p">(</span><span class="n">lora_model</span><span class="p">,</span> <span class="n">eval_rows</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'학습 전, 규칙 프롬프트: </span><span class="si">{</span><span class="n">before</span><span class="si">:</span><span class="s1">.0%</span><span class="si">}</span><span class="s1"> / 학습 후, 짧은 지시: </span><span class="si">{</span><span class="n">after</span><span class="si">:</span><span class="s1">.0%</span><span class="si">}</span><span class="s1"> (예측 </span><span class="si">{</span><span class="n">my_guess</span><span class="si">}</span><span class="s1">)'</span><span class="p">)</span>
+
+<span class="n">question</span> <span class="o">=</span> <span class="s1">'대한민국의 수도는 어디인가요?'</span>
+<span class="k">with</span> <span class="n">lora_model</span><span class="o">.</span><span class="n">disable_adapter</span><span class="p">():</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">'LoRA를 뗀 모델:'</span><span class="p">,</span> <span class="n">answer</span><span class="p">(</span><span class="n">lora_model</span><span class="p">,</span> <span class="n">question</span><span class="p">,</span> <span class="n">system</span><span class="o">=</span><span class="s1">'질문에 한 문장으로 답한다.'</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'학습한 모델:'</span><span class="p">,</span> <span class="n">answer</span><span class="p">(</span><span class="n">lora_model</span><span class="p">,</span> <span class="n">question</span><span class="p">,</span> <span class="n">system</span><span class="o">=</span><span class="s1">'질문에 한 문장으로 답한다.'</span><span class="p">))</span>
+</code></pre></div>
+
+<div class="result">
+<div class="codehilite"><pre><span></span><code>학습 전, 규칙 프롬프트: 0% / 학습 후, 짧은 지시: 34% (예측 {'학습 전, 규칙 프롬프트': 0.3, '학습 후, 짧은 지시': 0.7})
+LoRA를 뗀 모델: 대한민국의 수도는 서울입니다.
+학습한 모델: TH-01 | 대한민국 | 보전팀
+</code></pre></div>
+
+</div>
+<p>교재의 실행에서 규칙을 모두 적은 프롬프트의 원래 모델은 32건 중 한 건도 표준 형식과 글자까지 같게 답하지 못했고, 짧은 지시만 준 학습한 모델은 34%(11건)를 맞혔습니다. 0.5B 모델은 긴 규칙을 프롬프트로 받아도 따르지 못했지만, 64건의 예로 형식은 익혔습니다. 34%로는 쓸 수 없으므로 학습 데이터를 늘리거나 더 큰 모델을 검토합니다(실습 11-3). 학습한 모델은 수도를 묻는 질문에도 "TH-01 | 대한민국 | 보전팀"처럼 알람 형식으로 답했습니다. 학습 데이터에 알람만 있어 어떤 입력에도 이 형식으로 답하도록 학습된 망각입니다. 어댑터를 떼면 원래 답(서울)이 돌아옵니다.</p>
+</details>
+</section>
+<section class="box practice" id="실습-11-3">
+<header><span class="box-no">실습 11-3</span><span class="box-title">GPU에서 학습 설정 바꾸기</span><span class="box-where">노트북 <code>11_파인튜닝.ipynb</code>의 <code>실습 11-3</code></span></header>
+<p>GPU가 있는 환경에서 더 큰 모델(Qwen2.5-1.5B-Instruct)을 LoRA로 학습하고, 에포크마다 학습 데이터와 평가셋의 정확도를 함께 측정해 과적합이 생기는지 봅니다. <code>EPOCHS</code>, <code>LEARNING_RATE</code>, <code>RANK</code>를 바꿔 가며 다시 실행합니다. 학습 데이터의 정확도와 평가셋의 정확도 중 어느 쪽이 더 높을지, 에포크를 늘리면 두 값의 차이가 어떻게 될지 먼저 <code>my_guess</code>에 적습니다. 결과를 보고 과적합이 시작된 에포크가 있는지 설명하면 끝납니다. GPU가 없으면 이 셀은 실행하지 않고 넘어갑니다. 실습 11-2의 <code>accuracy()</code>를 씁니다.</p>
+<p>사내 GPU 환경에서 노트북을 여는 방법: (사내 GPU 환경의 사용 방법을 확인한 뒤 채웁니다.)</p>
+<div class="codehilite"><pre><span></span><code><span class="n">GPU_MODEL</span> <span class="o">=</span> <span class="s1">'Qwen/Qwen2.5-1.5B-Instruct'</span>   <span class="c1"># 0.5B와 토크나이저가 같아 make_batch(), answer()를 그대로 씁니다</span>
+<span class="n">EPOCHS</span><span class="p">,</span> <span class="n">LEARNING_RATE</span><span class="p">,</span> <span class="n">RANK</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span> <span class="mf">5e-4</span><span class="p">,</span> <span class="mi">8</span>   <span class="c1"># 바꿔 가며 다시 실행합니다</span>
+<span class="n">my_guess</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># TODO: 두 정확도 중 어느 쪽이 높을지, 에포크를 늘리면 차이가 어떻게 될지 적습니다</span>
+
+<span class="k">if</span> <span class="ow">not</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">():</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">'GPU가 없어 건너뜁니다. GPU가 있는 환경에서 실행합니다'</span><span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">gpu_model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">GPU_MODEL</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">'cuda'</span><span class="p">)</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="n">LoraConfig</span><span class="p">(</span><span class="n">r</span><span class="o">=</span><span class="n">RANK</span><span class="p">,</span> <span class="n">lora_alpha</span><span class="o">=</span><span class="mi">2</span> <span class="o">*</span> <span class="n">RANK</span><span class="p">,</span> <span class="n">target_modules</span><span class="o">=</span><span class="p">[</span><span class="s1">'q_proj'</span><span class="p">,</span> <span class="s1">'v_proj'</span><span class="p">],</span> <span class="n">task_type</span><span class="o">=</span><span class="s1">'CAUSAL_LM'</span><span class="p">)</span>
+    <span class="n">gpu_lora</span> <span class="o">=</span> <span class="n">get_peft_model</span><span class="p">(</span><span class="n">gpu_model</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>
+    <span class="n">optimizer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">AdamW</span><span class="p">([</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">gpu_lora</span><span class="o">.</span><span class="n">parameters</span><span class="p">()</span> <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">requires_grad</span><span class="p">],</span> <span class="n">lr</span><span class="o">=</span><span class="n">LEARNING_RATE</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">EPOCHS</span><span class="p">):</span>
+        <span class="c1"># TODO: 예제 11-3처럼 배치 8건씩 한 에포크를 학습합니다(배치는 .to('cuda')로 GPU에 올립니다)</span>
+        <span class="c1"># TODO: 학습 데이터 32건과 평가셋 32건의 정확도를 accuracy()로 측정해 출력합니다</span>
+        <span class="k">pass</span>
+</code></pre></div>
+
+<details class="answer">
+<summary>풀이 보기</summary>
+<p>에포크마다 학습한 뒤 학습 데이터의 일부와 평가셋의 정확도를 함께 출력합니다. 학습 데이터의 정확도만 오르고 평가셋의 정확도가 멈추거나 내려가기 시작한 에포크가 과적합의 시작입니다.</p>
+<div class="codehilite"><pre><span></span><code><span class="n">GPU_MODEL</span> <span class="o">=</span> <span class="s1">'Qwen/Qwen2.5-1.5B-Instruct'</span>   <span class="c1"># 0.5B와 토크나이저가 같아 make_batch(), answer()를 그대로 씁니다</span>
+<span class="n">EPOCHS</span><span class="p">,</span> <span class="n">LEARNING_RATE</span><span class="p">,</span> <span class="n">RANK</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span> <span class="mf">5e-4</span><span class="p">,</span> <span class="mi">8</span>   <span class="c1"># 바꿔 가며 다시 실행합니다</span>
+<span class="n">my_guess</span> <span class="o">=</span> <span class="s1">'학습 데이터 쪽이 높고, 에포크를 늘리면 차이가 벌어진다'</span>
+
+<span class="k">if</span> <span class="ow">not</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">():</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">'GPU가 없어 건너뜁니다. GPU가 있는 환경에서 실행합니다'</span><span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">gpu_model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">GPU_MODEL</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">'cuda'</span><span class="p">)</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="n">LoraConfig</span><span class="p">(</span><span class="n">r</span><span class="o">=</span><span class="n">RANK</span><span class="p">,</span> <span class="n">lora_alpha</span><span class="o">=</span><span class="mi">2</span> <span class="o">*</span> <span class="n">RANK</span><span class="p">,</span> <span class="n">target_modules</span><span class="o">=</span><span class="p">[</span><span class="s1">'q_proj'</span><span class="p">,</span> <span class="s1">'v_proj'</span><span class="p">],</span> <span class="n">task_type</span><span class="o">=</span><span class="s1">'CAUSAL_LM'</span><span class="p">)</span>
+    <span class="n">gpu_lora</span> <span class="o">=</span> <span class="n">get_peft_model</span><span class="p">(</span><span class="n">gpu_model</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>
+    <span class="n">optimizer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">AdamW</span><span class="p">([</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">gpu_lora</span><span class="o">.</span><span class="n">parameters</span><span class="p">()</span> <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">requires_grad</span><span class="p">],</span> <span class="n">lr</span><span class="o">=</span><span class="n">LEARNING_RATE</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">EPOCHS</span><span class="p">):</span>
+        <span class="n">gpu_lora</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">train_rows</span><span class="p">),</span> <span class="mi">8</span><span class="p">):</span>
+            <span class="n">batch</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">value</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">'cuda'</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">make_batch</span><span class="p">(</span><span class="n">train_rows</span><span class="p">[</span><span class="n">index</span><span class="p">:</span><span class="n">index</span> <span class="o">+</span> <span class="mi">8</span><span class="p">])</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+            <span class="n">gpu_lora</span><span class="p">(</span><span class="o">**</span><span class="n">batch</span><span class="p">)</span><span class="o">.</span><span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+            <span class="n">optimizer</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+            <span class="n">optimizer</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">()</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'에포크 </span><span class="si">{</span><span class="n">epoch</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s1">: 학습 데이터 </span><span class="si">{</span><span class="n">accuracy</span><span class="p">(</span><span class="n">gpu_lora</span><span class="p">,</span><span class="w"> </span><span class="n">train_rows</span><span class="p">[:</span><span class="mi">32</span><span class="p">])</span><span class="si">:</span><span class="s1">.0%</span><span class="si">}</span><span class="s1">, '</span>
+              <span class="sa">f</span><span class="s1">'평가셋 </span><span class="si">{</span><span class="n">accuracy</span><span class="p">(</span><span class="n">gpu_lora</span><span class="p">,</span><span class="w"> </span><span class="n">eval_rows</span><span class="p">)</span><span class="si">:</span><span class="s1">.0%</span><span class="si">}</span><span class="s1"> (예측 </span><span class="si">{</span><span class="n">my_guess</span><span class="si">}</span><span class="s1">)'</span><span class="p">)</span>
+</code></pre></div>
+
+</details>
+</section>
+<h2 id="자가점검">자가점검</h2>
+<p><strong>1.</strong> 사내 설비 매뉴얼 200건의 내용을 묻는 질문에 답하게 하려고 매뉴얼로 모델을 파인튜닝하자는 제안이 나왔습니다. 이 제안의 문제와 대안을 설명해 보세요.</p>
+<details class="answer">
+<summary>정답 보기</summary>
+<p>매뉴얼의 내용은 모델이 모르는 사실입니다. 파인튜닝으로 넣으면 매뉴얼이 개정될 때마다 다시 학습해야 하고, 학습한 사실을 정확히 꺼낸다는 보장이 없으며, 모르던 사실을 학습시키면 환각이 늘 수 있습니다(Gekhman 외, 2024). 매뉴얼을 검색해 입력에 넣는 RAG가 알맞습니다. 답의 형식이 문제라면 RAG에 더해 형식만 파인튜닝하는 구성을 검토합니다.</p>
+</details>
+<p><strong>2.</strong> 학습 데이터를 배치로 만들 때 패딩을 넣는 이유는 무엇이고, 패딩 위치와 프롬프트 위치를 손실에서 빼는 이유는 각각 무엇입니까?</p>
+<details class="answer">
+<summary>정답 보기</summary>
+<p>배치는 행렬 하나로 계산하므로 모든 행의 길이가 같아야 해서, 짧은 행의 뒤에 패딩을 채웁니다. 패딩은 내용이 없는 토큰이므로 손실에서 뺍니다. 프롬프트는 모델이 생성할 부분이 아니라 주어지는 부분이므로 뺍니다. 넣으면 모델이 알람 글을 이어 쓰는 법까지 함께 학습합니다.</p>
+</details>
+<p><strong>3.</strong> 학습 중 손실이 2.1, 1.4, 3.8, 9.5로 커졌습니다. 가장 먼저 의심할 설정은 무엇이고, 왜 그렇습니까?</p>
+<details class="answer">
+<summary>정답 보기</summary>
+<p>학습률입니다. 학습률이 너무 크면 한 스텝에 최솟값을 지나쳐 반대편으로 넘어가고, 넘어간 거리가 처음보다 멀면 스텝마다 손실이 커집니다(실습 11-1의 학습률 1.1). 학습률을 줄여 다시 학습합니다.</p>
+</details>
+<p><strong>4.</strong> 학습 데이터의 정확도는 에포크마다 올라 100%가 됐는데, 평가셋의 정확도는 3에포크부터 내려갔습니다. 무엇이 일어난 것이고 어떻게 대응합니까?</p>
+<details class="answer">
+<summary>정답 보기</summary>
+<p>과적합입니다. 모델이 학습 데이터에만 맞춰지고 처음 보는 입력에서는 나빠졌습니다. 평가셋 정확도가 가장 높았던 에포크(2에포크)에서 멈추거나, 학습 데이터를 늘립니다.</p>
+</details>
+<p><strong>5.</strong> 크기가 4,096 × 4,096인 행렬에 rank 8의 LoRA를 붙이면 학습하는 값은 몇 개이고, 원래 행렬의 몇 %입니까? 학습 전 모델의 출력이 원래 모델과 같은 이유도 설명해 보세요.</p>
+<details class="answer">
+<summary>정답 보기</summary>
+<p>B(4,096 × 8)와 A(8 × 4,096)이므로 8 × (4,096 + 4,096) = 65,536개이고, 원래 행렬 16,777,216개의 약 0.39%입니다. B를 0으로 시작하므로 학습 전에는 BA가 0이어서 원래 행렬의 결과에 더해지는 값이 없습니다.</p>
+</details>
+<p><strong>6.</strong> 파인튜닝한 모델이 평가셋에서는 정확도가 크게 올랐습니다. 이 모델을 배포하기 전에 더 점검할 것 두 가지와 그 방법을 적어 보세요.</p>
+<details class="answer">
+<summary>정답 보기</summary>
+<p>망각과 환각입니다. 망각은 학습과 무관한 질문 몇 개의 답을 학습 전후로 비교해 확인합니다(LoRA는 어댑터를 떼고 비교). 환각은 답이 없거나 모르는 내용을 물어 지어내는지 확인합니다. 파인튜닝은 답하는 형식과 기준을 바꿀 뿐 사실을 확인하는 단계를 만들지 않으므로, 사실이 필요한 답은 RAG로 근거를 넣습니다.</p>
+</details>
+<h2 id="참고-문헌">참고 문헌</h2>
+<ul>
+<li>Hu, E. J. 외 (2021). LoRA: Low-Rank Adaptation of Large Language Models. arXiv:2106.09685.</li>
+<li>Biderman, D. 외 (2024). LoRA Learns Less and Forgets Less. Transactions on Machine Learning Research. arXiv:2405.09673.</li>
+<li>Gekhman, Z. 외 (2024). Does Fine-Tuning LLMs on New Knowledge Encourage Hallucinations? EMNLP 2024. arXiv:2405.05904.</li>
+<li>Hugging Face. PEFT 문서: LoRA(2026-11 확인).</li>
+</ul>
+</article>
+    <footer class="foot">GenAI Intensive 강의(삼성전자 DS 부문 교육)의 주제를 바탕으로 새로 쓴 교재입니다.</footer>
+  </main>
+</div>
+<script>
+// 교재 화면 동작: 화면 밝기, 목차, 탭, 코드 복사, 찾기.
+(function () {
+  var root = document.documentElement;
+
+  // 화면 밝기. 기억해 둔 값이 없으면 기기 설정을 따른다.
+  var themeButton = document.querySelector('.theme');
+  function stored() { try { return localStorage.getItem('theme'); } catch (e) { return null; } }
+  function setTheme(name) {
+    root.setAttribute('data-theme', name);
+    themeButton.textContent = name === 'dark' ? '밝은 화면' : '어두운 화면';
+  }
+  setTheme(stored() || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+  themeButton.addEventListener('click', function () {
+    var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+    try { localStorage.setItem('theme', next); } catch (e) { /* 저장하지 못해도 화면은 바뀐다 */ }
+  });
+
+  // 본문 폭. 기본은 읽기 편한 폭, "넓게 보기"는 표와 코드를 넓게 본다.
+  var widthButton = document.querySelector('.width');
+  function setWidth(name) {
+    root.setAttribute('data-width', name);
+    widthButton.textContent = name === 'wide' ? '기본 폭으로' : '넓게 보기';
+  }
+  var savedWidth = null;
+  try { savedWidth = localStorage.getItem('width'); } catch (e) { /* 무시 */ }
+  setWidth(savedWidth === 'wide' ? 'wide' : 'normal');
+  widthButton.addEventListener('click', function () {
+    var next = root.getAttribute('data-width') === 'wide' ? 'normal' : 'wide';
+    setWidth(next);
+    try { localStorage.setItem('width', next); } catch (e) { /* 저장하지 못해도 화면은 바뀐다 */ }
+  });
+
+  // 좁은 화면의 목차 열고 닫기
+  var side = document.getElementById('side');
+  var menu = document.querySelector('.menu');
+  menu.addEventListener('click', function () {
+    var open = side.classList.toggle('open');
+    menu.setAttribute('aria-expanded', open);
+  });
+  side.addEventListener('click', function (event) {
+    if (event.target.closest('a')) { side.classList.remove('open'); menu.setAttribute('aria-expanded', false); }
+  });
+
+  // 이어진 탭을 한 묶음으로 만든다
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('.tab'));
+  tabs.forEach(function (tab) {
+    if (tab.classList.contains('ready')) return;
+    var group = [tab];
+    var next = tab.nextElementSibling;
+    while (next && next.classList.contains('tab')) { group.push(next); next = next.nextElementSibling; }
+    var wrap = document.createElement('div');
+    wrap.className = 'tabs';
+    var list = document.createElement('div');
+    list.className = 'tablist';
+    list.setAttribute('role', 'tablist');
+    tab.parentNode.insertBefore(wrap, tab);
+    wrap.appendChild(list);
+    group.forEach(function (panel, index) {
+      panel.classList.add('ready');
+      var button = document.createElement('button');
+      button.type = 'button';
+      button.setAttribute('role', 'tab');
+      button.textContent = panel.getAttribute('data-tab');
+      button.addEventListener('click', function () { choose(panel.getAttribute('data-tab')); });
+      list.appendChild(button);
+      wrap.appendChild(panel);
+      panel.hidden = index !== 0;
+      button.setAttribute('aria-selected', index === 0);
+    });
+  });
+  // 탭 하나를 고르면 같은 이름의 탭이 쪽 전체에서 함께 바뀐다
+  function choose(name) {
+    document.querySelectorAll('.tabs').forEach(function (wrap) {
+      var panels = wrap.querySelectorAll(':scope > .tab');
+      var has = Array.prototype.some.call(panels, function (p) { return p.getAttribute('data-tab') === name; });
+      if (!has) return;
+      panels.forEach(function (p) { p.hidden = p.getAttribute('data-tab') !== name; });
+      wrap.querySelectorAll('.tablist button').forEach(function (b) {
+        b.setAttribute('aria-selected', b.textContent === name);
+      });
+    });
+    try { localStorage.setItem('tab', name); } catch (e) { /* 무시 */ }
+  }
+  try { var savedTab = localStorage.getItem('tab'); if (savedTab) choose(savedTab); } catch (e) { /* 무시 */ }
+
+  // 코드 복사 단추
+  document.querySelectorAll('.codehilite').forEach(function (block) {
+    if (block.closest('.result') || !navigator.clipboard) return;
+    var button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'copy';
+    button.textContent = '복사';
+    button.addEventListener('click', function () {
+      navigator.clipboard.writeText(block.querySelector('pre').innerText).then(function () {
+        button.textContent = '복사했습니다';
+        setTimeout(function () { button.textContent = '복사'; }, 1500);
+      });
+    });
+    block.appendChild(button);
+  });
+
+  // 지금 읽는 절을 목차에 표시한다
+  var links = {};
+  document.querySelectorAll('.toc a').forEach(function (a) { links[decodeURIComponent(a.hash.slice(1))] = a; });
+  var headings = Array.prototype.slice.call(document.querySelectorAll('main h1[id], main h2[id], main h3[id]'));
+  function mark() {
+    var current = headings[0];
+    headings.forEach(function (h) { if (h.getBoundingClientRect().top < 120) current = h; });
+    Object.keys(links).forEach(function (id) { links[id].classList.remove('now'); });
+    if (current && links[current.id]) links[current.id].classList.add('now');
+  }
+  window.addEventListener('scroll', mark, { passive: true });
+  mark();
+
+  // 이 쪽에서 찾기: 절 단위로 찾아 목차 자리에 보여 준다
+  var input = document.querySelector('.search input');
+  var hits = document.querySelector('.hits');
+  var toc = document.querySelector('.toc');
+  var sections = headings.map(function (h) {
+    var text = '';
+    var node = h.nextElementSibling;
+    while (node && !/^H[123]$/.test(node.tagName)) { text += ' ' + node.textContent; node = node.nextElementSibling; }
+    return { id: h.id, title: h.childNodes[0].textContent.trim(), text: (h.textContent + text).toLowerCase(), raw: text };
+  });
+  input.addEventListener('input', function () {
+    var query = input.value.trim().toLowerCase();
+    if (!query) { hits.hidden = true; toc.hidden = false; return; }
+    var found = sections.filter(function (s) { return s.text.indexOf(query) !== -1; });
+    hits.textContent = '';
+    var summary = document.createElement('p');
+    summary.textContent = found.length ? '찾은 절 ' + found.length + '개' : '찾는 내용이 없습니다. 다른 낱말로 찾아 보세요.';
+    hits.appendChild(summary);
+    found.forEach(function (s) {
+      var a = document.createElement('a');
+      a.href = '#' + s.id;
+      a.textContent = s.title;
+      var at = s.raw.toLowerCase().indexOf(query);
+      if (at !== -1) {
+        var small = document.createElement('small');
+        small.textContent = '…' + s.raw.slice(Math.max(0, at - 20), at + 40).replace(/\s+/g, ' ') + '…';
+        a.appendChild(small);
+      }
+      hits.appendChild(a);
+    });
+    hits.hidden = false;
+    toc.hidden = true;
+  });
+})();
+
+</script>
+</body>
+</html>
