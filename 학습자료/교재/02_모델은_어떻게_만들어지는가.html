@@ -146,6 +146,8 @@ pre code { background: none; padding: 0; font-size: inherit; }
 
 /* 표 */
 table { border-collapse: collapse; width: 100%; margin: 0 0 1.25rem; font-size: 0.95rem; line-height: 1.6; }
+.table-wrap { overflow-x: auto; margin: 0 0 1.25rem; }
+.table-wrap table { margin: 0; }
 th, td { text-align: left; vertical-align: top; padding: 0.5rem 0.7rem; border-bottom: 1px solid var(--line); }
 thead th { border-bottom: 2px solid var(--ink); font-weight: 700; }
 .glossary th { white-space: nowrap; font-weight: 600; }
@@ -399,13 +401,19 @@ span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 
   <span class="site">생성형 AI 교재</span>
   <nav class="days" aria-label="일자">
 <a href="index.html">차례</a>
+<a href="00_시작하기_전에.html">시작하기 전에</a>
 <a href="01_LLM은_어떻게_글을_만드는가.html">1장</a>
 <a href="02_모델은_어떻게_만들어지는가.html" class="here">2장</a>
 <a href="03_컨텍스트.html">3장</a>
 <a href="04_프롬프트_설계.html">4장</a>
 <a href="05_LLM_API.html">5장</a>
 <a href="06_구조화_출력.html">6장</a>
+<a href="07_임베딩과_의미_검색.html">7장</a>
+<a href="08_RAG.html">8장</a>
+<a href="09_검색과_RAG의_평가와_개선.html">9장</a>
 <a href="10_지식을_구조화하는_다른_방법.html">10장</a>
+<a href="11_파인튜닝.html">11장</a>
+<a href="12_경량화와_배포.html">12장</a>
 <a href="13_AI_에이전트.html">13장</a>
 <a href="14_코딩_에이전트와_멀티_에이전트.html">14장</a>
 <a href="15_보안과_거버넌스.html">15장</a>
@@ -486,7 +494,7 @@ span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 
 <figcaption>처음부터 만드는 순서. 청록색 세 칸이 사전 학습의 본체입니다.</figcaption>
 </figure>
 
-<p>데이터를 정제하고 토크나이저를 만든 뒤, 모델의 층 수와 벡터 크기를 정하고 모든 파라미터를 무작위 값으로 채웁니다. 이 상태의 모델은 아무 글자나 냅니다. 그다음 글 묶음을 넣고 손실을 계산해 파라미터를 고치는 일을 되풀이합니다. 고치는 방법을 <span class="term" tabindex="0" data-def="손실이 줄어드는 방향을 계산해 파라미터를 그 방향으로 조금씩 고치는 학습 방법">경사 하강법</span>(gradient descent)이라고 하며, 파라미터 하나하나를 손실이 줄어드는 방향으로 조금씩 옮깁니다(자세한 내용은 11장). 이 되풀이에 드는 자원은 매우 큽니다. Llama 3 405B는 15.6조 토큰을 최대 1만 6천여 개의 H100 GPU로 학습했습니다(Meta, 2024).</p>
+<p>데이터를 정제하고 토크나이저를 만든 뒤, 모델의 층 수와 벡터 크기를 정하고 모든 파라미터를 무작위 값으로 채웁니다. 이 상태의 모델은 아무 글자나 냅니다. 그다음 글 묶음을 넣고 손실을 계산해 파라미터를 고치는 일을 되풀이합니다. 고치는 방법을 <span class="term" tabindex="0" data-def="손실이 줄어드는 방향을 계산해 파라미터를 그 방향으로 조금씩 고치는 학습 방법">경사 하강법</span>(gradient descent)이라고 하며, 파라미터 하나하나를 손실이 줄어드는 방향으로 조금씩 옮깁니다(자세한 내용은 11장). 이 되풀이에 드는 자원은 매우 큽니다. Llama 3 405B는 15.6조 토큰을 최대 1만 6천여 개의 H100 GPU(graphics processing unit)로 학습했습니다(Meta, 2024).</p>
 <section class="box example" id="예제-2-1">
 <header><span class="box-no">예제 2-1</span><span class="box-title">무작위 모델을 학습시키기</span><span class="box-where">노트북 <code>02_모델은_어떻게_만들어지는가.ipynb</code>의 <code>예제 2-1</code></span></header>
 <p>글자 하나를 토큰 하나로 쓰는 아주 작은 모델(파라미터 약 11만 개)을 무작위 값에서 시작해 후공정 문장 30개로 1,000번 고칩니다. 학습 전, 100번, 1,000번 고친 뒤에 같은 시작 글("와이어 본딩은 ")로 생성한 글과 손실을 비교합니다. <code>generate()</code>는 준비 셀에 있는 함수로, 1장의 네 단계대로 다음 글자를 샘플링해 붙입니다. PC에서 몇 초 안에 끝납니다.</p>
@@ -548,7 +556,7 @@ span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 
 </div>
 </section>
 <p>실행 결과를 정리하면 다음과 같습니다.</p>
-<table>
+<div class="table-wrap"><table>
 <thead>
 <tr>
 <th></th>
@@ -568,7 +576,7 @@ span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 
 <td>질문에 답하는 문장을 씁니다</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p>instruct 모델도 질문만 넣으면 답하지 않습니다. 다음 절의 SFT가 학습시킨 것은 "채팅 형식에서 답 차례가 열리면 답을 쓴다"는 행동이기 때문입니다. 베이스 모델이 채팅 형식에서 답하는 흉내를 낸 것은 어휘에 채팅 형식의 표시 토큰이 이미 들어 있기 때문으로 보입니다. 답의 품질은 두 모델 모두 낮습니다(파라미터 5억 개).</p>
 <h2 id="질문에-답하는-법-SFT">질문에 답하는 법: SFT</h2>
 <div class="gist">
@@ -660,7 +668,7 @@ span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 
 
 <p>파라미터가 많은 모델은 같은 글에서 더 많은 사실을 익히므로, 자주 나온 사실은 더 잘 구분합니다. 그러나 우리 회사의 규격 값처럼 학습한 글에 거의 없는 사실 앞에서는 큰 모델도 근거 없이 그럴듯한 글을 씁니다.</p>
 <p>평가 방식도 환각을 늘립니다. Kalai 외(2025)는 모델 평가 대부분이 정답만 점수로 세고 "모른다"에는 점수를 주지 않는다고 지적했습니다. 맞힐 가능성이 20%인 문제라면 다음과 같습니다.</p>
-<table>
+<div class="table-wrap"><table>
 <thead>
 <tr>
 <th>행동</th>
@@ -677,7 +685,7 @@ span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 
 <td>0점</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p>이런 시험으로 모델을 고르면 모를 때도 추측하는 모델이 남습니다. RLHF로 모르면 모른다고 답하게 다듬을 수는 있지만, 보상 모델도 사실 여부를 확인하지 못하고 모르던 사실이 새로 생기지도 않으므로 환각은 없어지지 않습니다. 파인튜닝도 마찬가지입니다(11장).</p>
 <p>계산도 같은 이유로 틀릴 수 있습니다. 숫자도 토큰으로 나뉘어(1장) 다음 토큰 예측으로 답이 만들어지므로, 계산은 도구에 맡깁니다(13장).</p>
 <h2 id="thinking-모델">thinking 모델</h2>

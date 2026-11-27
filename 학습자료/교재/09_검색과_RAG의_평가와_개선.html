@@ -146,6 +146,8 @@ pre code { background: none; padding: 0; font-size: inherit; }
 
 /* 표 */
 table { border-collapse: collapse; width: 100%; margin: 0 0 1.25rem; font-size: 0.95rem; line-height: 1.6; }
+.table-wrap { overflow-x: auto; margin: 0 0 1.25rem; }
+.table-wrap table { margin: 0; }
 th, td { text-align: left; vertical-align: top; padding: 0.5rem 0.7rem; border-bottom: 1px solid var(--line); }
 thead th { border-bottom: 2px solid var(--ink); font-weight: 700; }
 .glossary th { white-space: nowrap; font-weight: 600; }
@@ -399,6 +401,7 @@ span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 
   <span class="site">생성형 AI 교재</span>
   <nav class="days" aria-label="일자">
 <a href="index.html">차례</a>
+<a href="00_시작하기_전에.html">시작하기 전에</a>
 <a href="01_LLM은_어떻게_글을_만드는가.html">1장</a>
 <a href="02_모델은_어떻게_만들어지는가.html">2장</a>
 <a href="03_컨텍스트.html">3장</a>
@@ -408,6 +411,10 @@ span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 
 <a href="07_임베딩과_의미_검색.html">7장</a>
 <a href="08_RAG.html">8장</a>
 <a href="09_검색과_RAG의_평가와_개선.html" class="here">9장</a>
+<a href="10_지식을_구조화하는_다른_방법.html">10장</a>
+<a href="11_파인튜닝.html">11장</a>
+<a href="12_경량화와_배포.html">12장</a>
+<a href="13_AI_에이전트.html">13장</a>
 <a href="14_코딩_에이전트와_멀티_에이전트.html">14장</a>
 <a href="15_보안과_거버넌스.html">15장</a>
   </nav>
@@ -457,8 +464,8 @@ span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 
 <div class="gist">
 <p>실제로 들어올 질문의 유형을 고루 넣고, 문서에 답이 없는 질문도 넣어야 검색기나 프롬프트를 바꿀 때마다 같은 기준으로 비교할 수 있습니다.</p>
 </div>
-<p><span class="term" tabindex="0" data-def="질문마다 정답 문서와 정답을 적어 둔 묶음. 검색과 답을 바꿀 때마다 같은 기준으로 측정하는 데 쓴다">평가셋</span>(evaluation set)은 질문, 정답 문서, 정답을 짝지어 둔 묶음입니다. 검색기, 청크 크기, top-k, 프롬프트를 바꿀 때마다 같은 평가셋으로 측정해야 바꾼 것의 효과를 숫자로 비교할 수 있습니다. 이 교재의 평가셋(<code>evalset.json</code>)은 질문 62개이고, 질문마다 다음을 적어 두었습니다.</p>
-<table>
+<p><span class="term" tabindex="0" data-def="결과를 측정하려고 따로 떼어 둔 입력과 정답의 묶음. 검색과 RAG에서는 질문마다 정답 문서와 정답을 적는다. 학습이나 프롬프트 수정에 쓰지 않는다">평가셋</span>(evaluation set)은 질문, 정답 문서, 정답을 짝지어 둔 묶음입니다. 검색기, 청크 크기, top-k, 프롬프트를 바꿀 때마다 같은 평가셋으로 측정해야 바꾼 것의 효과를 숫자로 비교할 수 있습니다. 이 교재의 평가셋(<code>evalset.json</code>)은 질문 62개이고, 질문마다 다음을 적어 두었습니다.</p>
+<div class="table-wrap"><table>
 <thead>
 <tr>
 <th>키</th>
@@ -491,7 +498,7 @@ span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 
 <td>질문 유형. 유형마다 결과를 나눠 봅니다</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p>평가셋을 만들 때는 다음을 지킵니다.</p>
 <ul>
 <li><strong>질문 유형을 고루 넣습니다.</strong> 문서의 낱말로 묻는 질문만 넣으면 키워드 검색이 늘 더 나은 것처럼 보입니다. 이 평가셋에는 사실, 바꿔 말함, 코드, 개정, 표, 여러 문서, 충돌, 집계, 스캔, 일반(일반 지식), 오염(지시문이 숨은 문서, 15장) 질문을 넣었습니다.</li>
@@ -629,7 +636,7 @@ hybrid + rerank: recall@1 0.81, MRR 0.874, 질문당 2.45초
 <li><strong>검색어 여러 개로 나누기</strong>: 질문 하나를 검색어 세 개로 바꿔 각각 검색하고, 세 결과를 RRF로 합칩니다.</li>
 <li><strong>가상의 답을 써서 검색하기</strong>: 질문에 대한 답을 LLM이 지어 쓰게 하고, 그 답으로 검색합니다(HyDE(hypothetical document embeddings), Gao 외, 2022). 지어낸 답은 틀릴 수 있지만 문서와 비슷한 문체와 낱말을 쓰므로 문서와 가까운 벡터가 됩니다.</li>
 </ul>
-<p>비용도 있습니다. 질문마다 LLM 호출이 하나 늘어 대기 시간과 요금이 늘고, LLM은 사내 약어나 코드의 뜻을 모르므로 "SSC"를 엉뚱한 말로 풀어 쓰면 오히려 검색이 나빠집니다. 원래 질문의 검색 결과와 재작성한 질문의 검색 결과를 RRF로 합치면 이 위험이 줄어듭니다. 효과는 실습 9-1에서 확인합니다.</p>
+<p>비용도 있습니다. 질문마다 LLM 호출이 하나 늘어 대기 시간과 요금이 늘고, LLM은 사내 약어나 코드의 뜻을 모르므로 "SSC"를 다른 뜻의 말로 풀어 쓰면 오히려 검색이 나빠집니다. 원래 질문의 검색 결과와 재작성한 질문의 검색 결과를 RRF로 합치면 이 위험이 줄어듭니다. 효과는 실습 9-1에서 확인합니다.</p>
 <h2 id="답-평가">답 평가</h2>
 <div class="gist">
 <p>검색이 맞아도 답이 틀릴 수 있으므로 답도 따로 채점합니다. 정답성은 답이 기준 답과 같은 사실을 말하는지, 충실도는 답의 내용이 모두 검색 결과에 근거하는지를 봅니다. LLM에게 채점을 맡기면 문장으로 된 답도 채점할 수 있지만, 채점도 틀리므로 표본을 사람이 확인합니다.</p>

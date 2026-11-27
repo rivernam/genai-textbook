@@ -146,6 +146,8 @@ pre code { background: none; padding: 0; font-size: inherit; }
 
 /* 표 */
 table { border-collapse: collapse; width: 100%; margin: 0 0 1.25rem; font-size: 0.95rem; line-height: 1.6; }
+.table-wrap { overflow-x: auto; margin: 0 0 1.25rem; }
+.table-wrap table { margin: 0; }
 th, td { text-align: left; vertical-align: top; padding: 0.5rem 0.7rem; border-bottom: 1px solid var(--line); }
 thead th { border-bottom: 2px solid var(--ink); font-weight: 700; }
 .glossary th { white-space: nowrap; font-weight: 600; }
@@ -399,13 +401,19 @@ span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 
   <span class="site">생성형 AI 교재</span>
   <nav class="days" aria-label="일자">
 <a href="index.html">차례</a>
+<a href="00_시작하기_전에.html">시작하기 전에</a>
 <a href="01_LLM은_어떻게_글을_만드는가.html">1장</a>
 <a href="02_모델은_어떻게_만들어지는가.html">2장</a>
 <a href="03_컨텍스트.html">3장</a>
 <a href="04_프롬프트_설계.html">4장</a>
 <a href="05_LLM_API.html">5장</a>
 <a href="06_구조화_출력.html" class="here">6장</a>
+<a href="07_임베딩과_의미_검색.html">7장</a>
+<a href="08_RAG.html">8장</a>
+<a href="09_검색과_RAG의_평가와_개선.html">9장</a>
 <a href="10_지식을_구조화하는_다른_방법.html">10장</a>
+<a href="11_파인튜닝.html">11장</a>
+<a href="12_경량화와_배포.html">12장</a>
 <a href="13_AI_에이전트.html">13장</a>
 <a href="14_코딩_에이전트와_멀티_에이전트.html">14장</a>
 <a href="15_보안과_거버넌스.html">15장</a>
@@ -431,6 +439,7 @@ span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 
 <li class="l2"><a href="#구조화-출력이-보장하지-않는-것">구조화 출력이 보장하지 않는 것</a></li>
 <li class="l3"><a href="#잘림과-거절">잘림과 거절</a></li>
 <li class="l3"><a href="#형식은-맞지만-틀린-내용">형식은 맞지만 틀린 내용</a></li>
+<li class="l2"><a href="#결과를-저장하기">결과를 저장하기</a></li>
 <li class="l2"><a href="#개념-확인-실습">개념 확인 실습</a></li>
 <li class="l2"><a href="#관통-프로젝트-2단계">관통 프로젝트 2단계</a></li>
 <li class="l2"><a href="#자가점검">자가점검</a></li>
@@ -449,6 +458,7 @@ span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 
 <li>JSON 스키마로 필드의 이름, 자료형, 허용값(enum), 필수 여부를 정의할 수 있습니다.</li>
 <li>구조화 출력이 형식을 보장하는 원리(제약 디코딩)를 1장의 다음 토큰 확률 분포로 설명할 수 있습니다.</li>
 <li>구조화 출력이 보장하지 않는 것(내용의 정확성, 잘림과 거절)을 들고, 스키마 검증, 업무 규칙, 정답 라벨 비교로 확인하는 방법을 설명할 수 있습니다.</li>
+<li>분류 결과를 저장할 때 실패한 건만 다시 보내도 행이 겹치지 않게 하는 방법과, 결과와 함께 남길 값을 설명할 수 있습니다.</li>
 </ol>
 <p>예제 6-1과 6-3은 API(application programming interface)로 모델을 호출하고, 예제 6-2는 1장의 공개 LLM(large language model)을 PC에서 실행합니다. 모델의 응답과 확률은 실행할 때마다 교재와 다를 수 있습니다.</p>
 <h2 id="응답을-데이터로-받기">응답을 데이터로 받기</h2>
@@ -493,7 +503,7 @@ span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 
 <span class="p">}</span>
 </code></pre></div>
 
-<table>
+<div class="table-wrap"><table>
 <thead>
 <tr>
 <th>키워드</th>
@@ -522,7 +532,7 @@ span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 
 <td><code>false</code>이면 <code>properties</code>에 없는 필드를 허용하지 않습니다</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><span class="term" tabindex="0" data-def="참과 거짓 두 값만 갖는 자료형. JSON에서는 <code>true</code>와 <code>false</code>, 파이썬에서는 <code>True</code>와 <code>False</code>로 적는다">불리언</span>(boolean)은 참과 거짓 두 값만 갖는 자료형이고, JSON에서는 <code>true</code>와 <code>false</code>로 적습니다. <span class="term" tabindex="0" data-def="필드가 가질 수 있는 값을 나열한 목록. 스키마에 적으면 정상 종료한 응답에서는 목록 밖의 값이 나오지 않는다(영문 값의 대소문자는 보장하지 않는다)">enum</span>은 고를 값이 정해진 필드에 씁니다. 라벨을 자유 문자열로 두면 "안전 문제", "안전(긴급)"처럼 같은 뜻의 다른 문자열이 나와 집계가 어려워집니다. 값이 없을 수 있는 필드는 자료형에 <code>null</code>을 함께 넣습니다. <span class="term" tabindex="0" data-def="JSON에서 값이 없음을 나타내는 값. 파이썬으로 파싱하면 None이 된다">null</span>은 JSON에서 값이 없음을 나타내는 값입니다. <code>null</code>을 허용하지 않으면 문의에 설비 번호가 없어도 모델은 문자열 하나를 채워야 하므로, 근거 없는 번호를 지어낼 수 있습니다(4장의 형식이 빈칸을 채우는 현상).</p>
 <p>필드 이름은 결과 테이블의 열 이름으로 그대로 쓰므로 짧은 영문으로 짓습니다. 스키마는 프롬프트보다 먼저 작성합니다. 결과 테이블에 어떤 열이 필요한지 정하고, 그 열을 채울 수 있게 프롬프트를 작성합니다.</p>
 <h2 id="구조화-출력">구조화 출력</h2>
@@ -530,7 +540,7 @@ span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 
 <p>구조화 출력은 요청에 JSON 스키마를 넣어, 정상 종료한 응답이 그 스키마에 맞는 JSON이 되게 하는 API 기능입니다(예외는 "잘림과 거절"에서 설명합니다). Anthropic API와 OpenAI 호환 API 모두 지원하지만, 사내 서버가 지원하는지는 확인해야 합니다.</p>
 </div>
 <p><span class="term" tabindex="0" data-def="JSON 스키마를 요청에 넣어, 모델이 그 스키마에 맞는 JSON만 생성하게 하는 API 기능">구조화 출력</span>(structured output)은 요청에 스키마를 함께 보내면 서버가 스키마에 맞는 JSON만 생성하는 기능입니다. 요청하는 방법은 API마다 다릅니다.</p>
-<table>
+<div class="table-wrap"><table>
 <thead>
 <tr>
 <th>API</th>
@@ -547,10 +557,10 @@ span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 
 <td><code>response_format={'type': 'json_schema', 'json_schema': {'name': ..., 'schema': 스키마, 'strict': True}}</code></td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><code>llm.send()</code>와 <code>llm.ask()</code>에 <code>schema=</code>로 스키마를 주면 이 값을 넣어 보냅니다. 두 API 모두 객체마다 <code>additionalProperties: false</code>를 요구하고, OpenAI는 스키마의 최상위가 객체여야 합니다. 그래서 예제 6-3은 배열을 <code>items</code> 필드 하나를 가진 객체로 감쌉니다. Anthropic API는 숫자의 범위(<code>minimum</code>, <code>maximum</code>)나 문자열 길이(<code>minLength</code>) 같은 키워드는 지원하지 않습니다. 지원하지 않는 키워드를 넣으면 400 오류가 납니다(2026-11 확인). 이런 조건은 받은 뒤 코드로 검사합니다.</p>
 <p>OpenAI 호환 서버 가운데는 <code>json_schema</code> 방식을 지원하는 서버도 있고, <code>json_object</code>만 지원하는 서버도 있습니다. 환경 변수 <code>LLM_STRUCTURED</code>로 방식을 고릅니다.</p>
-<table>
+<div class="table-wrap"><table>
 <thead>
 <tr>
 <th><code>LLM_STRUCTURED</code></th>
@@ -579,7 +589,7 @@ span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 
 <td>종료 이유 확인, 파싱 오류 처리, 스키마 검증</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><span class="term" tabindex="0" data-def="받은 값이 스키마에 맞는지 코드로 확인하는 것">스키마 검증</span>(schema validation)은 받은 데이터가 스키마에 맞는지 코드로 확인하는 것입니다. 요청에 넣은 스키마를 그대로 써서 <code>jsonschema</code> 패키지의 <code>jsonschema.validate(data, SCHEMA)</code>로 검사하면, 맞지 않을 때 <code>ValidationError</code>가 발생합니다.</p>
 <section class="box example" id="예제-6-1">
 <header><span class="box-no">예제 6-1</span><span class="box-title">프롬프트로만 요구할 때와 구조화 출력</span><span class="box-where">노트북 <code>06_구조화_출력.ipynb</code>의 <code>예제 6-1</code></span></header>
@@ -718,6 +728,20 @@ Q45 정답 문서와 데이터 요청
 </div>
 </section>
 <p>교재의 실행에서 두 실행 모두 15건을 돌려받았고, 정확도는 두 번 모두 15건 가운데 11건이었습니다. 이번 프롬프트에는 예제 5-2와 달리 판정 기준을 넣지 않았습니다. 업무 규칙에 걸린 건은 없었고, Q42와 Q43은 두 실행의 라벨이 달랐습니다. 형식 검사와 업무 규칙만으로는 틀린 4건을 하나도 찾지 못합니다. 틀린 건은 정답 라벨과 비교해야 드러나고, 두 실행의 라벨이 다른 건은 다시 실행해 비교해야 드러납니다. 어느 건의 라벨이 바뀌는지는 실행마다 다릅니다.</p>
+<h2 id="결과를-저장하기">결과를 저장하기</h2>
+<div class="gist">
+<p>분류 결과는 문의 번호를 기본 키로 삼아 upsert로 저장하고, 모델 이름과 실행 시각을 함께 남깁니다. 그러면 실패한 건만 다시 보내도 같은 문의의 행이 늘지 않고, 실행마다 결과가 다를 때 어느 조건에서 나온 결과인지 알 수 있습니다.</p>
+</div>
+<p>여러 건을 처리한 결과는 파일이나 DB(database)에 저장해 집계하고 사람에게 넘깁니다. LLM의 결과를 저장할 때는 두 가지를 고려합니다. 첫째, 수백 건을 보내면 일부는 재시도 끝에 실패하므로(5장) 다시 실행해야 합니다. 이때 전체를 다시 보내면 이미 성공한 건의 요금을 또 내고, 샘플링 때문에 그 건의 라벨이 바뀔 수도 있습니다. 둘째, 같은 문의라도 모델, 프롬프트, 스키마를 바꾸면 결과가 바뀝니다.</p>
+<p>첫째를 해결하려면 다시 실행할 때 저장된 결과를 확인해, 결과가 없거나 실패한 건만 보냅니다. 같은 작업을 여러 번 실행해도 한 번 실행한 것과 결과가 같은 성질을 <span class="term" tabindex="0" data-def="같은 작업을 여러 번 실행해도 결과가 한 번 실행한 것과 같은 성질">멱등성</span>(idempotency)이라고 합니다. 저장도 멱등이어야 합니다. 결과를 행으로 덧붙이기만 하면 다시 실행할 때마다 같은 문의의 행이 늘어 건수가 실제보다 크게 나옵니다. 그래서 문의 번호처럼 행 하나를 유일하게 가리키는 열을 <span class="term" tabindex="0" data-def="테이블에서 행 하나를 유일하게 가리키는 열. 같은 값의 행을 두 개 넣을 수 없다">기본 키</span>(primary key)로 두고, 같은 기본 키의 행이 없으면 넣고 있으면 고치는 <span class="term" tabindex="0" data-def="같은 기본 키의 행이 없으면 넣고, 있으면 고치는 저장 방식">upsert</span>로 저장합니다. SQLite에서는 <code>INSERT INTO 결과 (...) VALUES (...) ON CONFLICT(번호) DO UPDATE SET ...</code> 형식의 SQL 문으로 작성합니다.</p>
+<p>둘째를 해결하려면 라벨과 함께 다음 값을 저장합니다. 이 값이 있어야 모델이나 프롬프트를 바꾼 뒤 결과를 비교할 수 있습니다.</p>
+<ul>
+<li>모델 이름과 프롬프트(또는 스키마)의 버전</li>
+<li>실행 시각</li>
+<li>처리 상태(자동 처리, 사람 확인, 실패)와 사유</li>
+<li>입력 토큰, 출력 토큰, 요금</li>
+</ul>
+<p>upsert는 같은 문의의 이전 결과를 고쳐 씁니다. 실행마다의 결과를 모두 남겨 비교하려면 (번호, 실행 시각)을 함께 기본 키로 둡니다. 사람 확인으로 보낸 건은 담당자가 열어 볼 수 있게 엑셀 파일로 따로 내보냅니다(pandas의 <code>to_excel()</code>).</p>
 <h2 id="개념-확인-실습">개념 확인 실습</h2>
 <p>실습은 장 노트북의 빈칸을 채워 실행합니다. 코드를 실행하기 전에 결과를 먼저 예측해 적고, 실행한 뒤 예측과 다른 부분을 이 장의 원리로 설명해 봅니다.</p>
 <section class="box practice" id="실습-6-1">
@@ -885,6 +909,11 @@ Q60 설비 알람이 계속 울립니다.
 <details class="answer">
 <summary>정답 보기</summary>
 <p>서버가 아무것도 보장하지 않으므로 제약 디코딩의 보장이 없습니다. 파싱 오류를 예외로 잡아 실패 목록에 남기고, 파싱한 데이터는 스키마 검증(필드, 자료형, enum)을 코드로 거친 뒤에 씁니다.</p>
+</details>
+<p><strong>6.</strong> 문의 500건을 분류하는 배치가 300건째에서 멈췄습니다. 다시 실행해도 요금이 두 번 들지 않고 결과 테이블에 같은 문의의 행이 두 개 생기지 않으려면 어떻게 작성해야 합니까?</p>
+<details class="answer">
+<summary>정답 보기</summary>
+<p>문의 번호를 기본 키로 두고 결과를 한 건씩 upsert로 저장합니다. 다시 실행할 때는 저장된 결과를 먼저 읽어, 결과가 없거나 상태가 실패인 건만 보냅니다. 그러면 이미 성공한 건은 다시 보내지 않으므로 요금이 들지 않고, 실패한 건을 다시 저장해도 같은 번호의 행을 고쳐 쓰므로 행이 늘지 않습니다. 결과와 함께 모델 이름과 실행 시각을 남겨, 다시 보낸 건이 어느 실행의 결과인지 알 수 있게 합니다.</p>
 </details>
 <h2 id="참고-문헌">참고 문헌</h2>
 <ul>

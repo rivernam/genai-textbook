@@ -146,6 +146,8 @@ pre code { background: none; padding: 0; font-size: inherit; }
 
 /* 표 */
 table { border-collapse: collapse; width: 100%; margin: 0 0 1.25rem; font-size: 0.95rem; line-height: 1.6; }
+.table-wrap { overflow-x: auto; margin: 0 0 1.25rem; }
+.table-wrap table { margin: 0; }
 th, td { text-align: left; vertical-align: top; padding: 0.5rem 0.7rem; border-bottom: 1px solid var(--line); }
 thead th { border-bottom: 2px solid var(--ink); font-weight: 700; }
 .glossary th { white-space: nowrap; font-weight: 600; }
@@ -399,13 +401,19 @@ span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 
   <span class="site">생성형 AI 교재</span>
   <nav class="days" aria-label="일자">
 <a href="index.html">차례</a>
+<a href="00_시작하기_전에.html">시작하기 전에</a>
 <a href="01_LLM은_어떻게_글을_만드는가.html">1장</a>
 <a href="02_모델은_어떻게_만들어지는가.html">2장</a>
 <a href="03_컨텍스트.html">3장</a>
 <a href="04_프롬프트_설계.html">4장</a>
 <a href="05_LLM_API.html">5장</a>
 <a href="06_구조화_출력.html">6장</a>
+<a href="07_임베딩과_의미_검색.html">7장</a>
+<a href="08_RAG.html">8장</a>
+<a href="09_검색과_RAG의_평가와_개선.html">9장</a>
 <a href="10_지식을_구조화하는_다른_방법.html">10장</a>
+<a href="11_파인튜닝.html">11장</a>
+<a href="12_경량화와_배포.html">12장</a>
 <a href="13_AI_에이전트.html">13장</a>
 <a href="14_코딩_에이전트와_멀티_에이전트.html" class="here">14장</a>
 <a href="15_보안과_거버넌스.html">15장</a>
@@ -534,7 +542,7 @@ span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 
 <h3 id="컨텍스트-엔지니어링">컨텍스트 엔지니어링</h3>
 <p>컨텍스트가 길면 비용만 커지는 것이 아닙니다. Anthropic(2025b)은 컨텍스트 윈도우의 토큰이 늘어날수록 모델이 그 안의 정보를 정확히 꺼내 쓰는 능력이 떨어지는 현상을 context rot이라고 부르고, 토큰마다 모델의 주의를 나눠 쓰므로 토큰이 하나 늘 때마다 그만큼 덜 집중한다고 설명합니다. 3장의 "긴 문서" 절에서 다룬 lost in the middle도 긴 컨텍스트에서 정보를 덜 정확히 쓰는 현상입니다.</p>
 <p>Anthropic(2025b)은 요청마다 모델에 보낼 토큰을 고르고 관리하는 일을 <span class="term" tabindex="0" data-def="에이전트가 요청마다 모델에 보낼 토큰을 고르고 관리하는 일. 무엇을 늘 넣고, 무엇을 필요할 때만 넣고, 무엇을 요약하거나 다른 에이전트에 맡길지 정한다">컨텍스트 엔지니어링</span>(context engineering)이라고 부릅니다. 4장의 프롬프트 설계가 지시문 하나를 잘 쓰는 일이라면, 컨텍스트 엔지니어링은 에이전트가 요청을 보낼 때마다 무엇을 넣을지를 되풀이해 정하는 일입니다. 코딩 에이전트에는 이것을 정하는 수단이 기능으로 들어 있습니다.</p>
-<table>
+<div class="table-wrap"><table>
 <thead>
 <tr>
 <th>수단</th>
@@ -569,7 +577,7 @@ span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 
 <td>반드시 막거나 매번 실행해야 하는 일</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <h2 id="규칙-파일">규칙 파일</h2>
 <div class="gist">
 <p>규칙 파일은 세션을 시작할 때마다 전체가 컨텍스트에 들어가는 지시입니다. 모든 작업에 필요한 짧은 사실과 규칙만 두고, 가끔 쓰는 절차는 Skill로 옮깁니다. 모델이 읽는 글일 뿐이므로, 반드시 막아야 하는 일은 권한 규칙이나 훅으로 막습니다.</p>
@@ -776,7 +784,7 @@ tools: Read, Grep, Glob
 <h3 id="권한-요청과-권한-모드">권한 요청과 권한 모드</h3>
 <p><span class="term" tabindex="0" data-def="코딩 에이전트가 파일을 바꾸거나 명령을 실행하기 전에 사용자에게 허용할지 묻는 것">권한 요청</span>(permission prompt)은 모델이 파일 수정이나 명령 실행을 요청했을 때, 하네스가 그 요청을 실행하기 전에 사용자에게 허용할지 묻는 확인입니다. 모델이 요청한 명령은 잘못 판단했거나 문서 속 지시에 속은 결과일 수 있으므로, 사용자가 실행 전에 멈출 기회가 필요합니다. 요청마다 물으면 사용자가 모든 수정과 명령을 확인할 수 있습니다. 대신 사용자가 답할 때까지 작업이 멈춥니다. 묻지 않으면 작업이 빨리 끝납니다. 대신 잘못된 명령을 멈출 사람이 없습니다.</p>
 <p>하네스는 도구 요청마다 "바로 실행", "사용자에게 물음", "실행하지 않음" 가운데 하나로 처리합니다. <span class="term" tabindex="0" data-def="어떤 행동을 묻지 않고 실행할지 정하는 코딩 에이전트의 설정. Claude Code에는 default, acceptEdits, plan, auto, dontAsk, bypassPermissions가 있다">권한 모드</span>(permission mode)는 어떤 요청을 이 셋 가운데 무엇으로 처리할지 정하는 세션 설정입니다. 아래 표는 권한 규칙과 훅(다음 두 소절)에 해당하지 않는 요청을 모드마다 어떻게 처리하는지 보여 줍니다. 작업 폴더 안의 파일 읽기와 검색은 어느 모드에서나 바로 실행하므로 표에서 뺐습니다(2026-11 확인).</p>
-<table>
+<div class="table-wrap"><table>
 <thead>
 <tr>
 <th>모드</th>
@@ -823,7 +831,7 @@ tools: Read, Grep, Glob
 <td>없음</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><code>auto</code> 모드에서는 하네스가 요청을 실행하기 전에 별도의 분류 모델에 보내 위험한지 판정하게 합니다. 분류 모델이 연속 3번 또는 세션 전체에서 20번 막으면, 하네스는 자동 판정을 멈추고 다시 사용자에게 묻습니다. 표의 <code>plan</code> 행은 <code>auto</code> 모드를 쓸 수 없는 세션의 처리이고, <code>auto</code> 모드를 쓸 수 있으면 <code>plan</code> 모드에서도 셸 명령을 분류 모델이 판정합니다(2026-11 확인).</p>
 <p>모드는 작업에 따라 다음처럼 고릅니다.</p>
 <ul>
@@ -863,7 +871,7 @@ tools: Read, Grep, Glob
 
 <p>훅은 설정 파일의 <code>hooks</code>에 적고, <code>matcher</code>로 어떤 도구에 실행할지 고릅니다. 훅은 출력이 없으면 컨텍스트를 차지하지 않습니다. 막는 일 말고도 <code>PostToolUse</code> 훅으로 도구 실행마다 로그를 남기거나, 파일을 고칠 때마다 형식 검사를 실행하는 데 씁니다.</p>
 <h3 id="무엇이-무엇을-막는가">무엇이 무엇을 막는가</h3>
-<table>
+<div class="table-wrap"><table>
 <thead>
 <tr>
 <th>수단</th>
@@ -898,11 +906,11 @@ tools: Read, Grep, Glob
 <td>파일 도구(Read, Edit)의 접근. 이쪽은 권한 규칙이 맡음</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p>권한 규칙과 훅은 모두 도구 요청에 적힌 글자만 봅니다. Claude Code 문서는 Bash의 deny 규칙이 같은 프로그램을 경로로 부르거나 <code>sh -c</code> 안에서 부르는 명령에는 맞지 않는다고 적습니다. <code>python tools/정리.py</code>처럼 스크립트를 실행하는 명령은, 그 스크립트가 안에서 <code>기록/</code>의 파일을 지워도 명령 문자열에는 <code>기록</code>이 나오지 않습니다(실습 14-1). 이런 경로까지 막으려면 명령이 쓸 수 있는 파일과 네트워크를 운영체제 수준에서 제한하는 <span class="term" tabindex="0" data-def="명령과 그 명령이 띄운 프로세스가 접근할 수 있는 파일과 네트워크를 운영체제 수준에서 제한하는 실행 환경">샌드박스</span>(sandbox)를 씁니다. Claude Code의 샌드박스는 셸 명령과 그 명령이 띄운 프로세스에 적용되고, macOS, Linux, WSL2에서 동작하며 Windows에서 바로 실행한 Claude Code에는 적용되지 않습니다(2026-11 확인).</p>
 <aside class="callout more">
 <p><strong>opencode에서 같은 일을 하는 기능(2026-11 확인)</strong></p>
-<table>
+<div class="table-wrap"><table>
 <thead>
 <tr>
 <th>이 장의 개념</th>
@@ -947,7 +955,7 @@ tools: Read, Grep, Glob
 <td><code>opencode run</code></td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p>두 도구의 권한 규칙은 우선순위를 정하는 방법이 반대입니다. Claude Code에서는 deny가 늘 우선하고, opencode에서는 목록의 뒤에 둔 규칙이 우선합니다. 한쪽의 설정을 다른 쪽으로 옮길 때는 규칙의 순서를 다시 확인합니다.</p>
 </aside>
 <h2 id="개념-확인-실습">개념 확인 실습</h2>

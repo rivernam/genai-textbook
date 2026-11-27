@@ -146,6 +146,8 @@ pre code { background: none; padding: 0; font-size: inherit; }
 
 /* 표 */
 table { border-collapse: collapse; width: 100%; margin: 0 0 1.25rem; font-size: 0.95rem; line-height: 1.6; }
+.table-wrap { overflow-x: auto; margin: 0 0 1.25rem; }
+.table-wrap table { margin: 0; }
 th, td { text-align: left; vertical-align: top; padding: 0.5rem 0.7rem; border-bottom: 1px solid var(--line); }
 thead th { border-bottom: 2px solid var(--ink); font-weight: 700; }
 .glossary th { white-space: nowrap; font-weight: 600; }
@@ -399,13 +401,19 @@ span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 
   <span class="site">생성형 AI 교재</span>
   <nav class="days" aria-label="일자">
 <a href="index.html">차례</a>
+<a href="00_시작하기_전에.html">시작하기 전에</a>
 <a href="01_LLM은_어떻게_글을_만드는가.html">1장</a>
 <a href="02_모델은_어떻게_만들어지는가.html">2장</a>
 <a href="03_컨텍스트.html">3장</a>
 <a href="04_프롬프트_설계.html" class="here">4장</a>
 <a href="05_LLM_API.html">5장</a>
 <a href="06_구조화_출력.html">6장</a>
+<a href="07_임베딩과_의미_검색.html">7장</a>
+<a href="08_RAG.html">8장</a>
+<a href="09_검색과_RAG의_평가와_개선.html">9장</a>
 <a href="10_지식을_구조화하는_다른_방법.html">10장</a>
+<a href="11_파인튜닝.html">11장</a>
+<a href="12_경량화와_배포.html">12장</a>
 <a href="13_AI_에이전트.html">13장</a>
 <a href="14_코딩_에이전트와_멀티_에이전트.html">14장</a>
 <a href="15_보안과_거버넌스.html">15장</a>
@@ -459,7 +467,7 @@ span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 
 <div class="gist">
 <p>모델은 프롬프트에 이어질 그럴듯한 글을 만듭니다. 지시가 모호하면 그럴듯한 응답이 여러 가지여서 실행마다 달라지고, 지시가 구체적일수록 후보가 좁아져 응답이 일정해집니다.</p>
 </div>
-<p><span class="term" tabindex="0" data-def="모델에 입력하는 지시와 재료. 질문, 붙여 넣은 문서, 형식 지정이 모두 프롬프트다">프롬프트</span>(prompt)는 모델에 입력하는 지시와 재료 전체입니다. "이 문의들을 분류해 주세요"라는 지시 뒤에는 표, 문단, 제각각의 라벨 이름 등 그럴듯한 이어짐이 아주 많습니다. 1장의 말로 하면 첫 토큰부터 확률이 여러 후보에 퍼져 있고, 샘플링할 때마다 다른 이어짐이 뽑힙니다. 라벨 목록과 출력 형식을 정해 주면 그 밖의 이어짐은 그럴듯하지 않게 되어 후보가 좁아집니다.</p>
+<p><span class="term" tabindex="0" data-def="모델에 입력하는 지시와 재료. 질문, 붙여 넣은 문서, 형식 지정이 모두 프롬프트다">프롬프트</span>(prompt)는 모델에 입력하는 지시와 재료 전체입니다. "이 문의들을 분류해 주세요"라는 지시 뒤에는 표, 문단, 제각각의 라벨 이름 등 그럴듯한 이어짐이 아주 많습니다. 1장의 말로 하면 첫 토큰부터 확률이 여러 후보에 퍼져 있고, 샘플링할 때마다 다른 이어짐이 뽑힙니다. 라벨 목록과 출력 형식을 정해 주면 그 밖의 이어짐은 그럴듯하지 않아 후보가 좁아집니다.</p>
 <figure>
 <svg viewBox="0 0 680 212" role="img" aria-label="모호한 분류 지시에는 표 구성과 라벨 이름이 제각각인 응답이 실행마다 다르게 나오고, 라벨 4개와 번호: 라벨 형식을 정한 지시는 후보가 좁아져 실행마다 같은 형식이 나오는 그림.">
 <rect x="10" y="20" width="170" height="50" rx="6" fill="var(--sheet)" stroke="var(--line)"/><text x="95" y="42" text-anchor="middle" fill="var(--ink)" font-size="13" font-weight="700">"분류해 주세요"</text><text x="95" y="60" text-anchor="middle" fill="var(--ink-soft)" font-size="11">+ 문의 10건</text><line x1="180" y1="45" x2="240" y2="30" stroke="var(--line)"/><rect x="240" y="20" width="190" height="22" rx="4" fill="var(--sheet)" stroke="var(--line)"/><text x="250" y="35" fill="var(--ink)" font-size="11">표 | 분류 | 세부 내용 | 우선순위</text><line x1="180" y1="45" x2="240" y2="62" stroke="var(--line)"/><rect x="240" y="52" width="190" height="22" rx="4" fill="var(--sheet)" stroke="var(--line)"/><text x="250" y="67" fill="var(--ink)" font-size="11">라벨: 안전/환경, 설비 장애…</text><line x1="180" y1="45" x2="240" y2="94" stroke="var(--line)"/><rect x="240" y="84" width="190" height="22" rx="4" fill="var(--sheet)" stroke="var(--line)"/><text x="250" y="99" fill="var(--ink)" font-size="11">라벨: 안전·환경, 품질 불량…</text><line x1="180" y1="45" x2="240" y2="126" stroke="var(--line)"/><rect x="240" y="116" width="190" height="22" rx="4" fill="var(--sheet)" stroke="var(--line)"/><text x="250" y="131" fill="var(--ink)" font-size="11">두 분류를 함께 적은 라벨</text><line x1="180" y1="45" x2="240" y2="158" stroke="var(--line)"/><rect x="240" y="148" width="190" height="22" rx="4" fill="var(--sheet)" stroke="var(--line)"/><text x="250" y="163" fill="var(--ink)" font-size="11">우선순위 열을 스스로 추가</text><text x="335" y="202" text-anchor="middle" fill="var(--amber)" font-size="12">그럴듯한 응답이 여러 가지 → 실행마다 다름</text><rect x="450" y="20" width="220" height="70" rx="6" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="560" y="40" text-anchor="middle" fill="var(--ink)" font-size="12" font-weight="700">라벨 4개 + "번호: 라벨" 형식</text><text x="560" y="58" text-anchor="middle" fill="var(--ink-soft)" font-size="11">+ 문의 10건</text><line x1="560" y1="90" x2="552" y2="90" stroke="var(--teal)" stroke-width="2"/><polygon points="552,85 560,90 552,95" fill="var(--teal)"/><line x1="560" y1="90" x2="560" y2="112" stroke="var(--teal)" stroke-width="2"/><polygon points="555,112 560,120 565,112" fill="var(--teal)"/><rect x="470" y="122" width="180" height="40" rx="4" fill="var(--sheet)" stroke="var(--teal)"/><text x="560" y="140" text-anchor="middle" fill="var(--ink)" font-size="12">Q01: 설비 이상</text><text x="560" y="155" text-anchor="middle" fill="var(--ink)" font-size="12">Q11: 품질 …</text><text x="560" y="202" text-anchor="middle" fill="var(--teal)" font-size="12">후보가 좁아짐 → 실행마다 같음</text>

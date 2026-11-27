@@ -146,6 +146,8 @@ pre code { background: none; padding: 0; font-size: inherit; }
 
 /* 표 */
 table { border-collapse: collapse; width: 100%; margin: 0 0 1.25rem; font-size: 0.95rem; line-height: 1.6; }
+.table-wrap { overflow-x: auto; margin: 0 0 1.25rem; }
+.table-wrap table { margin: 0; }
 th, td { text-align: left; vertical-align: top; padding: 0.5rem 0.7rem; border-bottom: 1px solid var(--line); }
 thead th { border-bottom: 2px solid var(--ink); font-weight: 700; }
 .glossary th { white-space: nowrap; font-weight: 600; }
@@ -399,14 +401,20 @@ span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 
   <span class="site">생성형 AI 교재</span>
   <nav class="days" aria-label="일자">
 <a href="index.html">차례</a>
+<a href="00_시작하기_전에.html">시작하기 전에</a>
 <a href="01_LLM은_어떻게_글을_만드는가.html">1장</a>
 <a href="02_모델은_어떻게_만들어지는가.html">2장</a>
 <a href="03_컨텍스트.html">3장</a>
 <a href="04_프롬프트_설계.html">4장</a>
 <a href="05_LLM_API.html">5장</a>
 <a href="06_구조화_출력.html">6장</a>
+<a href="07_임베딩과_의미_검색.html">7장</a>
+<a href="08_RAG.html">8장</a>
+<a href="09_검색과_RAG의_평가와_개선.html">9장</a>
+<a href="10_지식을_구조화하는_다른_방법.html">10장</a>
 <a href="11_파인튜닝.html" class="here">11장</a>
 <a href="12_경량화와_배포.html">12장</a>
+<a href="13_AI_에이전트.html">13장</a>
 <a href="14_코딩_에이전트와_멀티_에이전트.html">14장</a>
 <a href="15_보안과_거버넌스.html">15장</a>
   </nav>
@@ -447,7 +455,7 @@ span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 
 <p>프롬프트와 RAG(retrieval-augmented generation)는 모델에 보내는 입력을 바꿉니다. 파인튜닝은 모델의 파라미터 자체를 바꿉니다. 이 장은 언제 파라미터를 바꿔야 하는지, 학습이 파라미터를 어떻게 고치는지, 적은 메모리로 고치는 방법인 LoRA(low-rank adaptation)가 어떻게 동작하는지, 학습한 모델에서 무엇을 점검해야 하는지를 설명합니다.</p>
 <h2 id="학습-목표">학습 목표</h2>
 <ol>
-<li>프롬프트, RAG, 파인튜닝이 각각 무엇을 바꾸는지 설명하고, 모델이 모르는 사실이 문제인지 형식과 판단 기준을 따르지 않는 것이 문제인지로 셋 중 하나를 고를 수 있습니다.</li>
+<li>프롬프트, RAG, 파인튜닝이 각각 무엇을 바꾸는지 설명하고, 지금 겪는 문제가 모르는 사실 때문인지 형식과 판단 기준을 지키지 않아서인지에 따라 셋 중 하나를 고를 수 있습니다.</li>
 <li>학습 데이터가 채팅 템플릿, 최대 길이, 패딩을 거쳐 배치가 되고, 손실은 답 부분에서만 계산된다는 것을 설명할 수 있습니다.</li>
 <li>경사 하강법이 파라미터를 고치는 과정과 학습률, 배치, 에포크의 뜻을 설명하고, 학습 데이터와 평가셋의 결과로 과적합을 알아볼 수 있습니다.</li>
 <li>LoRA가 원래 행렬을 고정하고 작은 행렬 두 개만 학습하는 원리를 설명하고, 학습하는 파라미터 수를 계산할 수 있습니다.</li>
@@ -483,8 +491,8 @@ span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 
 <ol>
 <li>채팅 템플릿(3장)으로 시스템 프롬프트, 알람, 답을 글 한 덩어리로 잇습니다. 학습한 모델을 쓸 때도 같은 템플릿으로 입력해야 합니다. 템플릿이 다르면 모델이 학습한 형식과 실제 입력이 달라 학습한 대로 답하지 않습니다.</li>
 <li>토크나이저로 토큰 ID의 나열로 바꿉니다. 이때 <span class="term" tabindex="0" data-def="학습이나 토큰화에서 한 건의 토큰 수 상한. 넘는 뒤쪽은 잘린다. 모델의 컨텍스트 윈도우와 별개로 학습 코드가 정한다">최대 길이</span>(max length)를 넘는 뒤쪽은 잘라 냅니다. 학습에 드는 메모리와 시간은 토큰 수에 따라 늘어나므로 상한을 둡니다.</li>
-<li>여러 건을 묶어 한 번에 계산합니다. 묶은 단위를 <span class="term" tabindex="0" data-def="학습에서 파라미터를 한 번 고치는 데 쓰는 학습 데이터 묶음. 여러 건을 행렬 하나로 한꺼번에 계산한다. 배치 처리와 다른 말이다">배치</span>(batch)라고 합니다. 배치는 행렬 하나로 계산하므로 모든 행의 길이가 같아야 합니다. 그래서 짧은 행의 뒤에 <span class="term" tabindex="0" data-def="배치 안의 길이를 맞추려고 짧은 행의 뒤에 채우는 토큰. 계산과 손실에서 뺀다">패딩</span>(padding) 토큰을 채웁니다. 함께 만드는 <span class="term" tabindex="0" data-def="위치마다 실제 토큰이면 1, 패딩이면 0을 적은 목록. 모델은 0인 위치를 계산에 쓰지 않는다">어텐션 마스크</span>(attention mask)는 위치마다 실제 토큰이면 1, 패딩이면 0이고, 모델은 0인 위치를 계산에 쓰지 않습니다.</li>
-<li>손실을 계산할 위치를 정합니다. 위치마다 정답 토큰을 적은 목록(<code>labels</code>)에서 프롬프트와 패딩 위치는 -100으로 바꿉니다. -100인 위치는 손실 계산에서 빠집니다.</li>
+<li>여러 건을 묶어 한 번에 계산합니다. 묶은 단위를 <span class="term" tabindex="0" data-def="학습에서 파라미터를 한 번 고치는 데 쓰는 학습 데이터 묶음. 여러 건을 행렬 하나로 한꺼번에 계산한다. 배치 처리와 다른 말이다">배치</span>(batch)라고 합니다. 배치는 행렬 하나로 계산하므로 모든 행의 길이가 같아야 합니다. 그래서 짧은 행의 뒤에 <span class="term" tabindex="0" data-def="배치 안의 길이를 맞추려고 짧은 행의 뒤에 채우는 토큰. 계산과 손실에서 뺀다">패딩</span>(padding) 토큰을 채웁니다. 함께 만드는 <span class="term" tabindex="0" data-def="위치마다 실제 토큰이면 1, 패딩이면 0을 적은 목록. 모델은 어텐션에서 0인 위치를 참고하지 않는다">어텐션 마스크</span>(attention mask)는 위치마다 실제 토큰이면 1, 패딩이면 0이고, 모델은 어텐션에서 0인 위치를 참고하지 않습니다.</li>
+<li>손실을 계산할 위치를 정합니다. 위치마다 정답 토큰을 적은 목록(<code>labels</code>)에서 프롬프트와 패딩 위치는 -100으로 바꿉니다. -100은 PyTorch의 손실 함수(<code>CrossEntropyLoss</code>)가 무시하는 기본값(<code>ignore_index</code>)이어서, 이 위치는 손실 계산에서 빠집니다.</li>
 </ol>
 <figure>
 <svg viewBox="0 0 680 178" role="img" aria-label="학습 데이터 3건으로 만든 배치. 알람 1은 프롬프트 50토큰과 답 16토큰으로 66토큰이고, 알람 2는 프롬프트 51토큰, 답 12토큰에 패딩 3토큰, 알람 3은 프롬프트 46토큰, 답 12토큰에 패딩 8토큰을 붙여 모두 66토큰으로 맞춥니다. 손실은 답 부분에서만 계산하고, 프롬프트와 패딩은 뺍니다.">
@@ -556,7 +564,7 @@ span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 
 <div class="gist">
 <p>배치 하나로 파라미터를 한 번 고치는 것이 스텝이고, 학습 데이터 전체를 한 번 다 쓰는 것이 에포크입니다. 학습 데이터의 손실만 보면 과적합을 알 수 없으므로, 학습에 쓰지 않은 평가셋으로 함께 측정합니다.</p>
 </div>
-<p>기울기는 배치 하나의 평균 손실로 계산합니다. 한 건씩 고치면 그 건에만 맞춰 방향이 매번 바뀌고, 데이터 전체로 한 번에 계산하면 메모리가 부족하기 때문입니다. 배치가 클수록 기울기가 안정되지만 메모리가 더 듭니다. 학습 데이터 전체를 한 번 다 쓰는 단위를 <span class="term" tabindex="0" data-def="학습 데이터 전체를 한 번 다 쓰는 학습 단위">에포크</span>(epoch)라고 합니다.</p>
+<p>기울기는 배치 하나의 평균 손실로 계산합니다. 한 건씩 고치면 그 건에만 맞춰 방향이 매번 바뀌고, 데이터 전체로 한 번에 계산하면 메모리가 부족하기 때문입니다. 배치가 클수록 기울기가 안정되지만 메모리가 더 듭니다. 학습 데이터 64건을 8건씩 나누면 배치가 8개이고, 배치 8개를 모두 한 번씩 쓰면 1<span class="term" tabindex="0" data-def="학습 데이터 전체를 한 번 다 쓰는 학습 단위">에포크</span>(epoch)입니다(그림).</p>
 <figure>
 <svg viewBox="0 0 680 112" role="img" aria-label="학습 데이터 64건을 8건씩 배치 8개로 나눕니다. 배치마다 파라미터를 한 번 고치는 것이 스텝이고, 배치 8개를 모두 한 번 쓰면 1에포크(8스텝)입니다. 예제 11-3은 3에포크, 모두 24스텝을 학습합니다.">
 <rect x="20" y="30" width="50" height="34" rx="6" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="45" y="52" text-anchor="middle" fill="var(--ink)" font-size="11">배치 1</text><rect x="78" y="30" width="50" height="34" rx="6" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="103" y="52" text-anchor="middle" fill="var(--ink)" font-size="11">배치 2</text><rect x="136" y="30" width="50" height="34" rx="6" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="161" y="52" text-anchor="middle" fill="var(--ink)" font-size="11">배치 3</text><rect x="194" y="30" width="50" height="34" rx="6" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="219" y="52" text-anchor="middle" fill="var(--ink)" font-size="11">배치 4</text><rect x="252" y="30" width="50" height="34" rx="6" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="277" y="52" text-anchor="middle" fill="var(--ink)" font-size="11">배치 5</text><rect x="310" y="30" width="50" height="34" rx="6" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="335" y="52" text-anchor="middle" fill="var(--ink)" font-size="11">배치 6</text><rect x="368" y="30" width="50" height="34" rx="6" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="393" y="52" text-anchor="middle" fill="var(--ink)" font-size="11">배치 7</text><rect x="426" y="30" width="50" height="34" rx="6" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="451" y="52" text-anchor="middle" fill="var(--ink)" font-size="11">배치 8</text><text x="20" y="20" fill="var(--ink)" font-size="12" font-weight="700">학습 데이터 64건을 8건씩 나눈 배치 8개</text><path d="M20 74 L20 82 L484 82 L484 74" fill="none" stroke="var(--ink-soft)"/><text x="252" y="100" text-anchor="middle" fill="var(--ink)" font-size="12">1에포크 = 8스텝(배치마다 파라미터를 한 번 고침)</text><rect x="510" y="30" width="160" height="70" rx="6" fill="var(--amber-wash)" stroke="var(--amber)"/><text x="590" y="58" text-anchor="middle" fill="var(--ink)" font-size="12" font-weight="700">3에포크</text><text x="590" y="80" text-anchor="middle" fill="var(--ink)" font-size="12">8스텝 × 3 = 24스텝</text>
@@ -565,7 +573,7 @@ span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 
 </figure>
 
 <p>에포크를 늘리면 학습 데이터의 손실은 계속 내려갑니다. 그러다 모델이 학습 데이터의 문장 자체를 외우기 시작하면, 처음 보는 입력에서는 오히려 결과가 나빠집니다. 이 상태를 <span class="term" tabindex="0" data-def="모델이 학습 데이터에만 맞춰져, 학습 데이터의 결과는 좋아지는데 처음 보는 입력의 결과는 나빠지는 상태">과적합</span>(overfitting)이라고 합니다. 2장의 예제 2-1에서 문장 30개로 1,000번 학습한 작은 모델이 학습한 문장을 거의 그대로 외운 것도 과적합입니다.</p>
-<p>과적합은 학습 데이터만으로는 알 수 없습니다. 그래서 학습을 시작하기 전에 데이터의 일부를 <span class="term" tabindex="0" data-def="결과를 측정하려고 따로 떼어 둔 입력과 정답의 묶음. 학습이나 프롬프트 수정에 쓰지 않는다">평가셋</span>(evaluation set)으로 떼어 두고, 학습에는 쓰지 않습니다. 평가셋의 손실이나 정확도가 좋아지다가 나빠지기 시작하면 그 앞에서 학습을 멈추고, 학습 데이터를 늘리거나 에포크를 줄입니다.</p>
+<p>과적합은 학습 데이터만으로는 알 수 없습니다. 그래서 학습을 시작하기 전에 데이터의 일부를 <span class="term" tabindex="0" data-def="결과를 측정하려고 따로 떼어 둔 입력과 정답의 묶음. 검색과 RAG에서는 질문마다 정답 문서와 정답을 적는다. 학습이나 프롬프트 수정에 쓰지 않는다">평가셋</span>(evaluation set)으로 떼어 두고, 학습에는 쓰지 않습니다. 평가셋의 손실이나 정확도가 좋아지다가 나빠지기 시작하면 그 앞에서 학습을 멈추고, 학습 데이터를 늘리거나 에포크를 줄입니다.</p>
 <figure>
 <svg viewBox="0 0 680 194" role="img" aria-label="에포크에 따른 두 손실의 개념도. 학습 데이터의 손실(청록색)은 에포크가 늘수록 계속 내려갑니다. 평가셋의 손실(주황색)은 처음에는 함께 내려가다가 어느 에포크부터 다시 올라갑니다. 다시 오르기 시작한 뒤가 과적합이고, 평가셋 손실이 가장 낮은 곳에서 학습을 멈춥니다.">
 <line x1="60" y1="170" x2="630" y2="170" stroke="var(--line)"/><line x1="60" y1="20" x2="60" y2="170" stroke="var(--line)"/><text x="620" y="188" text-anchor="middle" fill="var(--ink-soft)" font-size="11">에포크</text><text x="66" y="16" fill="var(--ink-soft)" font-size="11">손실</text><polyline points="60,30.0 71,40.0 82,49.2 93,57.7 104,65.6 115,72.9 126,79.6 137,85.7 148,91.5 159,96.7 170,101.6 181,106.1 192,110.2 203,114.1 214,117.6 225,120.8 236,123.9 247,126.6 258,129.2 269,131.6 280,133.8 291,135.8 302,137.6 313,139.4 324,140.9 335,142.4 346,143.8 357,145.0 368,146.2 379,147.2 390,148.2 401,149.1 412,150.0 423,150.7 434,151.4 445,152.1 456,152.7 467,153.3 478,153.8 489,154.3 500,154.7 511,155.1 522,155.5 533,155.8 544,156.2 555,156.4 566,156.7 577,157.0 588,157.2 599,157.4 610,157.6" fill="none" stroke="var(--teal)" stroke-width="2"/><polyline points="60,30.0 71,40.5 82,49.9 93,58.5 104,66.3 115,73.3 126,79.6 137,85.4 148,90.6 159,95.3 170,99.5 181,103.4 192,106.9 203,110.0 214,112.9 225,115.5 236,117.8 247,119.9 258,121.7 269,123.2 280,124.3 291,125.2 302,125.9 313,126.4 324,126.7 335,126.9 346,126.9 357,126.8 368,126.6 379,126.2 390,125.8 401,125.2 412,124.6 423,123.9 434,123.1 445,122.2 456,121.2 467,120.2 478,119.2 489,118.0 500,116.9 511,115.6 522,114.3 533,113.0 544,111.6 555,110.2 566,108.8 577,107.3 588,105.7 599,104.2 610,102.6" fill="none" stroke="var(--amber)" stroke-width="2"/><line x1="346" y1="24" x2="346" y2="170" stroke="var(--ink-soft)" stroke-dasharray="4 4"/><text x="354" y="36" fill="var(--ink-soft)" font-size="11">평가셋 손실이 가장 낮은 곳에서 멈춤</text><text x="600" y="100" text-anchor="end" fill="var(--amber)" font-size="12" font-weight="700">평가셋 손실: 다시 오름</text><text x="600" y="150" text-anchor="end" fill="var(--teal)" font-size="12" font-weight="700">학습 데이터 손실: 계속 내려감</text>
@@ -575,9 +583,9 @@ span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 
 
 <h2 id="전체-파인튜닝과-LoRA">전체 파인튜닝과 LoRA</h2>
 <div class="gist">
-<p>전체 파인튜닝은 모든 파라미터를 고치므로 기울기와 옵티마이저 상태까지 파라미터 수만큼 메모리가 듭니다. LoRA는 원래 행렬을 고정하고 옆에 붙인 작은 행렬 두 개만 학습해, 학습하는 파라미터를 1% 아래로 줄입니다.</p>
+<p>전체 파인튜닝은 모든 파라미터를 고치므로 기울기와 옵티마이저 상태까지 파라미터 수만큼 메모리가 듭니다. LoRA는 원래 행렬을 고정하고 옆에 붙인 작은 행렬 두 개만 학습해, 예제 11-2의 설정에서는 학습하는 파라미터가 전체의 0.11%입니다.</p>
 </div>
-<p>모든 파라미터를 고치는 <span class="term" tabindex="0" data-def="모델의 모든 파라미터를 고치는 파인튜닝. 파라미터마다 기울기와 옵티마이저 상태를 메모리에 둔다">전체 파인튜닝</span>(full fine-tuning)은 파라미터마다 기울기와 옵티마이저 상태(AdamW는 값 두 개)를 메모리에 둡니다. 파라미터 70억 개 모델이면 이것만으로 GPU 한 장의 메모리를 넘습니다(12장에서 계산합니다). 학습이 끝나면 모델 전체의 사본이 하나 생기므로, 과제가 열 개면 사본도 열 개입니다.</p>
+<p>모든 파라미터를 고치는 <span class="term" tabindex="0" data-def="모델의 모든 파라미터를 고치는 파인튜닝. 파라미터마다 기울기와 옵티마이저 상태를 메모리에 둔다">전체 파인튜닝</span>(full fine-tuning)은 파라미터마다 기울기와 옵티마이저 상태(AdamW는 값 두 개)를 메모리에 둡니다. 파라미터 70억 개 모델이면 기울기와 옵티마이저 상태만으로 약 98GB가 들어, 80GB GPU 한 장을 넘습니다(12장). 학습이 끝나면 모델 전체의 사본이 하나 생기므로, 과제가 열 개면 사본도 열 개입니다.</p>
 <p><span class="term" tabindex="0" data-def="원래 행렬을 고정하고, 옆에 붙인 작은 행렬 두 개(A, B)만 학습하는 파인튜닝 방법. 두 행렬의 곱을 원래 행렬의 결과에 더한다">LoRA</span>(low-rank adaptation)는 원래 행렬 W를 고정하고, 옆에 작은 행렬 두 개 A와 B를 붙여 그것만 학습합니다(Hu 외, 2021). W가 d × k 행렬일 때 A는 r × k, B는 d × r이고, 둘을 곱한 BA는 W와 크기가 같은 d × k 행렬입니다. r을 <span class="term" tabindex="0" data-def="LoRA에서 작은 행렬 A와 B의 안쪽 크기 r. 클수록 학습하는 값이 많아진다">rank</span>라고 하며 보통 4~64로 작게 둡니다. 출력은 원래 행렬의 결과에 BA의 결과를 더한 것입니다. 더할 때 곱하는 α / r에서 α(<code>lora_alpha</code>)는 BA의 효과를 얼마나 크게 반영할지 정하는 값입니다.</p>
 <figure>
 <svg viewBox="0 0 680 204" role="img" aria-label="LoRA의 구조. 입력 x는 원래 행렬 W(896 × 896, 802,816개, 고정)를 지나는 길과, 작은 행렬 A(8 × 896)와 B(896 × 8)를 차례로 지나는 길로 나뉘고, 두 결과를 더한 Wx + (α / r) × BAx가 출력입니다. 학습하는 것은 A와 B의 14,336개뿐으로 W의 1.8%입니다. B는 0에서 시작하므로 학습 전에는 원래 모델과 출력이 같습니다.">
@@ -586,9 +594,9 @@ span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 
 <figcaption>원래 행렬 W는 고정하고, 옆에 붙인 작은 행렬 A와 B만 학습합니다(rank r=8, q_proj 하나).</figcaption>
 </figure>
 
-<p>이 방식이 통하는 이유와 특징은 다음과 같습니다.</p>
+<p>LoRA가 적은 파라미터로도 전체 파인튜닝에 가까운 결과를 내는 이유와 특징은 다음과 같습니다.</p>
 <ul>
-<li>BA는 크기가 W와 같지만 rank가 r 이하인 행렬이므로, LoRA는 W에 더할 변화를 이런 단순한 행렬로 제한합니다. Hu 외(2021)는 GPT-3 175B에서 r을 1~8 정도로 작게 두어도 전체 파인튜닝과 비슷하거나 나은 성능이 나왔고, 학습하는 파라미터는 1만분의 1로, 학습에 필요한 GPU 메모리는 3분의 1로 줄었다고 보고했습니다. 파인튜닝으로 생기는 변화가 그만큼 단순한 경우가 많다는 뜻입니다.</li>
+<li>BA는 크기가 W와 같지만 rank가 r 이하인 행렬이므로, LoRA는 W에 더할 변화를 rank가 r 이하인 행렬로 제한합니다. Hu 외(2021)는 GPT-3 175B에서 r을 1~8 정도로 작게 두어도 전체 파인튜닝과 비슷하거나 나은 성능이 나왔고, 학습하는 파라미터는 1만분의 1로, 학습에 필요한 GPU 메모리는 3분의 1로 줄었다고 보고했습니다. 파인튜닝이 만드는 변화는 낮은 rank의 행렬로 나타낼 수 있는 경우가 많다는 뜻입니다.</li>
 <li>B를 0으로 시작하므로 학습 전에는 BA가 0이고, 모델의 출력이 원래 모델과 같습니다. 학습은 원래 모델에서 출발합니다.</li>
 <li>학습한 A와 B만 따로 저장한 파일을 <span class="term" tabindex="0" data-def="LoRA로 학습한 행렬만 따로 저장한 것. 원래 모델에 붙이거나 떼어 쓴다">어댑터</span>(adapter)라고 합니다. 원래 모델 하나에 과제마다 어댑터를 바꿔 붙일 수 있고, 어댑터를 떼면 원래 모델로 돌아갑니다.</li>
 <li>학습한 뒤 BA를 W에 더해 행렬 하나로 합치면 생성 속도가 원래 모델과 같습니다(Hu 외, 2021).</li>
@@ -597,7 +605,7 @@ span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 
 <p>LoRA처럼 파라미터의 일부만 학습하는 방법을 묶어 PEFT(parameter-efficient fine-tuning)라고 부르며, Hugging Face의 <code>peft</code> 라이브러리가 이런 방법들을 구현합니다.</p>
 <section class="box example" id="예제-11-2">
 <header><span class="box-no">예제 11-2</span><span class="box-title">LoRA가 학습하는 파라미터 수</span><span class="box-where">노트북 <code>11_파인튜닝.ipynb</code>의 <code>예제 11-2</code></span></header>
-<p>0번 층 어텐션의 <code>q_proj</code> 행렬 하나에 rank를 바꿔 LoRA를 붙일 때 학습하는 값의 수를 계산하고, 24개 층의 <code>q_proj</code>와 <code>v_proj</code>에 r=8로 LoRA를 붙인 모델에서 학습하는 파라미터의 비율을 셉니다. 행렬이 클수록 LoRA가 학습하는 비율이 작아지는 것을 봅니다.</p>
+<p>0번 층 어텐션의 <code>q_proj</code> 행렬 하나에 rank를 바꿔 LoRA를 붙일 때 학습하는 값의 수를 계산하고, 24개 층의 <code>q_proj</code>와 <code>v_proj</code>에 r=8로 LoRA를 붙인 모델에서 학습하는 파라미터의 비율을 셉니다. 학습하는 값의 수가 rank에 비례해 늘고, 모델 전체에서는 비율이 훨씬 작아지는 것을 봅니다.</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">peft</span><span class="w"> </span><span class="kn">import</span> <span class="n">LoraConfig</span><span class="p">,</span> <span class="n">get_peft_model</span>
 
 <span class="n">q_proj</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">layers</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">self_attn</span><span class="o">.</span><span class="n">q_proj</span>     <span class="c1"># 0번 층 어텐션의 행렬 하나</span>
@@ -674,18 +682,18 @@ span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 
 
 </div>
 </section>
-<p>교재의 실행에서 3에포크는 약 5분(319초) 걸렸고, 에포크마다 평균 손실이 2.333, 0.229, 0.092로 줄었습니다. 학습 전에는 세 알람 모두 표준 형식과 무관한 문장으로 답했고, 학습 후에는 모두 "설비코드 | 분류 | 담당" 형식으로 답했습니다. 그러나 다이 본더 알람은 설비코드를 BD-06으로, 분류를 설비로 답해 틀렸습니다. 64건으로 형식은 익혔지만 약어와 분류 기준을 모두 익혔다고 할 수는 없습니다.</p>
+<p>교재의 실행에서 3에포크는 약 6분 걸렸고, 에포크마다 평균 손실이 2.333, 0.229, 0.092로 줄었습니다. 학습 전에는 세 알람 모두 표준 형식과 무관한 문장으로 답했고, 학습 후에는 모두 "설비코드 | 분류 | 담당" 형식으로 답했습니다. 그러나 다이 본더 알람은 설비코드를 BD-06으로, 분류를 설비로 답해 틀렸습니다. 64건으로 형식은 익혔지만 약어와 분류 기준을 모두 익혔다고 할 수는 없습니다.</p>
 <h2 id="학습한-모델에서-점검할-것">학습한 모델에서 점검할 것</h2>
 <div class="gist">
 <p>학습한 모델은 평가셋의 정확도, 학습과 무관한 질문에서 잃은 능력(망각), 모르는 것을 지어내는지(환각)의 세 가지로 점검합니다. 파인튜닝은 답하는 형식과 기준을 바꾸지만, 모델이 사실을 확인하게 만들지는 않습니다.</p>
 </div>
 <h3 id="평가셋">평가셋</h3>
-<p>학습 손실이 낮아도 처음 보는 입력에서 맞히는지는 알 수 없습니다. 학습에 쓰지 않은 평가셋으로 학습 전후의 정확도를 측정하고, 학습 전 모델은 규칙을 다 적은 프롬프트로 측정해 "프롬프트로 충분한가"와 비교합니다(실습 11-2). 평균 정확도만 보지 않고, 학습 전에는 맞히다가 학습 후에 틀린 건이 있는지도 봅니다.</p>
+<p>학습 손실이 낮아도 처음 보는 입력에서 맞히는지는 알 수 없습니다. 학습에 쓰지 않은 평가셋으로 학습 전후의 정확도를 측정하고, 학습 전 모델에는 규칙을 모두 적은 프롬프트를 주고 측정합니다. 두 정확도를 비교하면 프롬프트만으로 충분한지 알 수 있습니다(실습 11-2). 평균 정확도만 보지 않고, 학습 전에는 맞히다가 학습 후에 틀린 건이 있는지도 봅니다.</p>
 <h3 id="망각">망각</h3>
 <p>새 과제를 학습하면서 원래 하던 일을 못 하게 되는 현상을 <span class="term" tabindex="0" data-def="새 과제를 학습하면서 원래 하던 일을 못 하게 되는 현상">망각</span>(catastrophic forgetting)이라고 합니다. 파인튜닝은 학습 데이터에 대한 손실만 줄이도록 파라미터를 고치고, 학습 데이터에 없는 일을 그대로 유지하라는 신호는 주지 않기 때문입니다. 학습 데이터가 한 가지 과제뿐이면, 모델은 어떤 입력에도 그 과제의 형식으로 답하는 쪽으로 학습될 수 있습니다. 학습과 무관한 질문 몇 개를 정해 두고 학습 전후의 답을 비교하면 망각을 확인할 수 있습니다. LoRA는 어댑터를 떼면 원래 모델로 돌아가므로, 같은 모델에서 전후를 바로 비교할 수 있습니다(실습 11-2).</p>
 <h3 id="환각">환각</h3>
 <p>파인튜닝으로 사실을 가르치면 모델이 그 사실을 믿을 만하게 답할 것 같지만, 그렇지 않습니다. Gekhman 외(2024)는 모델이 사전 학습에서 몰랐던 사실을 파인튜닝으로 학습시키는 실험에서, 모델이 그런 예를 이미 알던 사실보다 느리게 학습했고, 그런 예를 학습할수록 환각이 늘었다고 보고했습니다. 저자들은 모델이 사실을 주로 사전 학습에서 익히고, 파인튜닝에서는 이미 아는 것을 쓰는 방법을 익힌다고 해석했습니다. 모르던 사실을 억지로 학습시키면 자기 지식에 근거하지 않은 답을 생성하는 법도 함께 학습한다는 것입니다.</p>
-<p>2장에서 설명한 환각의 원인도 파인튜닝으로 사라지지 않습니다. 학습 목표는 여전히 모범 답의 토큰에 높은 확률을 주는 것이고, 모델이 답하기 전에 사실을 확인하는 단계는 생기지 않습니다. 그래서 문서에 있는 사실은 RAG로 찾아 넣고 근거를 표시하게 하며, 파인튜닝은 형식과 기준을 익히는 데 씁니다.</p>
+<p>모델은 확률이 높은 다음 토큰을 이어 쓸 뿐 사실인지 확인하지 않습니다(2장). 이 원인은 파인튜닝으로 사라지지 않습니다. 학습 목표는 여전히 모범 답의 토큰에 높은 확률을 주는 것이고, 모델이 답하기 전에 사실을 확인하는 단계는 생기지 않습니다. 그래서 문서에 있는 사실은 RAG로 찾아 넣고 근거를 표시하게 하며, 파인튜닝은 형식과 기준을 익히는 데 씁니다.</p>
 <h2 id="개념-확인-실습">개념 확인 실습</h2>
 <p>실습은 장 노트북의 빈칸을 채워 실행합니다. 코드를 실행하기 전에 결과를 먼저 예측해 적고, 실행한 뒤 예측과 다른 부분을 이 장의 원리로 설명해 봅니다. 실습 11-1은 바로 끝나고, 실습 11-2는 예제 11-3에서 학습한 모델을 쓰며 CPU에서 몇 분 걸립니다. 실습 11-3은 GPU가 있는 환경에서 실행합니다.</p>
 <section class="box practice" id="실습-11-1">
@@ -799,13 +807,12 @@ LoRA를 뗀 모델: 대한민국의 수도는 서울입니다.
 </code></pre></div>
 
 </div>
-<p>교재의 실행에서 규칙을 모두 적은 프롬프트의 원래 모델은 32건 중 한 건도 표준 형식과 글자까지 같게 답하지 못했고, 짧은 지시만 준 학습한 모델은 34%(11건)를 맞혔습니다. 0.5B 모델은 긴 규칙을 프롬프트로 받아도 따르지 못했지만, 64건의 예로 형식은 익혔습니다. 34%로는 쓸 수 없으므로 학습 데이터를 늘리거나 더 큰 모델을 검토합니다(실습 11-3). 학습한 모델은 수도를 묻는 질문에도 "TH-01 | 대한민국 | 보전팀"처럼 알람 형식으로 답했습니다. 학습 데이터에 알람만 있어 어떤 입력에도 이 형식으로 답하도록 학습된 망각입니다. 어댑터를 떼면 원래 답(서울)이 돌아옵니다.</p>
+<p>교재의 실행에서 규칙을 모두 적은 프롬프트의 원래 모델은 32건 중 한 건도 표준 형식과 글자까지 같게 답하지 못했고, 짧은 지시만 준 학습한 모델은 34%(11건)를 맞혔습니다. 규칙을 프롬프트로 준 원래 모델은 형식에 맞는 답을 한 건도 내지 못했지만, 학습한 모델은 64건의 예로 형식을 익혔습니다. 34%로는 쓸 수 없으므로 학습 데이터를 늘리거나 더 큰 모델을 검토합니다(실습 11-3). 학습한 모델은 수도를 묻는 질문에도 "TH-01 | 대한민국 | 보전팀"처럼 알람 형식으로 답했습니다. 학습 데이터에 알람만 있어서 모델이 어떤 입력에도 이 형식으로 답했습니다. 이것이 망각입니다. 어댑터를 떼면 원래 답(서울)이 돌아옵니다.</p>
 </details>
 </section>
 <section class="box practice" id="실습-11-3">
 <header><span class="box-no">실습 11-3</span><span class="box-title">GPU에서 학습 설정 바꾸기</span><span class="box-where">노트북 <code>11_파인튜닝.ipynb</code>의 <code>실습 11-3</code></span></header>
-<p>GPU가 있는 환경에서 더 큰 모델(Qwen2.5-1.5B-Instruct)을 LoRA로 학습하고, 에포크마다 학습 데이터와 평가셋의 정확도를 함께 측정해 과적합이 생기는지 봅니다. <code>EPOCHS</code>, <code>LEARNING_RATE</code>, <code>RANK</code>를 바꿔 가며 다시 실행합니다. 학습 데이터의 정확도와 평가셋의 정확도 중 어느 쪽이 더 높을지, 에포크를 늘리면 두 값의 차이가 어떻게 될지 먼저 <code>my_guess</code>에 적습니다. 결과를 보고 과적합이 시작된 에포크가 있는지 설명하면 끝납니다. GPU가 없으면 이 셀은 실행하지 않고 넘어갑니다. 실습 11-2의 <code>accuracy()</code>를 씁니다.</p>
-<p>사내 GPU 환경에서 노트북을 여는 방법: (사내 GPU 환경의 사용 방법을 확인한 뒤 채웁니다.)</p>
+<p>GPU가 있는 환경에서 더 큰 모델(Qwen2.5-1.5B-Instruct)을 LoRA로 학습하고, 에포크마다 학습 데이터와 평가셋의 정확도를 함께 측정해 과적합이 생기는지 봅니다. <code>EPOCHS</code>, <code>LEARNING_RATE</code>, <code>RANK</code>를 바꿔 가며 다시 실행합니다. 학습 데이터의 정확도와 평가셋의 정확도 중 어느 쪽이 더 높을지, 에포크를 늘리면 두 값의 차이가 어떻게 될지 먼저 <code>my_guess</code>에 적습니다. 결과를 보고 과적합이 시작된 에포크가 있는지 설명하면 끝납니다. GPU가 없으면 이 셀은 실행하지 않고 넘어갑니다. 실습 11-2의 <code>accuracy()</code>를 씁니다. GPU 환경에서 노트북을 여는 방법은 사내 안내를 따릅니다.</p>
 <div class="codehilite"><pre><span></span><code><span class="n">GPU_MODEL</span> <span class="o">=</span> <span class="s1">'Qwen/Qwen2.5-1.5B-Instruct'</span>   <span class="c1"># 0.5B와 토크나이저가 같아 make_batch(), answer()를 그대로 씁니다</span>
 <span class="n">EPOCHS</span><span class="p">,</span> <span class="n">LEARNING_RATE</span><span class="p">,</span> <span class="n">RANK</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span> <span class="mf">5e-4</span><span class="p">,</span> <span class="mi">8</span>   <span class="c1"># 바꿔 가며 다시 실행합니다</span>
 <span class="n">my_guess</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># TODO: 두 정확도 중 어느 쪽이 높을지, 에포크를 늘리면 차이가 어떻게 될지 적습니다</span>

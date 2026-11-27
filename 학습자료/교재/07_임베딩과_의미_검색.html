@@ -146,6 +146,8 @@ pre code { background: none; padding: 0; font-size: inherit; }
 
 /* 표 */
 table { border-collapse: collapse; width: 100%; margin: 0 0 1.25rem; font-size: 0.95rem; line-height: 1.6; }
+.table-wrap { overflow-x: auto; margin: 0 0 1.25rem; }
+.table-wrap table { margin: 0; }
 th, td { text-align: left; vertical-align: top; padding: 0.5rem 0.7rem; border-bottom: 1px solid var(--line); }
 thead th { border-bottom: 2px solid var(--ink); font-weight: 700; }
 .glossary th { white-space: nowrap; font-weight: 600; }
@@ -399,6 +401,7 @@ span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 
   <span class="site">생성형 AI 교재</span>
   <nav class="days" aria-label="일자">
 <a href="index.html">차례</a>
+<a href="00_시작하기_전에.html">시작하기 전에</a>
 <a href="01_LLM은_어떻게_글을_만드는가.html">1장</a>
 <a href="02_모델은_어떻게_만들어지는가.html">2장</a>
 <a href="03_컨텍스트.html">3장</a>
@@ -408,6 +411,10 @@ span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 
 <a href="07_임베딩과_의미_검색.html" class="here">7장</a>
 <a href="08_RAG.html">8장</a>
 <a href="09_검색과_RAG의_평가와_개선.html">9장</a>
+<a href="10_지식을_구조화하는_다른_방법.html">10장</a>
+<a href="11_파인튜닝.html">11장</a>
+<a href="12_경량화와_배포.html">12장</a>
+<a href="13_AI_에이전트.html">13장</a>
 <a href="14_코딩_에이전트와_멀티_에이전트.html">14장</a>
 <a href="15_보안과_거버넌스.html">15장</a>
   </nav>
@@ -557,7 +564,7 @@ span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 
 <p>두 검색은 원리가 달라 놓치는 질문도 다릅니다. 알람 코드나 문서 번호처럼 정확한 문자열을 묻는 질문은 키워드 검색이, 문서와 다른 낱말로 묻는 질문은 임베딩 검색이 유리할 때가 많지만, 어느 쪽이 나은지는 평가 질문으로 측정해야 알 수 있습니다.</p>
 </div>
 <p>두 검색의 약점은 원리에서 나옵니다. 키워드 검색은 낱말이 겹쳐야 점수가 나므로 문서와 다른 낱말로 묻는 질문에 약합니다. 임베딩 검색은 학습 데이터에서 본 적 없는 문자열의 뜻을 모르므로, "E-2210"이나 "QIR-2026-014" 같은 사내 코드는 비슷한 형태의 다른 코드와 잘 구분하지 못합니다.</p>
-<p><span class="term" tabindex="0" data-def="질문마다 정답 문서와 정답을 적어 둔 묶음. 검색과 답을 바꿀 때마다 같은 기준으로 측정하는 데 쓴다">평가셋</span>(evaluation set)은 질문마다 정답 문서와 정답을 적어 둔 묶음이고, 자세한 내용은 9장에서 다룹니다. 이 교재의 평가셋(<code>evalset.json</code>)에는 질문마다 정답이 든 문서의 번호가 적혀 있습니다. 이 문서를 <span class="term" tabindex="0" data-def="질문에 답하는 내용이 들어 있다고 사람이 미리 정해 둔 문서. 검색 결과를 판정하는 기준이다">정답 문서</span>(gold document)라고 합니다. 질문의 <code>type</code>이 "바꿔 말함"이면 문서와 다른 낱말로 물은 질문이고, "코드"이면 알람 코드, 설비 번호, 문서 번호, 사내 약어로 물은 질문입니다.</p>
+<p><span class="term" tabindex="0" data-def="결과를 측정하려고 따로 떼어 둔 입력과 정답의 묶음. 검색과 RAG에서는 질문마다 정답 문서와 정답을 적는다. 학습이나 프롬프트 수정에 쓰지 않는다">평가셋</span>(evaluation set)은 질문마다 정답 문서와 정답을 적어 둔 묶음이고, 자세한 내용은 9장에서 다룹니다. 이 교재의 평가셋(<code>evalset.json</code>)에는 질문마다 정답이 든 문서의 번호가 적혀 있습니다. 이 문서를 <span class="term" tabindex="0" data-def="질문에 답하는 내용이 들어 있다고 사람이 미리 정해 둔 문서. 검색 결과를 판정하는 기준이다">정답 문서</span>(gold document)라고 합니다. 질문의 <code>type</code>이 "바꿔 말함"이면 문서와 다른 낱말로 물은 질문이고, "코드"이면 알람 코드, 설비 번호, 문서 번호, 사내 약어로 물은 질문입니다.</p>
 <section class="box example" id="예제-7-2">
 <header><span class="box-no">예제 7-2</span><span class="box-title">질문 유형마다 두 검색 비교하기</span><span class="box-where">노트북 <code>07_임베딩과_의미_검색.ipynb</code>의 <code>예제 7-2</code></span></header>
 <p>구판 5건을 뺀 유효 문서 115건의 본문 앞에 문서 번호와 제목을 붙여, 문서 하나에 벡터 하나씩 임베딩해 인덱스를 만듭니다(512토큰을 넘는 문서는 뒷부분이 잘립니다). 그리고 같은 문서로 키워드 검색(BM25) 인덱스도 만듭니다. "바꿔 말함" 질문 8개와 "코드" 질문 8개를 두 검색으로 찾아, 정답 문서가 1위에 온 질문 수와 1위를 놓친 질문의 순위를 봅니다. 임베딩에 1분쯤 걸립니다.</p>

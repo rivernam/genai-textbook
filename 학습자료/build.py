@@ -250,7 +250,9 @@ def to_html(text):
     converter = markdown.Markdown(
         extensions=['fenced_code', 'codehilite', 'tables', 'md_in_html', 'attr_list', 'sane_lists'],
         extension_configs={'codehilite': {'guess_lang': False, 'css_class': 'codehilite'}})
-    return converter.convert(text)
+    # 표가 화면보다 넓으면(좁은 화면, 긴 코드가 든 칸) 페이지가 아니라 표만 가로로 스크롤되게 감쌉니다
+    return re.sub(r'<table>(.*?)</table>', r'<div class="table-wrap"><table>\1</table></div>',
+                  converter.convert(text), flags=re.S)
 
 
 def toc_html(headings):
@@ -403,7 +405,7 @@ def _build(root):
         '직접 실행하려면 장마다 같은 이름의 장 노트북을, 관통 프로젝트는 프로젝트 노트북을 엽니다.</p>'
         + ''.join(sections) +
         '<h2 id="용어집">용어집</h2>'
-        f'<table class="glossary"><tbody>{glossary_rows}</tbody></table>'
+        f'<div class="table-wrap"><table class="glossary"><tbody>{glossary_rows}</tbody></table></div>'
         '</article>')
     index_toc = toc_html([(1, '차례', '차례'), (2, '용어집', '용어집')])
     (out_dir / 'index.html').write_text(
