@@ -1,0 +1,954 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>4장 프롬프트 설계 | 생성형 AI 교재</title>
+<style>
+/* 복습 교재 화면. 외부 글꼴과 이미지를 쓰지 않는다. */
+:root {
+  --paper: #f6f8f8;        /* 본문 바탕 */
+  --sheet: #ffffff;        /* 상자 바탕 */
+  --ink: #16252b;          /* 본문 글자 */
+  --ink-soft: #55676e;     /* 보조 글자 */
+  --line: #d3dcde;         /* 선 */
+  --teal: #0b5a66;         /* 제목, 링크, 예제 */
+  --teal-wash: #e3eff0;
+  --amber: #8a5a00;        /* 주의, 실습 */
+  --amber-wash: #fbf1d8;
+  --code-bg: #eef2f3;
+  --body-font: "Pretendard", "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --code-font: "D2Coding", "Cascadia Mono", "Consolas", "Menlo", "Malgun Gothic", "Apple SD Gothic Neo", monospace;
+  --measure: 50rem;        /* 본문 한 줄 약 50자. 표와 코드가 좁아지지 않는 폭 */
+}
+/* "넓게 보기"를 켜면 본문 폭을 넓힌다. 표와 코드가 많은 절을 볼 때 쓴다 */
+:root[data-width="wide"] { --measure: 74rem; }
+:root[data-theme="dark"] {
+  --paper: #10191c;
+  --sheet: #17242a;
+  --ink: #dde7e9;
+  --ink-soft: #94a8ae;
+  --line: #2c3f46;
+  --teal: #6fc7d2;
+  --teal-wash: #1b3238;
+  --amber: #e6b656;
+  --amber-wash: #322a16;
+  --code-bg: #1c2b31;
+}
+
+* { box-sizing: border-box; }
+html { scroll-padding-top: 4.5rem; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--body-font);
+  font-size: 1.0625rem;
+  line-height: 1.8;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+a { color: var(--teal); text-underline-offset: 0.2em; }
+:focus-visible { outline: 3px solid var(--teal); outline-offset: 2px; }
+.skip { position: absolute; left: -999rem; }
+.skip:focus { left: 1rem; top: 1rem; z-index: 30; background: var(--sheet); padding: 0.5rem 1rem; }
+
+/* 위쪽 띠 */
+.top {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; align-items: center; gap: 1rem;
+  height: 3.5rem; padding: 0 1.25rem;
+  background: var(--sheet); border-bottom: 1px solid var(--line);
+}
+.top .site { font-weight: 700; white-space: nowrap; }
+.top .days { display: flex; gap: 0.25rem; margin-right: auto; overflow-x: auto; }
+.top .days a { padding: 0.25rem 0.7rem; border-radius: 999px; text-decoration: none; color: var(--ink-soft); white-space: nowrap; }
+.top .days a.here { background: var(--teal); color: var(--sheet); }
+.top button {
+  font: inherit; font-size: 0.9rem; color: var(--ink);
+  background: none; border: 1px solid var(--line); border-radius: 6px;
+  padding: 0.3rem 0.8rem; cursor: pointer; white-space: nowrap;
+}
+.top .menu { display: none; }
+
+/* 배치: 왼쪽 목차, 가운데 본문 */
+.layout { display: grid; grid-template-columns: 18rem minmax(0, 1fr); }
+.side {
+  position: sticky; top: 3.5rem; align-self: start;
+  height: calc(100vh - 3.5rem); overflow-y: auto;
+  padding: 1.25rem 1rem 3rem 1.25rem;
+  border-right: 1px solid var(--line);
+  font-size: 0.92rem; line-height: 1.5;
+}
+.search span { display: block; color: var(--ink-soft); margin-bottom: 0.3rem; }
+.search input {
+  width: 100%; font: inherit; color: var(--ink);
+  background: var(--sheet); border: 1px solid var(--line); border-radius: 6px; padding: 0.45rem 0.6rem;
+}
+.hits { margin-top: 0.75rem; }
+.hits p { color: var(--ink-soft); margin: 0.5rem 0; }
+.hits a { display: block; padding: 0.4rem 0; text-decoration: none; border-bottom: 1px solid var(--line); }
+.hits small { display: block; color: var(--ink-soft); }
+.toc ul { list-style: none; margin: 1rem 0 0; padding: 0; }
+.toc a { display: block; padding: 0.22rem 0.5rem; border-left: 3px solid transparent; color: var(--ink-soft); text-decoration: none; }
+.toc a:hover { color: var(--ink); }
+.toc a.now { border-left-color: var(--teal); color: var(--ink); font-weight: 600; }
+.toc .l1 a { margin-top: 0.9rem; color: var(--ink); font-weight: 700; }
+.toc .l3 a { padding-left: 1.4rem; font-size: 0.88rem; }
+
+main { min-width: 0; padding: 2.5rem clamp(1.25rem, 5vw, 4.5rem) 4rem; }
+/* 본문은 남는 공간의 가운데에 둔다. 넓은 화면에서 한쪽에만 여백이 몰리지 않는다 */
+.part { max-width: var(--measure); margin: 0 auto 5rem; }
+.part > * { max-width: 100%; }
+
+/* 제목. 원본 쪽수는 제목 줄 오른쪽에 작은 표로 붙는다 */
+h1, h2, h3 { line-height: 1.35; letter-spacing: -0.01em; }
+h1 { font-size: 2.15rem; margin: 0 0 1.5rem; padding-bottom: 1rem; border-bottom: 3px solid var(--teal); }
+h2 { font-size: 1.5rem; margin: 3.5rem 0 1rem; }
+h3 { font-size: 1.15rem; margin: 2.25rem 0 0.75rem; }
+.source {
+  display: inline-block; vertical-align: middle; margin-left: 0.5rem;
+  font-size: 0.72rem; font-weight: 500; letter-spacing: 0;
+  color: var(--ink-soft); border: 1px solid var(--line); border-radius: 4px; padding: 0.05rem 0.4rem;
+}
+.source.added { color: var(--amber); border-color: currentColor; }
+
+p { margin: 0 0 1.1rem; }
+ul, ol { padding-left: 1.4rem; margin: 0 0 1.1rem; }
+li { margin-bottom: 0.3rem; }
+strong { font-weight: 700; }
+
+/* 용어: 점선 밑줄, 올리거나 초점이 가면 정의가 뜬다 */
+.term { position: relative; border-bottom: 1.5px dotted var(--teal); cursor: help; }
+.term:hover::after, .term:focus::after {
+  content: attr(data-def);
+  position: absolute; left: 0; top: 1.9em; z-index: 10;
+  width: max-content; max-width: min(22rem, 80vw);
+  background: var(--ink); color: var(--paper);
+  font-size: 0.86rem; font-weight: 400; line-height: 1.55;
+  padding: 0.55rem 0.75rem; border-radius: 6px;
+}
+
+/* 코드 */
+code { font-family: var(--code-font); font-size: 0.9em; background: var(--code-bg); padding: 0.1em 0.35em; border-radius: 4px; }
+/* 표 안의 짧은 코드(함수 이름, 패키지 이름)는 낱말 중간에서 끊지 않는다 */
+td code, th code { white-space: nowrap; }
+td, th { overflow-wrap: break-word; }
+pre { margin: 0; padding: 0.9rem 1rem; overflow-x: auto; font-size: 0.88rem; line-height: 1.65; }
+pre code { background: none; padding: 0; font-size: inherit; }
+.codehilite, .part > pre { position: relative; background: var(--code-bg); border-radius: 8px; margin: 0 0 1.1rem; }
+.codehilite pre { background: none; }
+.copy {
+  position: absolute; top: 0.4rem; right: 0.4rem;
+  font: inherit; font-size: 0.75rem; color: var(--ink-soft);
+  background: var(--sheet); border: 1px solid var(--line); border-radius: 5px; padding: 0.1rem 0.5rem; cursor: pointer;
+}
+
+/* 표 */
+table { border-collapse: collapse; width: 100%; margin: 0 0 1.25rem; font-size: 0.95rem; line-height: 1.6; }
+th, td { text-align: left; vertical-align: top; padding: 0.5rem 0.7rem; border-bottom: 1px solid var(--line); }
+thead th { border-bottom: 2px solid var(--ink); font-weight: 700; }
+.glossary th { white-space: nowrap; font-weight: 600; }
+
+/* 예제와 실습 상자. 번호는 노트북 셀 번호와 같다 */
+.box { background: var(--sheet); border: 1px solid var(--line); border-radius: 10px; margin: 1.75rem 0; overflow: hidden; }
+.box > header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 0.75rem; padding: 0.7rem 1.1rem; border-bottom: 1px solid var(--line); }
+.box-no { font-weight: 700; color: var(--teal); white-space: nowrap; }
+.box-title { font-weight: 600; }
+.box-where { margin-left: auto; font-size: 0.8rem; color: var(--ink-soft); }
+.box.example > header { background: var(--teal-wash); }
+.box.practice > header { background: var(--amber-wash); }
+.box.practice .box-no { color: var(--amber); }
+.box > :not(header) { margin-left: 1.1rem; margin-right: 1.1rem; }
+.box > header + * { margin-top: 1rem; }
+
+/* 탭 */
+.tabs { margin: 0 0 1.1rem; }
+.tablist { display: flex; gap: 0.25rem; }
+.tablist button {
+  font: inherit; font-size: 0.85rem; color: var(--ink-soft);
+  background: none; border: 1px solid var(--line); border-bottom: none; border-radius: 6px 6px 0 0;
+  padding: 0.25rem 0.8rem; cursor: pointer;
+}
+.tablist button[aria-selected="true"] { background: var(--code-bg); color: var(--ink); font-weight: 600; }
+.tabs .tab .codehilite { border-top-left-radius: 0; margin-bottom: 0; }
+.tab[hidden] { display: none; }
+/* 스크립트가 꺼져 있으면 탭 이름을 붙여 차례로 보여 준다 */
+.tab:not(.ready)::before { content: attr(data-tab); display: block; font-size: 0.85rem; font-weight: 600; color: var(--ink-soft); margin-bottom: 0.3rem; }
+
+.result { margin: 0 0 1.1rem; border-left: 4px solid var(--teal); }
+.result::before { content: "실행 결과"; display: block; font-size: 0.8rem; font-weight: 600; color: var(--teal); padding: 0 0 0.25rem 0.8rem; }
+.result .codehilite, .result > pre { margin: 0; border-radius: 0 8px 8px 0; background: none; }
+.result pre { padding-top: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+details.more-result summary { cursor: pointer; font-size: 0.85rem; font-weight: 600; color: var(--teal); padding: 0.2rem 0 0.4rem 1rem; }
+
+/* 절 첫머리의 요점 */
+.gist { margin: 0 0 1.4rem; padding: 0.1rem 0 0.1rem 1rem; border-left: 4px solid var(--teal); font-weight: 600; }
+.gist p { margin: 0.4rem 0; }
+
+.callout { margin: 1.5rem 0; padding: 0.9rem 1.1rem 0.1rem; border-radius: 8px; }
+.callout::before { display: block; font-weight: 700; font-size: 0.9rem; margin-bottom: 0.3rem; }
+.callout.warn { background: var(--amber-wash); }
+.callout.warn::before { content: "주의"; color: var(--amber); }
+.callout.more { background: var(--teal-wash); }
+.callout.more::before { content: "보충"; color: var(--teal); }
+
+details.answer { margin: 0 0 1.25rem; border: 1px dashed var(--line); border-radius: 8px; padding: 0.6rem 1rem; }
+details.answer summary { cursor: pointer; font-weight: 600; color: var(--teal); }
+details.answer[open] summary { margin-bottom: 0.6rem; }
+
+.day { margin: 2rem 0; }
+.day h2 { margin: 0 0 0.5rem; }
+.foot { max-width: var(--measure); margin: 4rem auto 0; padding-top: 1rem; border-top: 1px solid var(--line); font-size: 0.85rem; color: var(--ink-soft); }
+svg { max-width: 100%; height: auto; }
+figure { margin: 1.5rem 0; }
+figcaption { font-size: 0.88rem; color: var(--ink-soft); margin-top: 0.4rem; }
+
+@media (max-width: 60rem) {
+  .layout { display: block; }
+  .top .width { display: none; }
+  .top .menu { display: block; }
+  .top .site { display: none; }
+  .side {
+    position: fixed; top: 3.5rem; left: 0; z-index: 15; width: min(20rem, 88vw);
+    background: var(--paper); transform: translateX(-100%);
+  }
+  .side.open { transform: none; box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.35); }
+  .box-where { margin-left: 0; width: 100%; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .side { transition: transform 0.18s ease; }
+}
+@media print {
+  .top, .side, .copy, .tablist { display: none !important; }
+  .layout { display: block; }
+  body { background: #fff; font-size: 10.5pt; }
+  .tab[hidden] { display: block; }
+  .tab::before { content: attr(data-tab) !important; display: block; font-weight: 600; }
+  details.answer:not([open]) > *:not(summary) { display: block; }
+  details.more-result:not([open]) > *:not(summary) { display: block; }
+  .box, .callout, .codehilite { break-inside: avoid; }
+}
+
+pre { line-height: 125%; }
+td.linenos .normal { color: #666666; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+span.linenos { color: #666666; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+td.linenos .special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+.codehilite .hll { background-color: #ffffcc }
+.codehilite { background: #f0f0f0; }
+.codehilite .c { color: #60A0B0; font-style: italic } /* Comment */
+.codehilite .err { border: 1px solid #F00 } /* Error */
+.codehilite .k { color: #007020; font-weight: bold } /* Keyword */
+.codehilite .o { color: #666 } /* Operator */
+.codehilite .ch { color: #60A0B0; font-style: italic } /* Comment.Hashbang */
+.codehilite .cm { color: #60A0B0; font-style: italic } /* Comment.Multiline */
+.codehilite .cp { color: #007020 } /* Comment.Preproc */
+.codehilite .cpf { color: #60A0B0; font-style: italic } /* Comment.PreprocFile */
+.codehilite .c1 { color: #60A0B0; font-style: italic } /* Comment.Single */
+.codehilite .cs { color: #60A0B0; background-color: #FFF0F0 } /* Comment.Special */
+.codehilite .gd { color: #A00000 } /* Generic.Deleted */
+.codehilite .ge { font-style: italic } /* Generic.Emph */
+.codehilite .ges { font-weight: bold; font-style: italic } /* Generic.EmphStrong */
+.codehilite .gr { color: #F00 } /* Generic.Error */
+.codehilite .gh { color: #000080; font-weight: bold } /* Generic.Heading */
+.codehilite .gi { color: #00A000 } /* Generic.Inserted */
+.codehilite .go { color: #888 } /* Generic.Output */
+.codehilite .gp { color: #C65D09; font-weight: bold } /* Generic.Prompt */
+.codehilite .gs { font-weight: bold } /* Generic.Strong */
+.codehilite .gu { color: #800080; font-weight: bold } /* Generic.Subheading */
+.codehilite .gt { color: #04D } /* Generic.Traceback */
+.codehilite .kc { color: #007020; font-weight: bold } /* Keyword.Constant */
+.codehilite .kd { color: #007020; font-weight: bold } /* Keyword.Declaration */
+.codehilite .kn { color: #007020; font-weight: bold } /* Keyword.Namespace */
+.codehilite .kp { color: #007020 } /* Keyword.Pseudo */
+.codehilite .kr { color: #007020; font-weight: bold } /* Keyword.Reserved */
+.codehilite .kt { color: #902000 } /* Keyword.Type */
+.codehilite .m { color: #40A070 } /* Literal.Number */
+.codehilite .s { color: #4070A0 } /* Literal.String */
+.codehilite .na { color: #4070A0 } /* Name.Attribute */
+.codehilite .nb { color: #007020 } /* Name.Builtin */
+.codehilite .nc { color: #0E84B5; font-weight: bold } /* Name.Class */
+.codehilite .no { color: #60ADD5 } /* Name.Constant */
+.codehilite .nd { color: #555; font-weight: bold } /* Name.Decorator */
+.codehilite .ni { color: #D55537; font-weight: bold } /* Name.Entity */
+.codehilite .ne { color: #007020 } /* Name.Exception */
+.codehilite .nf { color: #06287E } /* Name.Function */
+.codehilite .nl { color: #002070; font-weight: bold } /* Name.Label */
+.codehilite .nn { color: #0E84B5; font-weight: bold } /* Name.Namespace */
+.codehilite .nt { color: #062873; font-weight: bold } /* Name.Tag */
+.codehilite .nv { color: #BB60D5 } /* Name.Variable */
+.codehilite .ow { color: #007020; font-weight: bold } /* Operator.Word */
+.codehilite .w { color: #BBB } /* Text.Whitespace */
+.codehilite .mb { color: #40A070 } /* Literal.Number.Bin */
+.codehilite .mf { color: #40A070 } /* Literal.Number.Float */
+.codehilite .mh { color: #40A070 } /* Literal.Number.Hex */
+.codehilite .mi { color: #40A070 } /* Literal.Number.Integer */
+.codehilite .mo { color: #40A070 } /* Literal.Number.Oct */
+.codehilite .sa { color: #4070A0 } /* Literal.String.Affix */
+.codehilite .sb { color: #4070A0 } /* Literal.String.Backtick */
+.codehilite .sc { color: #4070A0 } /* Literal.String.Char */
+.codehilite .dl { color: #4070A0 } /* Literal.String.Delimiter */
+.codehilite .sd { color: #4070A0; font-style: italic } /* Literal.String.Doc */
+.codehilite .s2 { color: #4070A0 } /* Literal.String.Double */
+.codehilite .se { color: #4070A0; font-weight: bold } /* Literal.String.Escape */
+.codehilite .sh { color: #4070A0 } /* Literal.String.Heredoc */
+.codehilite .si { color: #70A0D0; font-style: italic } /* Literal.String.Interpol */
+.codehilite .sx { color: #C65D09 } /* Literal.String.Other */
+.codehilite .sr { color: #235388 } /* Literal.String.Regex */
+.codehilite .s1 { color: #4070A0 } /* Literal.String.Single */
+.codehilite .ss { color: #517918 } /* Literal.String.Symbol */
+.codehilite .bp { color: #007020 } /* Name.Builtin.Pseudo */
+.codehilite .fm { color: #06287E } /* Name.Function.Magic */
+.codehilite .vc { color: #BB60D5 } /* Name.Variable.Class */
+.codehilite .vg { color: #BB60D5 } /* Name.Variable.Global */
+.codehilite .vi { color: #BB60D5 } /* Name.Variable.Instance */
+.codehilite .vm { color: #BB60D5 } /* Name.Variable.Magic */
+.codehilite .il { color: #40A070 } /* Literal.Number.Integer.Long */
+pre { line-height: 125%; }
+td.linenos .normal { color: #D8DEE9; background-color: #242933; padding-left: 5px; padding-right: 5px; }
+span.linenos { color: #D8DEE9; background-color: #242933; padding-left: 5px; padding-right: 5px; }
+td.linenos .special { color: #242933; background-color: #D8DEE9; padding-left: 5px; padding-right: 5px; }
+span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 5px; padding-right: 5px; }
+:root[data-theme="dark"] .codehilite .hll { background-color: #3B4252 }
+:root[data-theme="dark"] .codehilite { background: #2E3440; color: #D8DEE9 }
+:root[data-theme="dark"] .codehilite .c { color: #616E87; font-style: italic } /* Comment */
+:root[data-theme="dark"] .codehilite .err { color: #BF616A } /* Error */
+:root[data-theme="dark"] .codehilite .esc { color: #D8DEE9 } /* Escape */
+:root[data-theme="dark"] .codehilite .g { color: #D8DEE9 } /* Generic */
+:root[data-theme="dark"] .codehilite .k { color: #81A1C1; font-weight: bold } /* Keyword */
+:root[data-theme="dark"] .codehilite .l { color: #D8DEE9 } /* Literal */
+:root[data-theme="dark"] .codehilite .n { color: #D8DEE9 } /* Name */
+:root[data-theme="dark"] .codehilite .o { color: #81A1C1; font-weight: bold } /* Operator */
+:root[data-theme="dark"] .codehilite .x { color: #D8DEE9 } /* Other */
+:root[data-theme="dark"] .codehilite .p { color: #ECEFF4 } /* Punctuation */
+:root[data-theme="dark"] .codehilite .ch { color: #616E87; font-style: italic } /* Comment.Hashbang */
+:root[data-theme="dark"] .codehilite .cm { color: #616E87; font-style: italic } /* Comment.Multiline */
+:root[data-theme="dark"] .codehilite .cp { color: #5E81AC; font-style: italic } /* Comment.Preproc */
+:root[data-theme="dark"] .codehilite .cpf { color: #616E87; font-style: italic } /* Comment.PreprocFile */
+:root[data-theme="dark"] .codehilite .c1 { color: #616E87; font-style: italic } /* Comment.Single */
+:root[data-theme="dark"] .codehilite .cs { color: #616E87; font-style: italic } /* Comment.Special */
+:root[data-theme="dark"] .codehilite .gd { color: #BF616A } /* Generic.Deleted */
+:root[data-theme="dark"] .codehilite .ge { color: #D8DEE9; font-style: italic } /* Generic.Emph */
+:root[data-theme="dark"] .codehilite .ges { color: #D8DEE9; font-weight: bold; font-style: italic } /* Generic.EmphStrong */
+:root[data-theme="dark"] .codehilite .gr { color: #BF616A } /* Generic.Error */
+:root[data-theme="dark"] .codehilite .gh { color: #88C0D0; font-weight: bold } /* Generic.Heading */
+:root[data-theme="dark"] .codehilite .gi { color: #A3BE8C } /* Generic.Inserted */
+:root[data-theme="dark"] .codehilite .go { color: #D8DEE9 } /* Generic.Output */
+:root[data-theme="dark"] .codehilite .gp { color: #616E88; font-weight: bold } /* Generic.Prompt */
+:root[data-theme="dark"] .codehilite .gs { color: #D8DEE9; font-weight: bold } /* Generic.Strong */
+:root[data-theme="dark"] .codehilite .gu { color: #88C0D0; font-weight: bold } /* Generic.Subheading */
+:root[data-theme="dark"] .codehilite .gt { color: #BF616A } /* Generic.Traceback */
+:root[data-theme="dark"] .codehilite .kc { color: #81A1C1; font-weight: bold } /* Keyword.Constant */
+:root[data-theme="dark"] .codehilite .kd { color: #81A1C1; font-weight: bold } /* Keyword.Declaration */
+:root[data-theme="dark"] .codehilite .kn { color: #81A1C1; font-weight: bold } /* Keyword.Namespace */
+:root[data-theme="dark"] .codehilite .kp { color: #81A1C1 } /* Keyword.Pseudo */
+:root[data-theme="dark"] .codehilite .kr { color: #81A1C1; font-weight: bold } /* Keyword.Reserved */
+:root[data-theme="dark"] .codehilite .kt { color: #81A1C1 } /* Keyword.Type */
+:root[data-theme="dark"] .codehilite .ld { color: #D8DEE9 } /* Literal.Date */
+:root[data-theme="dark"] .codehilite .m { color: #B48EAD } /* Literal.Number */
+:root[data-theme="dark"] .codehilite .s { color: #A3BE8C } /* Literal.String */
+:root[data-theme="dark"] .codehilite .na { color: #8FBCBB } /* Name.Attribute */
+:root[data-theme="dark"] .codehilite .nb { color: #81A1C1 } /* Name.Builtin */
+:root[data-theme="dark"] .codehilite .nc { color: #8FBCBB } /* Name.Class */
+:root[data-theme="dark"] .codehilite .no { color: #8FBCBB } /* Name.Constant */
+:root[data-theme="dark"] .codehilite .nd { color: #D08770 } /* Name.Decorator */
+:root[data-theme="dark"] .codehilite .ni { color: #D08770 } /* Name.Entity */
+:root[data-theme="dark"] .codehilite .ne { color: #BF616A } /* Name.Exception */
+:root[data-theme="dark"] .codehilite .nf { color: #88C0D0 } /* Name.Function */
+:root[data-theme="dark"] .codehilite .nl { color: #D8DEE9 } /* Name.Label */
+:root[data-theme="dark"] .codehilite .nn { color: #8FBCBB } /* Name.Namespace */
+:root[data-theme="dark"] .codehilite .nx { color: #D8DEE9 } /* Name.Other */
+:root[data-theme="dark"] .codehilite .py { color: #D8DEE9 } /* Name.Property */
+:root[data-theme="dark"] .codehilite .nt { color: #81A1C1 } /* Name.Tag */
+:root[data-theme="dark"] .codehilite .nv { color: #D8DEE9 } /* Name.Variable */
+:root[data-theme="dark"] .codehilite .ow { color: #81A1C1; font-weight: bold } /* Operator.Word */
+:root[data-theme="dark"] .codehilite .pm { color: #ECEFF4 } /* Punctuation.Marker */
+:root[data-theme="dark"] .codehilite .w { color: #D8DEE9 } /* Text.Whitespace */
+:root[data-theme="dark"] .codehilite .mb { color: #B48EAD } /* Literal.Number.Bin */
+:root[data-theme="dark"] .codehilite .mf { color: #B48EAD } /* Literal.Number.Float */
+:root[data-theme="dark"] .codehilite .mh { color: #B48EAD } /* Literal.Number.Hex */
+:root[data-theme="dark"] .codehilite .mi { color: #B48EAD } /* Literal.Number.Integer */
+:root[data-theme="dark"] .codehilite .mo { color: #B48EAD } /* Literal.Number.Oct */
+:root[data-theme="dark"] .codehilite .sa { color: #A3BE8C } /* Literal.String.Affix */
+:root[data-theme="dark"] .codehilite .sb { color: #A3BE8C } /* Literal.String.Backtick */
+:root[data-theme="dark"] .codehilite .sc { color: #A3BE8C } /* Literal.String.Char */
+:root[data-theme="dark"] .codehilite .dl { color: #A3BE8C } /* Literal.String.Delimiter */
+:root[data-theme="dark"] .codehilite .sd { color: #616E87 } /* Literal.String.Doc */
+:root[data-theme="dark"] .codehilite .s2 { color: #A3BE8C } /* Literal.String.Double */
+:root[data-theme="dark"] .codehilite .se { color: #EBCB8B } /* Literal.String.Escape */
+:root[data-theme="dark"] .codehilite .sh { color: #A3BE8C } /* Literal.String.Heredoc */
+:root[data-theme="dark"] .codehilite .si { color: #A3BE8C } /* Literal.String.Interpol */
+:root[data-theme="dark"] .codehilite .sx { color: #A3BE8C } /* Literal.String.Other */
+:root[data-theme="dark"] .codehilite .sr { color: #EBCB8B } /* Literal.String.Regex */
+:root[data-theme="dark"] .codehilite .s1 { color: #A3BE8C } /* Literal.String.Single */
+:root[data-theme="dark"] .codehilite .ss { color: #A3BE8C } /* Literal.String.Symbol */
+:root[data-theme="dark"] .codehilite .bp { color: #81A1C1 } /* Name.Builtin.Pseudo */
+:root[data-theme="dark"] .codehilite .fm { color: #88C0D0 } /* Name.Function.Magic */
+:root[data-theme="dark"] .codehilite .vc { color: #D8DEE9 } /* Name.Variable.Class */
+:root[data-theme="dark"] .codehilite .vg { color: #D8DEE9 } /* Name.Variable.Global */
+:root[data-theme="dark"] .codehilite .vi { color: #D8DEE9 } /* Name.Variable.Instance */
+:root[data-theme="dark"] .codehilite .vm { color: #D8DEE9 } /* Name.Variable.Magic */
+:root[data-theme="dark"] .codehilite .il { color: #B48EAD } /* Literal.Number.Integer.Long */
+</style>
+</head>
+<body>
+<a class="skip" href="#main">본문으로 건너뛰기</a>
+<header class="top">
+  <button class="menu" type="button" aria-controls="side" aria-expanded="false">목차</button>
+  <span class="site">생성형 AI 교재</span>
+  <nav class="days" aria-label="일자">
+<a href="index.html">차례</a>
+<a href="01_LLM은_어떻게_글을_만드는가.html">1장</a>
+<a href="02_모델은_어떻게_만들어지는가.html">2장</a>
+<a href="03_컨텍스트.html">3장</a>
+<a href="04_프롬프트_설계.html" class="here">4장</a>
+<a href="05_LLM_API.html">5장</a>
+<a href="06_구조화_출력.html">6장</a>
+<a href="14_코딩_에이전트와_멀티_에이전트.html">14장</a>
+<a href="15_보안과_거버넌스.html">15장</a>
+  </nav>
+  <button class="width" type="button">넓게 보기</button>
+  <button class="theme" type="button">어두운 화면</button>
+</header>
+<div class="layout">
+  <aside class="side" id="side">
+    <label class="search">
+      <span>이 쪽에서 찾기</span>
+      <input type="search" placeholder="예: 토큰, 재시도" autocomplete="off">
+    </label>
+    <div class="hits" hidden></div>
+    <nav class="toc" aria-label="목차">
+<ul>
+<li class="l1"><a href="#4장-프롬프트-설계">4장 프롬프트 설계</a></li>
+<li class="l2"><a href="#학습-목표">학습 목표</a></li>
+<li class="l2"><a href="#프롬프트가-응답을-바꾸는-원리">프롬프트가 응답을 바꾸는 원리</a></li>
+<li class="l2"><a href="#프롬프트의-요소">프롬프트의 요소</a></li>
+<li class="l2"><a href="#few-shot">few-shot</a></li>
+<li class="l2"><a href="#형식과-제약">형식과 제약</a></li>
+<li class="l2"><a href="#CoT와-thinking">CoT와 thinking</a></li>
+<li class="l2"><a href="#프롬프트-체인">프롬프트 체인</a></li>
+<li class="l2"><a href="#자기-검증과-루브릭">자기 검증과 루브릭</a></li>
+<li class="l2"><a href="#개념-확인-실습">개념 확인 실습</a></li>
+<li class="l2"><a href="#자가점검">자가점검</a></li>
+<li class="l2"><a href="#참고-문헌">참고 문헌</a></li>
+</ul>
+    </nav>
+  </aside>
+  <main id="main">
+<article class="part">
+<h1 id="4장-프롬프트-설계">4장 프롬프트 설계</h1>
+<p>강의 1일차 파트 2에 해당합니다.</p>
+<p>프롬프트는 LLM(large language model)에 입력하는 지시와 재료입니다. 모델은 입력에 이어질 그럴듯한 토큰을 고를 뿐이므로(1장), 같은 모델이라도 무엇을 입력하느냐에 따라 응답이 크게 달라집니다. 이 장은 프롬프트의 어떤 부분이 응답을 어떻게 바꾸는지를 원리와 실험으로 설명합니다.</p>
+<h2 id="학습-목표">학습 목표</h2>
+<ol>
+<li>프롬프트의 요소(목적, 맥락, 입력 재료, 출력 형식, 제약)를 더할수록 응답이 왜 일정해지는지 1장의 확률 분포로 설명할 수 있습니다.</li>
+<li>few-shot 예시가 응답을 바꾸는 원리를 설명하고, 예시를 고를 때 주의할 점(라벨 치우침, 순서)을 들 수 있습니다.</li>
+<li>형식이 빈칸을 요구할 때 모델이 칸을 무엇으로 채우는지 보이고, 제약으로 채울 값을 정하는 방법을 설명할 수 있습니다.</li>
+<li>CoT(chain of thought), 프롬프트 체인, 자기 검증과 루브릭이 각각 무엇을 해결하고 무엇을 해결하지 못하는지 설명할 수 있습니다.</li>
+</ol>
+<p>예제와 실습은 가상 후공정 회사의 현장 문의 60건(<code>data/문의.csv</code>)을 씁니다. 문의마다 정답 라벨(설비 이상, 품질, 안전, 문서와 데이터 요청)과 긴급 여부가 붙어 있고, 두 라벨에 걸쳐 헷갈리는 문의 15건과 정보가 빠진 문의 5건이 섞여 있습니다. 모든 예제와 실습은 API(application programming interface)로 소형 모델을 호출하며, 응답은 실행할 때마다 교재와 다를 수 있습니다. 준비 셀에는 세 함수가 있습니다.</p>
+<ul>
+<li><code>numbered()</code>: 문의를 "번호: 문의" 줄로 잇습니다.</li>
+<li><code>parse_labels()</code>: 응답에서 "번호: 라벨" 줄(표라면 첫 칸)을 읽습니다.</li>
+<li><code>accuracy()</code>: 정답 라벨과 맞는 비율을 계산합니다.</li>
+</ul>
+<h2 id="프롬프트가-응답을-바꾸는-원리">프롬프트가 응답을 바꾸는 원리</h2>
+<div class="gist">
+<p>모델은 프롬프트에 이어질 그럴듯한 글을 만듭니다. 지시가 모호하면 그럴듯한 응답이 여러 가지여서 실행마다 달라지고, 지시가 구체적일수록 후보가 좁아져 응답이 일정해집니다.</p>
+</div>
+<p><span class="term" tabindex="0" data-def="모델에 입력하는 지시와 재료. 질문, 붙여 넣은 문서, 형식 지정이 모두 프롬프트다">프롬프트</span>(prompt)는 모델에 입력하는 지시와 재료 전체입니다. "이 문의들을 분류해 주세요"라는 지시 뒤에는 표, 문단, 제각각의 라벨 이름 등 그럴듯한 이어짐이 아주 많습니다. 1장의 말로 하면 첫 토큰부터 확률이 여러 후보에 퍼져 있고, 샘플링할 때마다 다른 이어짐이 뽑힙니다. 라벨 목록과 출력 형식을 정해 주면 그 밖의 이어짐은 그럴듯하지 않게 되어 후보가 좁아집니다.</p>
+<figure>
+<svg viewBox="0 0 680 212" role="img" aria-label="모호한 분류 지시에는 표 구성과 라벨 이름이 제각각인 응답이 실행마다 다르게 나오고, 라벨 4개와 번호: 라벨 형식을 정한 지시는 후보가 좁아져 실행마다 같은 형식이 나오는 그림.">
+<rect x="10" y="20" width="170" height="50" rx="6" fill="var(--sheet)" stroke="var(--line)"/><text x="95" y="42" text-anchor="middle" fill="var(--ink)" font-size="13" font-weight="700">"분류해 주세요"</text><text x="95" y="60" text-anchor="middle" fill="var(--ink-soft)" font-size="11">+ 문의 10건</text><line x1="180" y1="45" x2="240" y2="30" stroke="var(--line)"/><rect x="240" y="20" width="190" height="22" rx="4" fill="var(--sheet)" stroke="var(--line)"/><text x="250" y="35" fill="var(--ink)" font-size="11">표 | 분류 | 세부 내용 | 우선순위</text><line x1="180" y1="45" x2="240" y2="62" stroke="var(--line)"/><rect x="240" y="52" width="190" height="22" rx="4" fill="var(--sheet)" stroke="var(--line)"/><text x="250" y="67" fill="var(--ink)" font-size="11">라벨: 안전/환경, 설비 장애…</text><line x1="180" y1="45" x2="240" y2="94" stroke="var(--line)"/><rect x="240" y="84" width="190" height="22" rx="4" fill="var(--sheet)" stroke="var(--line)"/><text x="250" y="99" fill="var(--ink)" font-size="11">라벨: 안전·환경, 품질 불량…</text><line x1="180" y1="45" x2="240" y2="126" stroke="var(--line)"/><rect x="240" y="116" width="190" height="22" rx="4" fill="var(--sheet)" stroke="var(--line)"/><text x="250" y="131" fill="var(--ink)" font-size="11">두 분류를 함께 적은 라벨</text><line x1="180" y1="45" x2="240" y2="158" stroke="var(--line)"/><rect x="240" y="148" width="190" height="22" rx="4" fill="var(--sheet)" stroke="var(--line)"/><text x="250" y="163" fill="var(--ink)" font-size="11">우선순위 열을 스스로 추가</text><text x="335" y="202" text-anchor="middle" fill="var(--amber)" font-size="12">그럴듯한 응답이 여러 가지 → 실행마다 다름</text><rect x="450" y="20" width="220" height="70" rx="6" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="560" y="40" text-anchor="middle" fill="var(--ink)" font-size="12" font-weight="700">라벨 4개 + "번호: 라벨" 형식</text><text x="560" y="58" text-anchor="middle" fill="var(--ink-soft)" font-size="11">+ 문의 10건</text><line x1="560" y1="90" x2="552" y2="90" stroke="var(--teal)" stroke-width="2"/><polygon points="552,85 560,90 552,95" fill="var(--teal)"/><line x1="560" y1="90" x2="560" y2="112" stroke="var(--teal)" stroke-width="2"/><polygon points="555,112 560,120 565,112" fill="var(--teal)"/><rect x="470" y="122" width="180" height="40" rx="4" fill="var(--sheet)" stroke="var(--teal)"/><text x="560" y="140" text-anchor="middle" fill="var(--ink)" font-size="12">Q01: 설비 이상</text><text x="560" y="155" text-anchor="middle" fill="var(--ink)" font-size="12">Q11: 품질 …</text><text x="560" y="202" text-anchor="middle" fill="var(--teal)" font-size="12">후보가 좁아짐 → 실행마다 같음</text>
+</svg>
+<figcaption>지시가 구체적일수록 그럴듯한 응답의 후보가 좁아집니다(왼쪽 칸은 예제 4-1을 여러 번 실행한 응답에서 고름).</figcaption>
+</figure>
+
+<section class="box example" id="예제-4-1">
+<header><span class="box-no">예제 4-1</span><span class="box-title">모호한 지시와 구체적 지시</span><span class="box-where">노트북 <code>04_프롬프트_설계.ipynb</code>의 <code>예제 4-1</code></span></header>
+<p>문의 10건을 "분류해 주세요"만으로 두 번, 라벨 목록과 "번호: 라벨" 형식을 정해 두 번 보냅니다. 응답의 길이, 읽어 낸 라벨의 종류, 응답 앞부분이 실행마다 어떻게 다른지 봅니다. 이 셀은 API를 4번 호출합니다.</p>
+<div class="codehilite"><pre><span></span><code><span class="n">sample</span> <span class="o">=</span> <span class="p">[</span><span class="n">inquiries</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="mi">42</span><span class="p">,</span> <span class="mi">44</span><span class="p">,</span> <span class="mi">49</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">31</span><span class="p">]]</span>   <span class="c1"># 라벨이 섞이게 고른 10건</span>
+<span class="n">vague</span> <span class="o">=</span> <span class="s1">'다음 문의들을 분류해 주세요.</span><span class="se">\n\n</span><span class="s1">'</span> <span class="o">+</span> <span class="n">numbered</span><span class="p">(</span><span class="n">sample</span><span class="p">)</span>
+<span class="n">specific</span> <span class="o">=</span> <span class="p">(</span><span class="s1">'다음 문의를 [설비 이상, 품질, 안전, 문서와 데이터 요청] 중 하나로 분류하세요.</span><span class="se">\n</span><span class="s1">'</span>
+            <span class="s1">'한 줄에 한 건씩 "번호: 라벨" 형식으로만 답하세요.</span><span class="se">\n\n</span><span class="s1">'</span> <span class="o">+</span> <span class="n">numbered</span><span class="p">(</span><span class="n">sample</span><span class="p">))</span>
+<span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">prompt</span> <span class="ow">in</span> <span class="p">[(</span><span class="s1">'모호한 지시'</span><span class="p">,</span> <span class="n">vague</span><span class="p">),</span> <span class="p">(</span><span class="s1">'구체적 지시'</span><span class="p">,</span> <span class="n">specific</span><span class="p">)]:</span>
+    <span class="k">for</span> <span class="n">attempt</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">):</span>
+        <span class="n">reply</span> <span class="o">=</span> <span class="n">llm</span><span class="o">.</span><span class="n">ask</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s1">'소형'</span><span class="p">,</span> <span class="n">max_tokens</span><span class="o">=</span><span class="mi">2000</span><span class="p">)</span>
+        <span class="n">labels</span> <span class="o">=</span> <span class="n">parse_labels</span><span class="p">(</span><span class="n">reply</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>                        <span class="c1"># "Q01: 라벨" 줄만 읽습니다</span>
+        <span class="n">valid</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">label</span> <span class="ow">in</span> <span class="n">LABELS</span> <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">labels</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>   <span class="c1"># 네 라벨 가운데 하나로 읽힌 건수</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'[</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">attempt</span><span class="si">}</span><span class="s1">회] 응답 </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">reply</span><span class="o">.</span><span class="n">text</span><span class="p">)</span><span class="si">:</span><span class="s1">,</span><span class="si">}</span><span class="s1">자, 네 라벨로 읽힌 건 </span><span class="si">{</span><span class="n">valid</span><span class="si">}</span><span class="s1">/10'</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">'   앞부분:'</span><span class="p">,</span> <span class="n">reply</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">()[:</span><span class="mi">80</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">'</span><span class="se">\n</span><span class="s1">'</span><span class="p">,</span> <span class="s1">' / '</span><span class="p">))</span>
+</code></pre></div>
+
+<div class="result">
+<div class="codehilite"><pre><span></span><code>[모호한 지시 1회] 응답 1,123자, 네 라벨로 읽힌 건 0/10
+   앞부분: ## 문의 분류 결과 /  / | 문의 | 분류 | 핵심 내용 | 우선순위 | 담당 추천 | / |---|---|---|---|---| / | **Q21** 
+[모호한 지시 2회] 응답 1,102자, 네 라벨로 읽힌 건 0/10
+   앞부분: ## 문의 분류 결과 /  / | 문의 번호 | 분류 | 세부 유형 | 긴급도 | 요약 | / |---|---|---|---|---| / | Q01 | 설비 
+[구체적 지시 1회] 응답 106자, 네 라벨로 읽힌 건 10/10
+   앞부분: Q01: 설비 이상 / Q11: 품질 / Q21: 안전 / Q31: 문서와 데이터 요청 / Q41: 품질 / Q43: 안전 / Q45: 문서와 데이터 요청 / Q50: 
+[구체적 지시 2회] 응답 109자, 네 라벨로 읽힌 건 10/10
+   앞부분: Q01: 설비 이상 / Q11: 품질 / Q21: 안전 / Q31: 문서와 데이터 요청 / Q41: 품질 / Q43: 설비 이상 / Q45: 문서와 데이터 요청 / Q5
+</code></pre></div>
+
+</div>
+</section>
+<p>모호한 지시에는 두 번 모두 마크다운 표로 답했고, 열 구성(세부 유형, 우선순위, 담당 추천, 요약 등)이 실행마다 달랐습니다. 분류 이름도 모델이 그때그때 지어서, 네 라벨로 읽힌 건이 0건이었습니다. 이런 응답은 사람이 읽을 수는 있어도 프로그램이 라벨을 파싱할 수 없습니다. 구체적 지시에는 두 번 모두 네 라벨만 쓴 열 줄로 답했습니다. 다만 Q41(정답 설비 이상)은 두 번 모두 품질로, Q43(정답 안전)은 한 번은 안전, 한 번은 설비 이상으로 분류했습니다. 형식을 정해도 판정은 틀리거나 실행마다 바뀔 수 있으며, 판정은 few-shot 절의 예시와 실습 4-1의 판정 기준이 다룹니다.</p>
+<h2 id="프롬프트의-요소">프롬프트의 요소</h2>
+<div class="gist">
+<p>좋은 프롬프트는 목적, 맥락, 입력 재료, 출력 형식, 제약을 빠짐없이 적은 프롬프트입니다. 요소마다 막는 실패가 다르므로, 응답이 어긋나면 어느 요소가 빠졌는지부터 봅니다.</p>
+</div>
+<figure>
+<svg viewBox="0 0 680 192" role="img" aria-label="프롬프트를 목적, 맥락, 입력 재료, 출력 형식, 제약 다섯 칸으로 나눈 예. 입력 재료는 문의 태그로 감싸 지시와 구분합니다.">
+<rect x="10" y="10" width="110" height="30" rx="4" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="65" y="30" text-anchor="middle" fill="var(--ink)" font-size="12" font-weight="700">목적</text><rect x="126" y="10" width="544" height="30" rx="4" fill="var(--sheet)" stroke="var(--line)"/><text x="138" y="30" fill="var(--ink)" font-size="12">다음 문의를 하나의 라벨로 분류하세요.</text><rect x="10" y="46" width="110" height="30" rx="4" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="65" y="66" text-anchor="middle" fill="var(--ink)" font-size="12" font-weight="700">맥락</text><rect x="126" y="46" width="544" height="30" rx="4" fill="var(--sheet)" stroke="var(--line)"/><text x="138" y="66" fill="var(--ink)" font-size="12">결과는 담당 부서로 문의를 넘기는 데 씁니다.</text><rect x="10" y="82" width="110" height="30" rx="4" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="65" y="102" text-anchor="middle" fill="var(--ink)" font-size="12" font-weight="700">입력 재료</text><rect x="126" y="82" width="544" height="30" rx="4" fill="var(--sheet)" stroke="var(--line)"/><text x="138" y="102" fill="var(--ink)" font-size="12">&lt;문의&gt; Q41: W-03 와이어 본더의 … &lt;/문의&gt;</text><rect x="10" y="118" width="110" height="30" rx="4" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="65" y="138" text-anchor="middle" fill="var(--ink)" font-size="12" font-weight="700">출력 형식</text><rect x="126" y="118" width="544" height="30" rx="4" fill="var(--sheet)" stroke="var(--line)"/><text x="138" y="138" fill="var(--ink)" font-size="12">한 줄에 한 건씩 "번호: 라벨"로만 답하세요.</text><rect x="10" y="154" width="110" height="30" rx="4" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="65" y="174" text-anchor="middle" fill="var(--ink)" font-size="12" font-weight="700">제약</text><rect x="126" y="154" width="544" height="30" rx="4" fill="var(--sheet)" stroke="var(--line)"/><text x="138" y="174" fill="var(--ink)" font-size="12">라벨은 [설비 이상, 품질, 안전, 문서와 데이터 요청] 중 하나만.</text>
+</svg>
+<figcaption>프롬프트를 다섯 요소로 나눈 예입니다.</figcaption>
+</figure>
+
+<ul>
+<li><strong>목적</strong>: 무엇을 하라는 것인지 한 문장으로 적습니다. 목적이 없으면 모델은 요약, 분류, 설명 가운데 그럴듯한 것을 고릅니다.</li>
+<li><strong><span class="term" tabindex="0" data-def="결과를 누가 읽고 어디에 쓰는지 알려 주는 프롬프트의 요소. 무엇을 앞에 둘지 판단하는 기준이 된다">맥락</span>(context)</strong>: 결과를 누가 어디에 쓰는지 적습니다. 무엇을 앞에 두고 무엇을 뺄지 판단하는 기준이 됩니다.</li>
+<li><strong>입력 재료</strong>: 처리할 글입니다. 지시와 재료가 섞이지 않게 <code>&lt;문의&gt;</code> 같은 태그로 감싸 구분하는 것을 Anthropic의 프롬프트 안내가 권합니다(2026-11 확인). 이 장의 예제는 문의가 한 줄씩이라 "번호: 문의" 줄로 구분합니다.</li>
+<li><strong>출력 형식</strong>: 응답의 구조를 정합니다. 프로그램이 응답을 읽어야 한다면, 형식이 어긋날 때 파싱 오류가 납니다. 형식을 강제로 지키게 하는 방법은 6장 "구조화 출력"에서 다룹니다.</li>
+<li><strong><span class="term" tabindex="0" data-def="결과가 지켜야 할 조건이나 하지 말아야 할 일을 적은 프롬프트의 요소. 예: 원문에 없는 내용은 쓰지 않는다">제약</span>(constraint)</strong>: 지킬 조건과 하지 말 일입니다. 특히 근거가 없을 때 무엇을 쓸지 정해 둡니다(이 장의 "형식과 제약").</li>
+</ul>
+<p>"너는 장비팀 파트장이다"처럼 모델의 입장을 정하는 <span class="term" tabindex="0" data-def="모델이 어떤 입장에서 답할지 프롬프트에 적는 지시. 예: &quot;너는 장비팀 파트장이다&quot;. 메시지의 역할(role)과 다른 말이다">역할 지정</span>(role prompting)은 말투와 관점을 맞추는 데 쓰이며, Anthropic은 이를 시스템 프롬프트에 두기를 권합니다. 다만 역할 지정만으로 모델이 모르는 지식이 생기지는 않습니다. 매번 같은 역할, 규칙, 형식은 시스템 프롬프트(3장)에, 요청마다 바뀌는 재료는 사용자 메시지에 둡니다.</p>
+<h2 id="few-shot">few-shot</h2>
+<div class="gist">
+<p>프롬프트에 입력과 정답의 예시를 몇 개 넣으면, 모델은 예시가 보여 준 형식과 판정 방식으로 새 입력 뒤를 이어 씁니다. 예시도 입력의 일부이므로 예시의 라벨이 치우치면 응답도 치우칠 수 있습니다.</p>
+</div>
+<p><span class="term" tabindex="0" data-def="프롬프트에 입력과 정답의 예시를 몇 개 넣어 규칙을 보여 주는 방법. 예시가 없는 것은 zero-shot이다">few-shot</span>(few-shot prompting)은 프롬프트에 입력과 정답의 예시 몇 개를 넣는 방법이고, 예시가 없으면 zero-shot이라고 합니다. 모델의 파라미터는 바뀌지 않습니다. 예시가 입력에 들어가 다음 토큰의 확률 분포를 바꿀 뿐이며, 이를 in-context learning이라고 부릅니다(Brown 외, 2020).</p>
+<figure>
+<svg viewBox="0 0 680 208" role="img" aria-label="few-shot 프롬프트. 지시, 예시 세 개(냉각수가 샘은 안전, 기록 확인은 문서와 데이터 요청, W-03 본딩 강도는 설비 이상), 새 문의가 한 요청 안에 이어져 들어가고, 모델은 예시의 형식과 판정 방식으로 새 문의의 라벨을 이어 씁니다.">
+<rect x="100" y="10" width="570" height="28" rx="4" fill="var(--sheet)" stroke="var(--line)"/><text x="112" y="29" fill="var(--ink)" font-size="12" font-weight="700">지시</text><text x="200" y="29" fill="var(--ink)" font-size="12">라벨 4개, 형식</text><rect x="100" y="44" width="570" height="28" rx="4" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="112" y="63" fill="var(--ink)" font-size="12" font-weight="700">예시 1</text><text x="200" y="63" fill="var(--ink)" font-size="12">냉각수가 샘 → 안전</text><rect x="100" y="78" width="570" height="28" rx="4" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="112" y="97" fill="var(--ink)" font-size="12" font-weight="700">예시 2</text><text x="200" y="97" fill="var(--ink)" font-size="12">기록 확인 → 문서와 데이터 요청</text><rect x="100" y="112" width="570" height="28" rx="4" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="112" y="131" fill="var(--ink)" font-size="12" font-weight="700">예시 3</text><text x="200" y="131" fill="var(--ink)" font-size="12">W-03 본딩 강도 → 설비 이상</text><rect x="100" y="146" width="570" height="28" rx="4" fill="var(--amber-wash)" stroke="var(--amber)"/><text x="112" y="165" fill="var(--ink)" font-size="12" font-weight="700">새 문의</text><text x="200" y="165" fill="var(--ink)" font-size="12">알람 로그를 보내 주세요 → ?</text><line x1="86" y1="10" x2="86" y2="174" stroke="var(--ink-soft)" stroke-width="2"/><text x="14" y="96" fill="var(--ink-soft)" font-size="12">한 요청</text>
+</svg>
+<figcaption>few-shot 예시는 지시와 새 입력 사이에 들어가는 입력의 일부입니다.</figcaption>
+</figure>
+
+<p>Zhao 외(2021)는 GPT-3에서 예시에 많이 나온 라벨과 끝 쪽에 놓인 예시의 라벨이 더 자주 예측되는 치우침을 보고했습니다. 예시는 라벨마다 같은 수로, 헷갈리는 엣지 케이스를 중심으로 뽑습니다. Anthropic의 안내는 예시를 3~5개 넣기를 권합니다(2026-11 확인).</p>
+<section class="box example" id="예제-4-2">
+<header><span class="box-no">예제 4-2</span><span class="box-title">few-shot의 효과와 치우침</span><span class="box-where">노트북 <code>04_프롬프트_설계.ipynb</code>의 <code>예제 4-2</code></span></header>
+<p>헷갈리거나 정보가 빠진 문의 16건(Q45~Q60)을 예시 없이, 라벨이 서로 다른 예시 3개로, 모두 "안전"인 예시 3개로 분류하고 정확도와 라벨별 건수를 비교합니다. 이 셀은 API를 3번 호출합니다.</p>
+<div class="codehilite"><pre><span></span><code><span class="n">evaluation</span> <span class="o">=</span> <span class="n">inquiries</span><span class="p">[</span><span class="mi">44</span><span class="p">:</span><span class="mi">60</span><span class="p">]</span>                    <span class="c1"># Q45~Q60: 헷갈리는 11건과 정보가 빠진 5건</span>
+<span class="n">instruction</span> <span class="o">=</span> <span class="p">(</span><span class="s1">'다음 문의를 [설비 이상, 품질, 안전, 문서와 데이터 요청] 중 하나로 분류하세요.</span><span class="se">\n</span><span class="s1">'</span>
+               <span class="s1">'한 줄에 한 건씩 "번호: 라벨" 형식으로만 답하세요.</span><span class="se">\n</span><span class="s1">'</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">with_examples</span><span class="p">(</span><span class="n">numbers</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""예시로 쓸 문의(0부터 센 위치)를 "예시) 문의 → 라벨" 줄로 붙입니다"""</span>
+    <span class="k">return</span> <span class="n">instruction</span> <span class="o">+</span> <span class="s1">'</span><span class="se">\n</span><span class="s1">'</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">"예시) </span><span class="si">{</span><span class="n">inquiries</span><span class="p">[</span><span class="n">n</span><span class="p">][</span><span class="s1">'문의'</span><span class="p">]</span><span class="si">}</span><span class="s2"> → </span><span class="si">{</span><span class="n">inquiries</span><span class="p">[</span><span class="n">n</span><span class="p">][</span><span class="s1">'라벨'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">numbers</span><span class="p">)</span> <span class="o">+</span> <span class="s1">'</span><span class="se">\n</span><span class="s1">'</span>
+
+
+<span class="n">conditions</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'예시 없음'</span><span class="p">:</span> <span class="n">instruction</span><span class="p">,</span>
+              <span class="s1">'예시 3개(라벨 세 종류)'</span><span class="p">:</span> <span class="n">with_examples</span><span class="p">([</span><span class="mi">40</span><span class="p">,</span> <span class="mi">41</span><span class="p">,</span> <span class="mi">42</span><span class="p">]),</span>     <span class="c1"># Q41 설비 이상, Q42 문서와 데이터 요청, Q43 안전</span>
+              <span class="s1">'예시 3개(모두 안전)'</span><span class="p">:</span> <span class="n">with_examples</span><span class="p">([</span><span class="mi">20</span><span class="p">,</span> <span class="mi">21</span><span class="p">,</span> <span class="mi">22</span><span class="p">])}</span>      <span class="c1"># Q21~Q23 모두 안전</span>
+<span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">prompt</span> <span class="ow">in</span> <span class="n">conditions</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="n">predicted</span> <span class="o">=</span> <span class="n">parse_labels</span><span class="p">(</span><span class="n">llm</span><span class="o">.</span><span class="n">ask</span><span class="p">(</span><span class="n">prompt</span> <span class="o">+</span> <span class="s1">'</span><span class="se">\n</span><span class="s1">'</span> <span class="o">+</span> <span class="n">numbered</span><span class="p">(</span><span class="n">evaluation</span><span class="p">),</span> <span class="n">model</span><span class="o">=</span><span class="s1">'소형'</span><span class="p">,</span> <span class="n">max_tokens</span><span class="o">=</span><span class="mi">2000</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+    <span class="n">counts</span> <span class="o">=</span> <span class="p">{</span><span class="n">label</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">predicted</span><span class="o">.</span><span class="n">values</span><span class="p">())</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">label</span><span class="p">)</span> <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">LABELS</span><span class="p">}</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'[</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s1">] 읽은 라벨 </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">predicted</span><span class="p">)</span><span class="si">}</span><span class="s1">건, 정확도 </span><span class="si">{</span><span class="n">accuracy</span><span class="p">(</span><span class="n">predicted</span><span class="p">,</span><span class="w"> </span><span class="n">evaluation</span><span class="p">)</span><span class="si">:</span><span class="s1">.0%</span><span class="si">}</span><span class="s1">, 라벨별 건수 </span><span class="si">{</span><span class="n">counts</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
+</code></pre></div>
+
+<div class="result">
+<div class="codehilite"><pre><span></span><code>[예시 없음] 읽은 라벨 16건, 정확도 88%, 라벨별 건수 {'설비 이상': 6, '품질': 3, '안전': 3, '문서와 데이터 요청': 4}
+[예시 3개(라벨 세 종류)] 읽은 라벨 16건, 정확도 94%, 라벨별 건수 {'설비 이상': 6, '품질': 2, '안전': 3, '문서와 데이터 요청': 5}
+[예시 3개(모두 안전)] 읽은 라벨 16건, 정확도 94%, 라벨별 건수 {'설비 이상': 5, '품질': 4, '안전': 3, '문서와 데이터 요청': 4}
+</code></pre></div>
+
+</div>
+</section>
+<p>교재의 실행에서 16건 가운데 맞힌 건수는 예시 없음 14건(88%), 라벨이 서로 다른 예시 15건(94%), 모두 안전인 예시 15건(94%)이었습니다. 1건 차이는 다시 실행하면 바뀔 수 있는 크기이고, 모두 안전인 예시를 넣어도 "안전"으로 분류한 건수는 3건으로 같았습니다. 이 실행에 쓴 소형 모델은 라벨 이름만으로도 이 문의들을 대부분 맞혔고, 예시 3개의 효과는 작았습니다. few-shot의 효과는 모델과 과제에 따라 크게 다르므로, 넣기 전과 후의 정확도를 측정해 확인합니다. 헷갈리는 문의는 예시보다 판정 기준을 글로 적는 편이 효과가 클 수 있습니다(실습 4-1).</p>
+<h2 id="형식과-제약">형식과 제약</h2>
+<div class="gist">
+<p>형식은 응답의 칸을 정하고, 모델은 칸을 채우려 합니다. 근거가 없는 칸에 무엇을 쓸지 제약으로 정하지 않으면 그럴듯한 값을 지어낼 수 있습니다.</p>
+</div>
+<p>모델은 그럴듯한 이어짐을 고르므로, "담당자" 칸이 있는 표를 요구받으면 칸을 비우는 것보다 이름을 적는 쪽이 그럴듯할 수 있습니다. 2장의 환각이 형식 때문에 생길 수 있습니다. 이를 막으려면 근거가 없을 때 쓸 값("확인 필요")을 제약으로 정하고, 응답을 받은 뒤 그 값이 실제로 원문에 있는지 검사합니다.</p>
+<section class="box example" id="예제-4-3">
+<header><span class="box-no">예제 4-3</span><span class="box-title">빈칸을 채우는 모델</span><span class="box-where">노트북 <code>04_프롬프트_설계.ipynb</code>의 <code>예제 4-3</code></span></header>
+<p>설비 번호, 담당자, 시각이 빠진 문의 5건(Q56~Q60)으로 "번호 | 설비 번호 | 담당자 | 발생 시각 | 요청 내용" 표를 요구합니다. 제약 없이 한 번, "없는 값은 확인 필요"라는 제약 한 줄을 더해 한 번 보내고, 문의에 없는 값이 표에 생기는지 봅니다. 이 셀은 API를 2번 호출합니다.</p>
+<div class="codehilite"><pre><span></span><code><span class="n">missing</span> <span class="o">=</span> <span class="n">inquiries</span><span class="p">[</span><span class="mi">55</span><span class="p">:</span><span class="mi">60</span><span class="p">]</span>                       <span class="c1"># Q56~Q60: 설비 번호, 담당자, 시각이 빠진 문의</span>
+<span class="n">table</span> <span class="o">=</span> <span class="p">(</span><span class="s1">'다음 문의마다 "번호 | 설비 번호 | 담당자 | 발생 시각 | 요청 내용" 표의 한 행을 만드세요.</span><span class="se">\n\n</span><span class="s1">'</span>
+         <span class="o">+</span> <span class="n">numbered</span><span class="p">(</span><span class="n">missing</span><span class="p">))</span>
+<span class="n">guarded</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">'만드세요.'</span><span class="p">,</span> <span class="s1">'만드세요. 문의에 없는 값은 지어내지 말고 "확인 필요"로 적으세요.'</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">prompt</span> <span class="ow">in</span> <span class="p">[(</span><span class="s1">'제약 없음'</span><span class="p">,</span> <span class="n">table</span><span class="p">),</span> <span class="p">(</span><span class="s1">'제약 한 줄 추가'</span><span class="p">,</span> <span class="n">guarded</span><span class="p">)]:</span>
+    <span class="n">reply</span> <span class="o">=</span> <span class="n">llm</span><span class="o">.</span><span class="n">ask</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s1">'소형'</span><span class="p">,</span> <span class="n">max_tokens</span><span class="o">=</span><span class="mi">2000</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'[</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s1">]</span><span class="se">\n</span><span class="si">{</span><span class="n">reply</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="si">}</span><span class="se">\n</span><span class="s1">'</span><span class="p">)</span>
+</code></pre></div>
+
+<div class="result">
+<div class="codehilite"><pre><span></span><code>[제약 없음]
+| 번호 | 설비 번호 | 담당자 | 발생 시각 | 요청 내용 |
+|---|---|---|---|---|
+| Q56 | 미확인 (본더) | 미확인 | 미확인 | 본더 1대가 다시 정지함 |
+| Q57 | 미확인 | 미확인 | 미확인 | 불량이 갑자기 증가하여 원인 확인 요청 |
+| Q58 | 미확인 | 미확인 | 미확인 | 작업자 넘어짐 사고 발생 여부 및 경위 확인 요청 |
+| Q59 | 미확인 | 미확인 | 미확인 | 요청한 자료의 수령 일정 문의 |
+| Q60 | 미확인 | 미확인 | 미확인 | 설비 알람이 지속적으로 울려 점검 요청 |
+
+[제약 한 줄 추가]
+| 번호 | 설비 번호 | 담당자 | 발생 시각 | 요청 내용 |
+|---|---|---|---|---|
+| Q56 | 확인 필요 (본더 1대) | 확인 필요 | 확인 필요 | 본더 설비가 다시 정지됨 |
+| Q57 | 확인 필요 | 확인 필요 | 확인 필요 | 불량 수량이 갑자기 증가했으니 확인 요청 |
+| Q58 | 확인 필요 | 확인 필요 | 확인 필요 | 누군가 넘어진 사고가 있었다고 하니 사실 확인 요청 |
+| Q59 | 확인 필요 | 확인 필요 | 확인 필요 | 요청한 자료의 수령 가능 시점 문의 |
+| Q60 | 확인 필요 | 확인 필요 | 확인 필요 | 설비 알람이 계속 울리고 있어 점검 요청 |
+</code></pre></div>
+
+</div>
+</section>
+<p>교재의 실행에서 모델은 이름이나 번호를 지어내지 않고, 빈칸을 "미확인"으로 채웠습니다. 같은 예제를 여러 번 실행해 보면 "미기재", "미지정", "해당 없음"처럼 실행마다, 열마다 다른 말이 나오기도 했습니다. 제약 한 줄을 더하면 빈칸이 우리가 정한 "확인 필요"로 통일됩니다. 이 실행에 쓴 소형 모델은 이 정도 문의에서 값을 지어내지 않았지만, 빈칸에 쓸 값이 하나로 정해져 있어야 코드가 그 칸을 찾아 사람에게 넘길 수 있습니다.</p>
+<h2 id="CoT와-thinking">CoT와 thinking</h2>
+<div class="gist">
+<p>중간 단계를 먼저 적게 하면 복잡한 문제의 정확도가 오를 수 있고, 무엇보다 중간 값을 검산할 수 있습니다. thinking 모델은 이 일을 스스로 하므로, 지시의 쓸모는 중간 값을 응답에 남기는 쪽으로 옮겨 갔습니다.</p>
+</div>
+<p><span class="term" tabindex="0" data-def="답에 이르는 중간 단계를 먼저 적게 하는 방법. 중간 값을 사람이나 코드가 검산할 수 있다">CoT</span>(chain of thought)는 답에 이르는 중간 단계를 먼저 적게 하는 방법입니다. Wei 외(2022)는 중간 풀이가 든 예시를 몇 개 넣으면 큰 모델의 산술 문제와 상식 판단 문제의 정확도가 크게 오른다고 보고했습니다. 2장의 원리로 보면, 중간 단계의 토큰도 입력 끝에 붙으므로 답 토큰이 그 중간 결과를 보고 계산됩니다.</p>
+<p>현행 Claude 모델(예: 이 교재의 소형 모델)은 요청에 thinking 설정이 없어도 thinking을 하므로(2장), "단계별로 생각하라"는 지시의 효과는 작아졌습니다. 대신 답의 근거나 계산에 쓴 중간 값을 짧게 적게 하면 사람이나 코드가 검산할 수 있습니다. thinking을 그대로 응답에 옮기라는 지시는 거절(<code>refusal</code>)될 수 있습니다(2026-11 확인).</p>
+<h2 id="프롬프트-체인">프롬프트 체인</h2>
+<div class="gist">
+<p>여러 일을 한 번에 시키지 않고 단계로 나누면, 단계 사이에서 결과를 검사하고 잘못된 결과를 다음 단계로 넘기지 않을 수 있습니다. 대신 앞 단계의 오류는 뒤 단계로 그대로 전해집니다.</p>
+</div>
+<p><span class="term" tabindex="0" data-def="한 작업을 여러 단계로 나누고, 앞 단계의 출력을 다음 단계의 입력으로 넘기는 프롬프트의 연결">프롬프트 체인</span>(prompt chaining)은 한 작업을 여러 단계로 나누고, 앞 단계의 출력을 다음 단계의 입력으로 넘기는 방법입니다. 단계마다 프롬프트가 짧고 목적이 하나라서 응답이 일정하고, 단계 사이에서 코드로 결과를 검사할 수 있습니다.</p>
+<figure>
+<svg viewBox="0 0 680 112" role="img" aria-label="프롬프트 체인. 1단계 분류, 라벨이 허용 목록에 있는지 검사, 2단계 긴급 판단, 예/아니오만 있는지 검사, 결과 순서로 이어지고, 검사에서 걸리면 다음 단계로 넘기지 않습니다.">
+<rect x="10" y="20" width="118" height="56" rx="6" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="69" y="44" text-anchor="middle" fill="var(--ink)" font-size="13" font-weight="700">1단계</text><text x="69" y="62" text-anchor="middle" fill="var(--ink)" font-size="11">분류</text><line x1="128" y1="48" x2="136" y2="48" stroke="var(--teal)" stroke-width="2"/><polygon points="136,43 144,48 136,53" fill="var(--teal)"/><rect x="144" y="20" width="118" height="56" rx="6" fill="var(--amber-wash)" stroke="var(--amber)"/><text x="203" y="44" text-anchor="middle" fill="var(--ink)" font-size="13" font-weight="700">검사</text><text x="203" y="62" text-anchor="middle" fill="var(--ink)" font-size="11">라벨이 허용 목록에 있나</text><line x1="262" y1="48" x2="270" y2="48" stroke="var(--teal)" stroke-width="2"/><polygon points="270,43 278,48 270,53" fill="var(--teal)"/><rect x="278" y="20" width="118" height="56" rx="6" fill="var(--teal-wash)" stroke="var(--teal)"/><text x="337" y="44" text-anchor="middle" fill="var(--ink)" font-size="13" font-weight="700">2단계</text><text x="337" y="62" text-anchor="middle" fill="var(--ink)" font-size="11">긴급 판단</text><line x1="396" y1="48" x2="404" y2="48" stroke="var(--teal)" stroke-width="2"/><polygon points="404,43 412,48 404,53" fill="var(--teal)"/><rect x="412" y="20" width="118" height="56" rx="6" fill="var(--amber-wash)" stroke="var(--amber)"/><text x="471" y="44" text-anchor="middle" fill="var(--ink)" font-size="13" font-weight="700">검사</text><text x="471" y="62" text-anchor="middle" fill="var(--ink)" font-size="11">예/아니오만 있나</text><line x1="530" y1="48" x2="538" y2="48" stroke="var(--teal)" stroke-width="2"/><polygon points="538,43 546,48 538,53" fill="var(--teal)"/><rect x="546" y="20" width="118" height="56" rx="6" fill="var(--sheet)" stroke="var(--line)"/><text x="605" y="44" text-anchor="middle" fill="var(--ink)" font-size="13" font-weight="700">결과</text><text x="605" y="62" text-anchor="middle" fill="var(--ink)" font-size="11"></text><text x="340" y="100" text-anchor="middle" fill="var(--ink-soft)" font-size="12">검사에서 걸리면 다음 단계로 넘기지 않고 다시 요청하거나 사람이 확인합니다</text>
+</svg>
+<figcaption>프롬프트 체인은 단계 사이에서 결과를 검사할 수 있게 합니다.</figcaption>
+</figure>
+
+<p>검사는 코드로 확인할 수 있는 것(라벨이 허용 목록에 있는지, 건수가 입력과 같은지)부터 넣습니다. 체인은 앞 단계가 틀리면 뒤 단계가 그 틀린 결과를 바탕으로 일하므로, 검사가 없으면 오류가 쌓입니다. 3장의 분할 처리도 같은 단계 구조입니다.</p>
+<h2 id="자기-검증과-루브릭">자기 검증과 루브릭</h2>
+<div class="gist">
+<p>모델에게 자기 응답을 점검하게 하면 확인할 곳을 표시하는 데는 도움이 되지만, 모델이 모르는 사실을 찾아내지는 못합니다. 응답을 비교하려면 항목별 기준(루브릭)을 정하고, 모델에게 채점을 맡길 때는 순서 편향을 확인합니다.</p>
+</div>
+<p><span class="term" tabindex="0" data-def="모델에게 자기 응답을 사실, 확인 필요, 추측으로 나누게 하는 검증 단계. 확인할 곳을 표시해 줄 뿐 확인을 대신하지 않는다">자기 검증</span>(self-verification)은 모델에게 자기 응답을 "알려진 사실, 문서로 확인할 것, 추측"으로 나누게 하는 단계입니다. 같은 모델이 같은 지식으로 점검하므로, 모르는 사실이 틀렸어도 알아차리지 못합니다. 자기 검증의 결과는 사람이 원문과 대조할 곳의 목록으로 씁니다.</p>
+<p>두 프롬프트의 결과 가운데 어느 쪽이 나은지 비교할 때는 "좋아 보인다" 대신 <span class="term" tabindex="0" data-def="결과를 몇 개 항목으로 나누고 항목마다 점수의 기준을 적은 평가표">루브릭</span>(rubric)을 씁니다. 결과를 몇 개 항목(예: 원문에 없는 내용이 없는가, 요구한 형식을 지켰는가)으로 나누고 항목마다 점수의 기준을 적은 평가표입니다. 모델에게 루브릭으로 채점하게 하는 <span class="term" tabindex="0" data-def="모델에게 다른 응답을 채점하게 하는 평가 방법">LLM-as-a-judge</span>는 사람보다 빠릅니다. 다만 Zheng 외(2023)는 두 응답의 순서를 바꾸면 판정이 바뀌는 <span class="term" tabindex="0" data-def="채점할 응답이 놓인 순서가 점수에 주는 영향">position bias</span>를 보고했습니다. 두 순서로 모두 채점해 판정이 같은지 확인합니다. 정량 평가는 9장에서 다룹니다.</p>
+<h2 id="개념-확인-실습">개념 확인 실습</h2>
+<p>실습은 장 노트북의 빈칸을 채워 실행합니다. 코드를 실행하기 전에 결과를 먼저 예측해 적고, 실행한 뒤 예측과 다른 부분을 이 장의 원리로 설명해 봅니다.</p>
+<section class="box practice" id="실습-4-1">
+<header><span class="box-no">실습 4-1</span><span class="box-title">판정 기준으로 정확도 올리기</span><span class="box-where">노트북 <code>04_프롬프트_설계.ipynb</code>의 <code>실습 4-1</code></span></header>
+<p>헷갈리거나 정보가 빠진 문의 20건(Q41~Q60)을 분류하는 프롬프트에 판정 기준을 적어 정확도를 올립니다. 먼저 <code>my_guess</code>에 예상 정확도를 적고, 틀린 문의를 보고 기준을 한 번 고쳐 다시 실행합니다. 정확도가 예제 4-2의 "예시 없음"보다 올랐는지, 남은 오답이 어떤 문의인지 한 문장으로 설명하면 끝납니다. 이 셀은 실행할 때마다 API를 1번 호출합니다.</p>
+<div class="codehilite"><pre><span></span><code><span class="n">hard</span> <span class="o">=</span> <span class="n">inquiries</span><span class="p">[</span><span class="mi">40</span><span class="p">:</span><span class="mi">60</span><span class="p">]</span>                         <span class="c1"># Q41~Q60: 헷갈리는 15건과 정보가 빠진 5건</span>
+<span class="n">my_prompt</span> <span class="o">=</span> <span class="p">(</span><span class="s1">'다음 문의를 [설비 이상, 품질, 안전, 문서와 데이터 요청] 중 하나로 분류하세요.</span><span class="se">\n</span><span class="s1">'</span>
+             <span class="s1">'한 줄에 한 건씩 "번호: 라벨" 형식으로만 답하세요.</span><span class="se">\n</span><span class="s1">'</span>
+             <span class="s1">''</span><span class="p">)</span>  <span class="c1"># TODO: 헷갈리는 문의를 가를 판정 기준을 적습니다</span>
+<span class="n">my_guess</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># TODO: 예상 정확도(0~1)를 먼저 적습니다</span>
+
+<span class="n">reply</span> <span class="o">=</span> <span class="n">llm</span><span class="o">.</span><span class="n">ask</span><span class="p">(</span><span class="n">my_prompt</span> <span class="o">+</span> <span class="s1">'</span><span class="se">\n</span><span class="s1">'</span> <span class="o">+</span> <span class="n">numbered</span><span class="p">(</span><span class="n">hard</span><span class="p">),</span> <span class="n">model</span><span class="o">=</span><span class="s1">'소형'</span><span class="p">,</span> <span class="n">max_tokens</span><span class="o">=</span><span class="mi">2000</span><span class="p">)</span>
+<span class="n">predicted</span> <span class="o">=</span> <span class="n">parse_labels</span><span class="p">(</span><span class="n">reply</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'읽은 라벨 </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">predicted</span><span class="p">)</span><span class="si">}</span><span class="s1">건(종료 이유 </span><span class="si">{</span><span class="n">reply</span><span class="o">.</span><span class="n">stop_reason</span><span class="si">}</span><span class="s1">), 정확도 </span><span class="si">{</span><span class="n">accuracy</span><span class="p">(</span><span class="n">predicted</span><span class="p">,</span><span class="w"> </span><span class="n">hard</span><span class="p">)</span><span class="si">:</span><span class="s1">.0%</span><span class="si">}</span><span class="s1"> (예측 </span><span class="si">{</span><span class="n">my_guess</span><span class="si">}</span><span class="s1">)'</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">hard</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">predicted</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="s1">'번호'</span><span class="p">])</span> <span class="o">!=</span> <span class="n">item</span><span class="p">[</span><span class="s1">'라벨'</span><span class="p">]:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"틀림 </span><span class="si">{</span><span class="n">item</span><span class="p">[</span><span class="s1">'번호'</span><span class="p">]</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">item</span><span class="p">[</span><span class="s1">'문의'</span><span class="p">]</span><span class="si">}</span><span class="s2"> → </span><span class="si">{</span><span class="n">predicted</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="s1">'번호'</span><span class="p">])</span><span class="si">}</span><span class="s2"> (정답 </span><span class="si">{</span><span class="n">item</span><span class="p">[</span><span class="s1">'라벨'</span><span class="p">]</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
+</code></pre></div>
+
+<details class="answer">
+<summary>풀이 보기</summary>
+<p><code>노트북/data/README.md</code>의 판정 기준 네 줄을 순서대로 적습니다. 기준끼리 겹칠 때 어느 것을 먼저 적용하는지(순서)가 헷갈리는 문의를 가릅니다.</p>
+<div class="codehilite"><pre><span></span><code><span class="n">hard</span> <span class="o">=</span> <span class="n">inquiries</span><span class="p">[</span><span class="mi">40</span><span class="p">:</span><span class="mi">60</span><span class="p">]</span>                         <span class="c1"># Q41~Q60: 헷갈리는 15건과 정보가 빠진 5건</span>
+<span class="n">my_prompt</span> <span class="o">=</span> <span class="p">(</span><span class="s1">'다음 문의를 [설비 이상, 품질, 안전, 문서와 데이터 요청] 중 하나로 분류하세요.</span><span class="se">\n</span><span class="s1">'</span>
+             <span class="s1">'한 줄에 한 건씩 "번호: 라벨" 형식으로만 답하세요.</span><span class="se">\n</span><span class="s1">'</span>
+             <span class="s1">'판정 기준은 위에서부터 차례로 적용합니다.</span><span class="se">\n</span><span class="s1">'</span>
+             <span class="s1">'1. 사람이 다치거나 다칠 위험이 있으면 안전</span><span class="se">\n</span><span class="s1">'</span>
+             <span class="s1">'2. 문의자가 원하는 것이 문서나 기록의 전달이면 문서와 데이터 요청</span><span class="se">\n</span><span class="s1">'</span>
+             <span class="s1">'3. 설비의 고장, 알람, 이상 동작이거나 불량의 원인 설비가 특정되면 설비 이상</span><span class="se">\n</span><span class="s1">'</span>
+             <span class="s1">'4. 제품 결과나 품질 판정에 이상이 있고 원인 설비가 특정되지 않으면 품질</span><span class="se">\n</span><span class="s1">'</span><span class="p">)</span>
+<span class="n">my_guess</span> <span class="o">=</span> <span class="mf">0.8</span>
+
+<span class="n">reply</span> <span class="o">=</span> <span class="n">llm</span><span class="o">.</span><span class="n">ask</span><span class="p">(</span><span class="n">my_prompt</span> <span class="o">+</span> <span class="s1">'</span><span class="se">\n</span><span class="s1">'</span> <span class="o">+</span> <span class="n">numbered</span><span class="p">(</span><span class="n">hard</span><span class="p">),</span> <span class="n">model</span><span class="o">=</span><span class="s1">'소형'</span><span class="p">,</span> <span class="n">max_tokens</span><span class="o">=</span><span class="mi">2000</span><span class="p">)</span>
+<span class="n">predicted</span> <span class="o">=</span> <span class="n">parse_labels</span><span class="p">(</span><span class="n">reply</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'읽은 라벨 </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">predicted</span><span class="p">)</span><span class="si">}</span><span class="s1">건(종료 이유 </span><span class="si">{</span><span class="n">reply</span><span class="o">.</span><span class="n">stop_reason</span><span class="si">}</span><span class="s1">), 정확도 </span><span class="si">{</span><span class="n">accuracy</span><span class="p">(</span><span class="n">predicted</span><span class="p">,</span><span class="w"> </span><span class="n">hard</span><span class="p">)</span><span class="si">:</span><span class="s1">.0%</span><span class="si">}</span><span class="s1"> (예측 </span><span class="si">{</span><span class="n">my_guess</span><span class="si">}</span><span class="s1">)'</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">hard</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">predicted</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="s1">'번호'</span><span class="p">])</span> <span class="o">!=</span> <span class="n">item</span><span class="p">[</span><span class="s1">'라벨'</span><span class="p">]:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"틀림 </span><span class="si">{</span><span class="n">item</span><span class="p">[</span><span class="s1">'번호'</span><span class="p">]</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">item</span><span class="p">[</span><span class="s1">'문의'</span><span class="p">]</span><span class="si">}</span><span class="s2"> → </span><span class="si">{</span><span class="n">predicted</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="s1">'번호'</span><span class="p">])</span><span class="si">}</span><span class="s2"> (정답 </span><span class="si">{</span><span class="n">item</span><span class="p">[</span><span class="s1">'라벨'</span><span class="p">]</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
+</code></pre></div>
+
+<div class="result">
+<div class="codehilite"><pre><span></span><code>읽은 라벨 20건(종료 이유 end), 정확도 100% (예측 0.8)
+</code></pre></div>
+
+</div>
+<p>교재의 실행에서 판정 기준을 넣자 20건을 모두 맞혔습니다(100%). 같은 16건(Q45~Q60)만 보면 예제 4-2의 예시 없음(14건)보다 2건 많습니다. 기준끼리 겹치는 문의(예: 설비 문제이면서 사람이 다칠 위험이 있는 Q43)는 기준을 적용하는 순서가 판정을 정합니다. 실행에 따라 1~2건이 틀릴 수 있으니, 틀린 문의가 나오면 어느 기준이 모호했는지 보고 그 기준의 낱말을 고쳐 다시 실행해 봅니다.</p>
+</details>
+</section>
+<section class="box practice" id="실습-4-2">
+<header><span class="box-no">실습 4-2</span><span class="box-title">체인으로 나누고 단계 사이에서 검사하기</span><span class="box-where">노트북 <code>04_프롬프트_설계.ipynb</code>의 <code>실습 4-2</code></span></header>
+<p>같은 20건에 대해 라벨과 긴급 여부를 한 번에 묻는 경우와, 라벨을 먼저 받고 검사한 뒤 긴급 여부를 따로 묻는 두 단계 체인을 비교합니다. 분류 기준은 실습 4-1에서 작성한 <code>my_prompt</code>를 그대로 씁니다. <code>invalid_labels()</code>는 허용 목록(<code>LABELS</code>)에 없는 라벨이 붙은 번호를 돌려주게, <code>step2_prompt()</code>는 문의와 1단계 라벨을 함께 주고 긴급 여부만 "번호: 예" 또는 "번호: 아니오"로 묻게 작성합니다. 긴급의 뜻(<code>URGENT</code>)은 두 방식에 똑같이 넣습니다. 어느 쪽의 긴급 판단이 정확할지 먼저 예측하고, 결과의 차이를 체인의 장단점으로 설명하면 끝납니다. 이 셀은 API를 3번 호출합니다.</p>
+<div class="codehilite"><pre><span></span><code><span class="n">hard</span> <span class="o">=</span> <span class="n">inquiries</span><span class="p">[</span><span class="mi">40</span><span class="p">:</span><span class="mi">60</span><span class="p">]</span>
+<span class="n">URGENT</span> <span class="o">=</span> <span class="s1">'긴급은 지금 조치하지 않으면 사람이 다치거나, 생산이 멈추거나, 불량이 출하될 수 있는 문의입니다.</span><span class="se">\n</span><span class="s1">'</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">invalid_labels</span><span class="p">(</span><span class="n">predicted</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""허용 목록(LABELS)에 없는 라벨이 붙은 번호의 목록"""</span>
+    <span class="k">return</span> <span class="p">[]</span>  <span class="c1"># TODO</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">step2_prompt</span><span class="p">(</span><span class="n">labels</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""문의와 1단계 라벨을 함께 주고, 긴급 여부만 "번호: 예" 또는 "번호: 아니오"로 묻는 프롬프트"""</span>
+    <span class="k">return</span> <span class="s1">''</span>  <span class="c1"># TODO</span>
+
+
+<span class="k">assert</span> <span class="n">step2_prompt</span><span class="p">({</span><span class="s1">'Q41'</span><span class="p">:</span> <span class="s1">'설비 이상'</span><span class="p">}),</span> <span class="s1">'step2_prompt()를 먼저 작성합니다'</span>   <span class="c1"># 빈칸이면 API를 부르기 전에 멈춥니다</span>
+<span class="c1"># 한 번에: 라벨과 긴급 여부를 함께(분류 기준은 실습 4-1의 my_prompt)</span>
+<span class="n">once</span> <span class="o">=</span> <span class="n">llm</span><span class="o">.</span><span class="n">ask</span><span class="p">(</span><span class="n">my_prompt</span> <span class="o">+</span> <span class="n">URGENT</span> <span class="o">+</span> <span class="s1">'"번호: 라벨 / 예 또는 아니오"로 답하세요.</span><span class="se">\n\n</span><span class="s1">'</span> <span class="o">+</span> <span class="n">numbered</span><span class="p">(</span><span class="n">hard</span><span class="p">),</span>
+               <span class="n">model</span><span class="o">=</span><span class="s1">'소형'</span><span class="p">,</span> <span class="n">max_tokens</span><span class="o">=</span><span class="mi">3000</span><span class="p">)</span><span class="o">.</span><span class="n">text</span>
+<span class="c1"># 체인 1단계: 라벨만, 단계 사이에서 검사</span>
+<span class="n">step1</span> <span class="o">=</span> <span class="n">parse_labels</span><span class="p">(</span><span class="n">llm</span><span class="o">.</span><span class="n">ask</span><span class="p">(</span><span class="n">my_prompt</span> <span class="o">+</span> <span class="s1">'</span><span class="se">\n</span><span class="s1">'</span> <span class="o">+</span> <span class="n">numbered</span><span class="p">(</span><span class="n">hard</span><span class="p">),</span> <span class="n">model</span><span class="o">=</span><span class="s1">'소형'</span><span class="p">,</span> <span class="n">max_tokens</span><span class="o">=</span><span class="mi">2000</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'1단계 검사에 걸린 번호:'</span><span class="p">,</span> <span class="n">invalid_labels</span><span class="p">(</span><span class="n">step1</span><span class="p">))</span>
+<span class="c1"># 체인 2단계: 긴급 여부만</span>
+<span class="n">step2</span> <span class="o">=</span> <span class="n">parse_labels</span><span class="p">(</span><span class="n">llm</span><span class="o">.</span><span class="n">ask</span><span class="p">(</span><span class="n">step2_prompt</span><span class="p">(</span><span class="n">step1</span><span class="p">),</span> <span class="n">model</span><span class="o">=</span><span class="s1">'소형'</span><span class="p">,</span> <span class="n">max_tokens</span><span class="o">=</span><span class="mi">2000</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+
+<span class="n">pairs</span> <span class="o">=</span> <span class="p">{</span><span class="n">number</span><span class="p">:</span> <span class="n">value</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">'/'</span><span class="p">)</span> <span class="k">for</span> <span class="n">number</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">parse_labels</span><span class="p">(</span><span class="n">once</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+<span class="n">once_labels</span> <span class="o">=</span> <span class="p">{</span><span class="n">number</span><span class="p">:</span> <span class="n">parts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">number</span><span class="p">,</span> <span class="n">parts</span> <span class="ow">in</span> <span class="n">pairs</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+<span class="n">once_urgent</span> <span class="o">=</span> <span class="p">{</span><span class="n">number</span><span class="p">:</span> <span class="n">parts</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">number</span><span class="p">,</span> <span class="n">parts</span> <span class="ow">in</span> <span class="n">pairs</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+<span class="n">urgent_score</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">answers</span><span class="p">:</span> <span class="nb">sum</span><span class="p">(</span><span class="n">answers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="s1">'번호'</span><span class="p">])</span> <span class="o">==</span> <span class="n">item</span><span class="p">[</span><span class="s1">'긴급'</span><span class="p">]</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">hard</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">hard</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'한 번에 응답 앞부분:'</span><span class="p">,</span> <span class="n">once</span><span class="o">.</span><span class="n">strip</span><span class="p">()[:</span><span class="mi">60</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">'</span><span class="se">\n</span><span class="s1">'</span><span class="p">,</span> <span class="s1">' / '</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'한 번에: 라벨 </span><span class="si">{</span><span class="n">accuracy</span><span class="p">(</span><span class="n">once_labels</span><span class="p">,</span><span class="w"> </span><span class="n">hard</span><span class="p">)</span><span class="si">:</span><span class="s1">.0%</span><span class="si">}</span><span class="s1">, 긴급 </span><span class="si">{</span><span class="n">urgent_score</span><span class="p">(</span><span class="n">once_urgent</span><span class="p">)</span><span class="si">:</span><span class="s1">.0%</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'체인:   라벨 </span><span class="si">{</span><span class="n">accuracy</span><span class="p">(</span><span class="n">step1</span><span class="p">,</span><span class="w"> </span><span class="n">hard</span><span class="p">)</span><span class="si">:</span><span class="s1">.0%</span><span class="si">}</span><span class="s1">, 긴급 </span><span class="si">{</span><span class="n">urgent_score</span><span class="p">(</span><span class="n">step2</span><span class="p">)</span><span class="si">:</span><span class="s1">.0%</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
+</code></pre></div>
+
+<details class="answer">
+<summary>풀이 보기</summary>
+<p>검사는 라벨이 허용 목록에 있는지만 봅니다. 2단계 프롬프트는 긴급의 뜻과 함께, 문의 옆에 1단계 라벨을 붙여 줍니다.</p>
+<div class="codehilite"><pre><span></span><code><span class="n">hard</span> <span class="o">=</span> <span class="n">inquiries</span><span class="p">[</span><span class="mi">40</span><span class="p">:</span><span class="mi">60</span><span class="p">]</span>
+<span class="n">URGENT</span> <span class="o">=</span> <span class="s1">'긴급은 지금 조치하지 않으면 사람이 다치거나, 생산이 멈추거나, 불량이 출하될 수 있는 문의입니다.</span><span class="se">\n</span><span class="s1">'</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">invalid_labels</span><span class="p">(</span><span class="n">predicted</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""허용 목록(LABELS)에 없는 라벨이 붙은 번호의 목록"""</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">number</span> <span class="k">for</span> <span class="n">number</span><span class="p">,</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">predicted</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">label</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">LABELS</span><span class="p">]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">step2_prompt</span><span class="p">(</span><span class="n">labels</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""문의와 1단계 라벨을 함께 주고, 긴급 여부만 "번호: 예" 또는 "번호: 아니오"로 묻는 프롬프트"""</span>
+    <span class="n">lines</span> <span class="o">=</span> <span class="s1">'</span><span class="se">\n</span><span class="s1">'</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">item</span><span class="p">[</span><span class="s1">'번호'</span><span class="p">]</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">item</span><span class="p">[</span><span class="s1">'문의'</span><span class="p">]</span><span class="si">}</span><span class="s2"> (라벨: </span><span class="si">{</span><span class="n">labels</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="s1">'번호'</span><span class="p">])</span><span class="si">}</span><span class="s2">)"</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">hard</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">URGENT</span> <span class="o">+</span> <span class="s1">'각 문의가 긴급인지 판단하세요. 한 줄에 한 건씩 "번호: 예" 또는 "번호: 아니오"로만 답하세요.</span><span class="se">\n\n</span><span class="s1">'</span> <span class="o">+</span> <span class="n">lines</span>
+
+
+<span class="k">assert</span> <span class="n">step2_prompt</span><span class="p">({</span><span class="s1">'Q41'</span><span class="p">:</span> <span class="s1">'설비 이상'</span><span class="p">}),</span> <span class="s1">'step2_prompt()를 먼저 작성합니다'</span>   <span class="c1"># 빈칸이면 API를 부르기 전에 멈춥니다</span>
+<span class="c1"># 한 번에: 라벨과 긴급 여부를 함께(분류 기준은 실습 4-1의 my_prompt)</span>
+<span class="n">once</span> <span class="o">=</span> <span class="n">llm</span><span class="o">.</span><span class="n">ask</span><span class="p">(</span><span class="n">my_prompt</span> <span class="o">+</span> <span class="n">URGENT</span> <span class="o">+</span> <span class="s1">'"번호: 라벨 / 예 또는 아니오"로 답하세요.</span><span class="se">\n\n</span><span class="s1">'</span> <span class="o">+</span> <span class="n">numbered</span><span class="p">(</span><span class="n">hard</span><span class="p">),</span>
+               <span class="n">model</span><span class="o">=</span><span class="s1">'소형'</span><span class="p">,</span> <span class="n">max_tokens</span><span class="o">=</span><span class="mi">3000</span><span class="p">)</span><span class="o">.</span><span class="n">text</span>
+<span class="c1"># 체인 1단계: 라벨만, 단계 사이에서 검사</span>
+<span class="n">step1</span> <span class="o">=</span> <span class="n">parse_labels</span><span class="p">(</span><span class="n">llm</span><span class="o">.</span><span class="n">ask</span><span class="p">(</span><span class="n">my_prompt</span> <span class="o">+</span> <span class="s1">'</span><span class="se">\n</span><span class="s1">'</span> <span class="o">+</span> <span class="n">numbered</span><span class="p">(</span><span class="n">hard</span><span class="p">),</span> <span class="n">model</span><span class="o">=</span><span class="s1">'소형'</span><span class="p">,</span> <span class="n">max_tokens</span><span class="o">=</span><span class="mi">2000</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'1단계 검사에 걸린 번호:'</span><span class="p">,</span> <span class="n">invalid_labels</span><span class="p">(</span><span class="n">step1</span><span class="p">))</span>
+<span class="c1"># 체인 2단계: 긴급 여부만</span>
+<span class="n">step2</span> <span class="o">=</span> <span class="n">parse_labels</span><span class="p">(</span><span class="n">llm</span><span class="o">.</span><span class="n">ask</span><span class="p">(</span><span class="n">step2_prompt</span><span class="p">(</span><span class="n">step1</span><span class="p">),</span> <span class="n">model</span><span class="o">=</span><span class="s1">'소형'</span><span class="p">,</span> <span class="n">max_tokens</span><span class="o">=</span><span class="mi">2000</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+
+<span class="n">pairs</span> <span class="o">=</span> <span class="p">{</span><span class="n">number</span><span class="p">:</span> <span class="n">value</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">'/'</span><span class="p">)</span> <span class="k">for</span> <span class="n">number</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">parse_labels</span><span class="p">(</span><span class="n">once</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+<span class="n">once_labels</span> <span class="o">=</span> <span class="p">{</span><span class="n">number</span><span class="p">:</span> <span class="n">parts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">number</span><span class="p">,</span> <span class="n">parts</span> <span class="ow">in</span> <span class="n">pairs</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+<span class="n">once_urgent</span> <span class="o">=</span> <span class="p">{</span><span class="n">number</span><span class="p">:</span> <span class="n">parts</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">number</span><span class="p">,</span> <span class="n">parts</span> <span class="ow">in</span> <span class="n">pairs</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+<span class="n">urgent_score</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">answers</span><span class="p">:</span> <span class="nb">sum</span><span class="p">(</span><span class="n">answers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="s1">'번호'</span><span class="p">])</span> <span class="o">==</span> <span class="n">item</span><span class="p">[</span><span class="s1">'긴급'</span><span class="p">]</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">hard</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">hard</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'한 번에 응답 앞부분:'</span><span class="p">,</span> <span class="n">once</span><span class="o">.</span><span class="n">strip</span><span class="p">()[:</span><span class="mi">60</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">'</span><span class="se">\n</span><span class="s1">'</span><span class="p">,</span> <span class="s1">' / '</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'한 번에: 라벨 </span><span class="si">{</span><span class="n">accuracy</span><span class="p">(</span><span class="n">once_labels</span><span class="p">,</span><span class="w"> </span><span class="n">hard</span><span class="p">)</span><span class="si">:</span><span class="s1">.0%</span><span class="si">}</span><span class="s1">, 긴급 </span><span class="si">{</span><span class="n">urgent_score</span><span class="p">(</span><span class="n">once_urgent</span><span class="p">)</span><span class="si">:</span><span class="s1">.0%</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'체인:   라벨 </span><span class="si">{</span><span class="n">accuracy</span><span class="p">(</span><span class="n">step1</span><span class="p">,</span><span class="w"> </span><span class="n">hard</span><span class="p">)</span><span class="si">:</span><span class="s1">.0%</span><span class="si">}</span><span class="s1">, 긴급 </span><span class="si">{</span><span class="n">urgent_score</span><span class="p">(</span><span class="n">step2</span><span class="p">)</span><span class="si">:</span><span class="s1">.0%</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
+</code></pre></div>
+
+<div class="result">
+<div class="codehilite"><pre><span></span><code>1단계 검사에 걸린 번호: []
+한 번에 응답 앞부분: Q41: 설비 이상 / 아니오 / Q42: 문서와 데이터 요청 / 아니오 / Q43: 안전 / 예 / Q44: 안전 /
+한 번에: 라벨 100%, 긴급 70%
+체인:   라벨 100%, 긴급 90%
+</code></pre></div>
+
+</div>
+<p>교재의 실행에서 라벨 정확도는 두 방식 모두 100%였고, 긴급 판단은 한 번에 물었을 때 70%, 체인으로 따로 물었을 때 90%였습니다. 두 방식 모두 같은 긴급의 뜻(<code>URGENT</code>)을 받았으므로, 차이는 한 요청에 두 판단을 섞었는지에서 나왔다고 볼 수 있습니다. 다만 20건 중 4건 차이이므로 다시 실행해 확인합니다. 체인은 요청이 하나 늘어나는 대신 단계마다 한 가지만 묻고, 1단계 결과를 검사한 뒤 다음 단계로 넘길 수 있습니다. 1단계 라벨이 틀린 문의는 2단계에서도 틀린 라벨을 참고하므로, 앞 단계의 오류가 전해질 수 있다는 점도 함께 기억합니다.</p>
+</details>
+</section>
+<h2 id="자가점검">자가점검</h2>
+<p><strong>1.</strong> "이 회의록 정리해 줘"로 받은 응답이 매번 형식과 길이가 다릅니다. 1장의 확률 분포로 이유를 설명하고, 고칠 방법을 두 가지 들어 보세요.</p>
+<details class="answer">
+<summary>정답 보기</summary>
+<p>지시가 모호하면 그럴듯한 이어짐이 많아 확률이 여러 후보에 퍼지고, 샘플링할 때마다 다른 이어짐이 뽑힙니다. 목적(무엇을 하라는지), 맥락(누가 어디에 쓰는지), 출력 형식(예: 결정 사항 표와 할 일 목록) 가운데 빠진 것을 적어 후보를 좁힙니다.</p>
+</details>
+<p><strong>2.</strong> few-shot 예시는 모델의 파라미터를 바꿉니까? 예시 다섯 개가 모두 같은 라벨이면 어떤 일이 생길 수 있습니까?</p>
+<details class="answer">
+<summary>정답 보기</summary>
+<p>파라미터는 바뀌지 않습니다. 예시는 입력의 일부로 들어가 다음 토큰의 확률 분포를 바꿀 뿐입니다. 예시의 라벨이 한쪽에 치우치면 그 라벨이 더 자주 예측될 수 있으므로, 예시는 라벨마다 같은 수로 뽑습니다.</p>
+</details>
+<p><strong>3.</strong> 정보가 빠진 문의로 "담당자" 칸이 있는 표를 요청했더니 문의에 없는 이름이 적혔습니다. 원인과 막는 방법은 무엇입니까?</p>
+<details class="answer">
+<summary>정답 보기</summary>
+<p>형식이 칸을 요구하면 칸을 채우는 이어짐의 확률이 높아 근거 없는 값이 생성될 수 있습니다. "문의에 없는 값은 확인 필요로 적는다"는 제약을 넣고, 응답의 값이 원문에 실제로 있는지 검사합니다.</p>
+</details>
+<p><strong>4.</strong> thinking 모델에 "단계별로 생각해서 답하라"고 지시할 필요가 있습니까? 그래도 중간 과정을 적게 하는 이유는 무엇입니까?</p>
+<details class="answer">
+<summary>정답 보기</summary>
+<p>thinking 모델은 지시하지 않아도 답 전에 thinking을 하므로 정확도를 위한 지시의 효과는 작습니다. 그래도 근거와 중간 값을 응답에 짧게 적게 하면, 보이지 않는 thinking과 달리 사람이나 코드가 검산할 수 있습니다.</p>
+</details>
+<p><strong>5.</strong> 프롬프트 체인의 장점과 단점을 하나씩 들어 보세요.</p>
+<details class="answer">
+<summary>정답 보기</summary>
+<p>장점: 단계마다 목적이 하나라 응답이 일정하고, 단계 사이에서 코드로 결과를 검사할 수 있습니다. 단점: 앞 단계의 오류가 뒤 단계로 그대로 전해지고, 요청 수가 늘어 시간과 비용이 듭니다.</p>
+</details>
+<p><strong>6.</strong> 두 요약 A, B를 모델에게 루브릭으로 비교하게 했더니 A가 낫다고 했습니다. 이 판정을 믿기 전에 무엇을 해야 합니까?</p>
+<details class="answer">
+<summary>정답 보기</summary>
+<p>A와 B의 순서를 바꿔 다시 채점하게 합니다. 순서에 따라 판정이 바뀌면(position bias) 그 판정은 믿을 수 없습니다. 또 모델이 원문에 없는 내용을 알아차리지 못할 수 있으므로, 사실 여부는 원문과 대조합니다.</p>
+</details>
+<h2 id="참고-문헌">참고 문헌</h2>
+<ul>
+<li>Brown, T. 외 (2020). Language Models are Few-Shot Learners. NeurIPS 2020.</li>
+<li>Zhao, Z. 외 (2021). Calibrate Before Use: Improving Few-Shot Performance of Language Models. ICML 2021.</li>
+<li>Wei, J. 외 (2022). Chain-of-Thought Prompting Elicits Reasoning in Large Language Models. NeurIPS 2022.</li>
+<li>Zheng, L. 외 (2023). Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena. NeurIPS 2023.</li>
+<li>Anthropic. 프롬프트 엔지니어링 안내: XML 태그, 역할 지정, 예시(2026-11 확인).</li>
+</ul>
+</article>
+    <footer class="foot">GenAI Intensive 강의(삼성전자 DS 부문 교육)의 주제를 바탕으로 새로 쓴 교재입니다.</footer>
+  </main>
+</div>
+<script>
+// 교재 화면 동작: 화면 밝기, 목차, 탭, 코드 복사, 찾기.
+(function () {
+  var root = document.documentElement;
+
+  // 화면 밝기. 기억해 둔 값이 없으면 기기 설정을 따른다.
+  var themeButton = document.querySelector('.theme');
+  function stored() { try { return localStorage.getItem('theme'); } catch (e) { return null; } }
+  function setTheme(name) {
+    root.setAttribute('data-theme', name);
+    themeButton.textContent = name === 'dark' ? '밝은 화면' : '어두운 화면';
+  }
+  setTheme(stored() || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+  themeButton.addEventListener('click', function () {
+    var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+    try { localStorage.setItem('theme', next); } catch (e) { /* 저장하지 못해도 화면은 바뀐다 */ }
+  });
+
+  // 본문 폭. 기본은 읽기 편한 폭, "넓게 보기"는 표와 코드를 넓게 본다.
+  var widthButton = document.querySelector('.width');
+  function setWidth(name) {
+    root.setAttribute('data-width', name);
+    widthButton.textContent = name === 'wide' ? '기본 폭으로' : '넓게 보기';
+  }
+  var savedWidth = null;
+  try { savedWidth = localStorage.getItem('width'); } catch (e) { /* 무시 */ }
+  setWidth(savedWidth === 'wide' ? 'wide' : 'normal');
+  widthButton.addEventListener('click', function () {
+    var next = root.getAttribute('data-width') === 'wide' ? 'normal' : 'wide';
+    setWidth(next);
+    try { localStorage.setItem('width', next); } catch (e) { /* 저장하지 못해도 화면은 바뀐다 */ }
+  });
+
+  // 좁은 화면의 목차 열고 닫기
+  var side = document.getElementById('side');
+  var menu = document.querySelector('.menu');
+  menu.addEventListener('click', function () {
+    var open = side.classList.toggle('open');
+    menu.setAttribute('aria-expanded', open);
+  });
+  side.addEventListener('click', function (event) {
+    if (event.target.closest('a')) { side.classList.remove('open'); menu.setAttribute('aria-expanded', false); }
+  });
+
+  // 이어진 탭을 한 묶음으로 만든다
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('.tab'));
+  tabs.forEach(function (tab) {
+    if (tab.classList.contains('ready')) return;
+    var group = [tab];
+    var next = tab.nextElementSibling;
+    while (next && next.classList.contains('tab')) { group.push(next); next = next.nextElementSibling; }
+    var wrap = document.createElement('div');
+    wrap.className = 'tabs';
+    var list = document.createElement('div');
+    list.className = 'tablist';
+    list.setAttribute('role', 'tablist');
+    tab.parentNode.insertBefore(wrap, tab);
+    wrap.appendChild(list);
+    group.forEach(function (panel, index) {
+      panel.classList.add('ready');
+      var button = document.createElement('button');
+      button.type = 'button';
+      button.setAttribute('role', 'tab');
+      button.textContent = panel.getAttribute('data-tab');
+      button.addEventListener('click', function () { choose(panel.getAttribute('data-tab')); });
+      list.appendChild(button);
+      wrap.appendChild(panel);
+      panel.hidden = index !== 0;
+      button.setAttribute('aria-selected', index === 0);
+    });
+  });
+  // 탭 하나를 고르면 같은 이름의 탭이 쪽 전체에서 함께 바뀐다
+  function choose(name) {
+    document.querySelectorAll('.tabs').forEach(function (wrap) {
+      var panels = wrap.querySelectorAll(':scope > .tab');
+      var has = Array.prototype.some.call(panels, function (p) { return p.getAttribute('data-tab') === name; });
+      if (!has) return;
+      panels.forEach(function (p) { p.hidden = p.getAttribute('data-tab') !== name; });
+      wrap.querySelectorAll('.tablist button').forEach(function (b) {
+        b.setAttribute('aria-selected', b.textContent === name);
+      });
+    });
+    try { localStorage.setItem('tab', name); } catch (e) { /* 무시 */ }
+  }
+  try { var savedTab = localStorage.getItem('tab'); if (savedTab) choose(savedTab); } catch (e) { /* 무시 */ }
+
+  // 코드 복사 단추
+  document.querySelectorAll('.codehilite').forEach(function (block) {
+    if (block.closest('.result') || !navigator.clipboard) return;
+    var button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'copy';
+    button.textContent = '복사';
+    button.addEventListener('click', function () {
+      navigator.clipboard.writeText(block.querySelector('pre').innerText).then(function () {
+        button.textContent = '복사했습니다';
+        setTimeout(function () { button.textContent = '복사'; }, 1500);
+      });
+    });
+    block.appendChild(button);
+  });
+
+  // 지금 읽는 절을 목차에 표시한다
+  var links = {};
+  document.querySelectorAll('.toc a').forEach(function (a) { links[decodeURIComponent(a.hash.slice(1))] = a; });
+  var headings = Array.prototype.slice.call(document.querySelectorAll('main h1[id], main h2[id], main h3[id]'));
+  function mark() {
+    var current = headings[0];
+    headings.forEach(function (h) { if (h.getBoundingClientRect().top < 120) current = h; });
+    Object.keys(links).forEach(function (id) { links[id].classList.remove('now'); });
+    if (current && links[current.id]) links[current.id].classList.add('now');
+  }
+  window.addEventListener('scroll', mark, { passive: true });
+  mark();
+
+  // 이 쪽에서 찾기: 절 단위로 찾아 목차 자리에 보여 준다
+  var input = document.querySelector('.search input');
+  var hits = document.querySelector('.hits');
+  var toc = document.querySelector('.toc');
+  var sections = headings.map(function (h) {
+    var text = '';
+    var node = h.nextElementSibling;
+    while (node && !/^H[123]$/.test(node.tagName)) { text += ' ' + node.textContent; node = node.nextElementSibling; }
+    return { id: h.id, title: h.childNodes[0].textContent.trim(), text: (h.textContent + text).toLowerCase(), raw: text };
+  });
+  input.addEventListener('input', function () {
+    var query = input.value.trim().toLowerCase();
+    if (!query) { hits.hidden = true; toc.hidden = false; return; }
+    var found = sections.filter(function (s) { return s.text.indexOf(query) !== -1; });
+    hits.textContent = '';
+    var summary = document.createElement('p');
+    summary.textContent = found.length ? '찾은 절 ' + found.length + '개' : '찾는 내용이 없습니다. 다른 낱말로 찾아 보세요.';
+    hits.appendChild(summary);
+    found.forEach(function (s) {
+      var a = document.createElement('a');
+      a.href = '#' + s.id;
+      a.textContent = s.title;
+      var at = s.raw.toLowerCase().indexOf(query);
+      if (at !== -1) {
+        var small = document.createElement('small');
+        small.textContent = '…' + s.raw.slice(Math.max(0, at - 20), at + 40).replace(/\s+/g, ' ') + '…';
+        a.appendChild(small);
+      }
+      hits.appendChild(a);
+    });
+    hits.hidden = false;
+    toc.hidden = true;
+  });
+})();
+
+</script>
+</body>
+</html>

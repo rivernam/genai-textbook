@@ -24,6 +24,7 @@
   :::탭 이름 ... :::          나란히 전환되는 탭. 이어서 쓰면 한 묶음이 된다
   :::결과 ... :::             실행 결과
   :::정답 ... :::             접히는 정답
+  :::힌트 ... :::             접히는 힌트
   :::주의 ... :::  :::보충 ... :::   강조 상자
   :::요점 ... :::             절 첫머리의 요점
 """
@@ -60,12 +61,13 @@ PARTS = [
 SIMPLE_BLOCKS = {
     '결과': '<div class="result" markdown="1">',
     '정답': '<details class="answer" markdown="1">\n<summary>정답 보기</summary>',
+    '힌트': '<details class="answer" markdown="1">\n<summary>힌트 보기</summary>',
     '풀이': '<details class="answer" markdown="1">\n<summary>풀이 보기</summary>',
     '주의': '<aside class="callout warn" markdown="1">',
     '보충': '<aside class="callout more" markdown="1">',
     '요점': '<div class="gist" markdown="1">',
 }
-CLOSERS = {'요점': '</div>', '결과': '</div>', '정답': '</details>', '풀이': '</details>', '주의': '</aside>', '보충': '</aside>',
+CLOSERS = {'요점': '</div>', '결과': '</div>', '정답': '</details>', '힌트': '</details>', '풀이': '</details>', '주의': '</aside>', '보충': '</aside>',
            '탭': '</div>', '예제': '</section>', '실습': '</section>'}
 
 
@@ -283,6 +285,9 @@ def chapter_label(path):
 
 
 def write_notebook(notebook, folder, name):
+    # 셀 id를 위치로 정해, 내용이 같으면 빌드할 때마다 같은 파일이 나오게 합니다(git diff를 줄이려고)
+    for index, cell in enumerate(notebook.cells):
+        cell['id'] = f'cell-{index:03d}'
     folder.mkdir(parents=True, exist_ok=True)
     nbformat.write(notebook, folder / name)
 
