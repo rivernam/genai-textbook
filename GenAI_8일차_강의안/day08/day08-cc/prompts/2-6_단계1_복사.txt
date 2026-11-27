@@ -1,0 +1,1 @@
+../day08-pack/agents 안의 report-writer.md와 compliance-reviewer.md를 .claude/agents/로 그대로 복사해 주세요. 내용은 바꾸지 마세요.

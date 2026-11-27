@@ -1,0 +1,1 @@
+.claude/settings.json의 맨 바깥(permissions와 같은 단계)에 있는 hooks에 PostToolUse, matcher "*", 명령 python tools/log_tool.py 한 덩어리를 더해 주세요. 이미 있는 PreToolUse는 그대로 두고, 다른 줄은 바꾸지 마세요.

@@ -1,0 +1,37 @@
+{
+  "model": "sonnet",
+  "permissions": {
+    "defaultMode": "default",
+    "allow": [
+      "PowerShell(python tools/*)",
+      "Bash(python tools/*)",
+      "PowerShell(python bench/*)",
+      "Bash(python bench/*)",
+      "Edit(./answers/**)",
+      "Edit(./out/**)"
+    ],
+    "deny": [
+      "Read(./data/**)",
+      "Edit(./data/**)",
+      "Read(./rules/**)",
+      "Edit(./rules/**)",
+      "Bash(rm *data*)",
+      "PowerShell(Remove-Item *data*)",
+      "Bash(rm *rules*)",
+      "PowerShell(Remove-Item *rules*)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python tools/log_tool.py"
+          }
+        ]
+      }
+    ]
+  }
+}

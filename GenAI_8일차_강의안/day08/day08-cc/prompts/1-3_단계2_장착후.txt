@@ -1,0 +1,2 @@
+MTG-2025-W04 회의록을 정리해서 out/m_after.md로 저장하고,
+python tools/check_minutes.py out/m_after.md MTG-2025-W04 결과를 보여 주세요.

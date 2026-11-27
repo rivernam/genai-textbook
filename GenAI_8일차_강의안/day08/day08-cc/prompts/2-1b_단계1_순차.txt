@@ -1,0 +1,1 @@
+ETCH 계열 챔버 여섯 개 각각의 2026년 상반기 월별 NG 비율을 구하고, 가장 나쁜 챔버 셋에 대해 사내 규정 문서를 찾아 대응 절차를 정리해 주세요. 월별 NG 비율은 runs 테이블에서 집계합니다(python tools/query_db.py, 계산은 python tools/calc.py). 결과는 out/ncr_seq.md로 저장해 주세요.

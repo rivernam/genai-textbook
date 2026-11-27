@@ -1,0 +1,4 @@
+방금 한 절차를 Skill로 저장해 주세요. .claude/skills/ranking-chamber-defects/SKILL.md 한 파일로 만듭니다.
+- 머리: name은 ranking-chamber-defects, description은 3인칭으로 무엇을 하는지와 언제 쓰는지(챔버 이름과 연월을 주고 결함 원인 · 많이 나온 결함을 물을 때)를 함께 적습니다.
+- 본문은 짧게 씁니다. 입력(챔버 · 연월, 없으면 되묻기), 방금 쓴 조회와 계산 명령, 표 양식, 마지막의 check_defects.py 검사를 담습니다.
+- Claude가 이미 아는 설명(SQL 문법 등)은 넣지 않고, 다른 파일은 만들지 않습니다.

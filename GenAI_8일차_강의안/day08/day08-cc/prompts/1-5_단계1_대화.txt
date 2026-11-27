@@ -1,0 +1,5 @@
+CVD-01 챔버의 2026-07 결함 원인 상위 3개를 표로 정리해 out/defect_CVD-01_2026-07.md로 저장해 주세요.
+- 결함 수는 defects의 defect_cnt를 runs와 이어 그 챔버 · 그 달 런만 더하고, 코드마다 결함이 나온 런 수도 집계합니다.
+- 표는 결함 코드 · 결함 수 · 런 수 · 비중(%) 네 열입니다. 비중은 그 달 결함 합계 대비이고 python tools/calc.py로 계산합니다.
+- 표 아래에 「그 달 런 N건 · NG M건」 한 줄을 runs에서 집계해 붙입니다.
+끝나면 python tools/check_defects.py out/defect_CVD-01_2026-07.md CVD-01 2026-07을 실행해 결과를 보여 주세요.

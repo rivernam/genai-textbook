@@ -1,0 +1,1 @@
+.claude/settings.json의 permissions.deny 목록 끝에 "Bash(python tools/query_db.py *)"와 "PowerShell(python tools/query_db.py *)" 두 줄을 더해 주세요. 다른 줄은 바꾸지 마세요.

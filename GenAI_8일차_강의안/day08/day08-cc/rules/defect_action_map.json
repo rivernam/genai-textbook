@@ -1,0 +1,51 @@
+[
+ {
+  "defect_code": "D-CONT",
+  "short": "이물",
+  "first_action": "AC-CLEAN",
+  "requires_recheck": "Y",
+  "priority": 2
+ },
+ {
+  "defect_code": "D-CRACK",
+  "short": "크랙",
+  "first_action": "AC-HOLD",
+  "requires_recheck": "Y",
+  "priority": 1
+ },
+ {
+  "defect_code": "D-LIFT",
+  "short": "들뜸",
+  "first_action": "AC-ADJUST",
+  "requires_recheck": "Y",
+  "priority": 2
+ },
+ {
+  "defect_code": "D-MARK",
+  "short": "마킹 불량",
+  "first_action": "AC-DOC",
+  "requires_recheck": "N",
+  "priority": 4
+ },
+ {
+  "defect_code": "D-SWEEP",
+  "short": "와이어 쓸림",
+  "first_action": "AC-ADJUST",
+  "requires_recheck": "Y",
+  "priority": 2
+ },
+ {
+  "defect_code": "D-VOID",
+  "short": "보이드",
+  "first_action": "AC-REPLACE",
+  "requires_recheck": "Y",
+  "priority": 1
+ },
+ {
+  "defect_code": "D-WARP",
+  "short": "휨",
+  "first_action": "AC-ESCAL",
+  "requires_recheck": "N",
+  "priority": 3
+ }
+]

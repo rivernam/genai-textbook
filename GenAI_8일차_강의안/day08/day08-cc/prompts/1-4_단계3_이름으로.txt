@@ -1,0 +1,1 @@
+/report-helper ETCH-04 2026-07 · out/manual.md로 저장해 주세요.

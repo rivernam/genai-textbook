@@ -1,0 +1,58 @@
+[
+ {
+  "code": "AC-CLEAN",
+  "short": "세정",
+  "steps": "장비 유휴 전환 → 이물 제거 → 시편 확인",
+  "minutes": 40,
+  "needs_approval": "N",
+  "owner": "조립기술팀"
+ },
+ {
+  "code": "AC-REPLACE",
+  "short": "교체",
+  "steps": "재고 확인 → 교체 → 시편 검증 → 이력 등록",
+  "minutes": 90,
+  "needs_approval": "Y",
+  "owner": "설비기술팀"
+ },
+ {
+  "code": "AC-ADJUST",
+  "short": "조정",
+  "steps": "현재값 기록 → 변경 → 시편 3매 확인",
+  "minutes": 35,
+  "needs_approval": "Y",
+  "owner": "조립기술팀"
+ },
+ {
+  "code": "AC-CALIB",
+  "short": "교정",
+  "steps": "표준기 확인 → 교정 → 성적서 등록",
+  "minutes": 60,
+  "needs_approval": "N",
+  "owner": "품질보증팀"
+ },
+ {
+  "code": "AC-HOLD",
+  "short": "보류",
+  "steps": "물량 격리 → 판정 요청 → 결과 통보",
+  "minutes": 20,
+  "needs_approval": "Y",
+  "owner": "품질보증팀"
+ },
+ {
+  "code": "AC-DOC",
+  "short": "문서",
+  "steps": "초안 → 검토 → 개정 등록",
+  "minutes": 120,
+  "needs_approval": "Y",
+  "owner": "지식관리팀"
+ },
+ {
+  "code": "AC-ESCAL",
+  "short": "이관",
+  "steps": "1차 정리 → 이관 요청 → 일정 협의",
+  "minutes": 30,
+  "needs_approval": "Y",
+  "owner": "파트장"
+ }
+]

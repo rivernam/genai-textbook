@@ -1,0 +1,1 @@
+저장한 뒤 python tools/check_report.py out/report_0704.md ETCH-04 2026-07로 검사하는 단계를 계획 끝에 넣어 주세요.

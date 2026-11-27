@@ -1,0 +1,36 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "교재",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8765",
+        "--bind",
+        "127.0.0.1",
+        "--directory",
+        "학습자료/교재"
+      ],
+      "port": 8765
+    },
+    {
+      "name": "노트북-확인",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "-m",
+        "jupyterlab",
+        "--no-browser",
+        "--ip",
+        "127.0.0.1",
+        "--port",
+        "8899",
+        "--ServerApp.port_retries=0",
+        "--IdentityProvider.token=local-check",
+        "--ServerApp.root_dir=학습자료/노트북"
+      ],
+      "port": 8899
+    }
+  ]
+}

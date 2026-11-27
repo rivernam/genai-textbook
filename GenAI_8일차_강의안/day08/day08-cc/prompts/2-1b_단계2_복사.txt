@@ -1,0 +1,1 @@
+../day08-pack/agents/ncr-researcher.md를 .claude/agents/로 그대로 복사해 주세요. 내용은 바꾸지 마세요.

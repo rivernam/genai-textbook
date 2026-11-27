@@ -1,0 +1,24 @@
+doc_id,type,title,equip,date,version,file
+PKG-MAN-001,매뉴얼,와이어 본더 캐필러리 점검,WB-01 ~ WB-05,2025-04-14,v1.0,PKG-MAN-001.md
+PKG-MAN-002,매뉴얼,와이어 본더 와이어 스풀 교체,WB-01 ~ WB-05,2025-09-02,v1.0,PKG-MAN-002.md
+PKG-MAN-003,매뉴얼,다이 본더 콜릿 점검,DB-01 ~ DB-04,2024-12-09,v1.0,PKG-MAN-003.md
+PKG-MAN-004,매뉴얼,몰딩 프레스 유압 점검,MOLD-01 ~ MOLD-03,2025-06-20,v1.0,PKG-MAN-004.md
+PKG-MAN-005,매뉴얼,레이저 마커 렌즈 청소,MARK-01 · MARK-02,2025-11-03,v1.0,PKG-MAN-005.md
+PKG-MAN-006,매뉴얼,백그라인더 휠 점검,BG-01 ~ BG-03,2025-02-17,v1.0,PKG-MAN-006.md
+PKG-MAN-007,매뉴얼,테스트 핸들러 소켓 점검,TEST-01 ~ TEST-06,2026-01-12,v1.0,PKG-MAN-007.md
+PKG-MAN-008,매뉴얼,레이저 마커 집진기 점검,MARK-01 · MARK-02,2024-10-28,v1.0,PKG-MAN-008.md
+PKG-EHS-001,안전규정,회전체 설비 작업 잠금,-,2025-08-11,v1.0,PKG-EHS-001.md
+PKG-EHS-002,안전규정,몰드 금형 고온 작업,-,2026-03-05,v1.0,PKG-EHS-002.md
+PKG-EHS-003,안전규정,레이저 설비 안전,-,2025-05-26,v1.0,PKG-EHS-003.md
+PKG-EHS-004,안전규정,이형제·세정제 취급,-,2024-11-18,v1.0,PKG-EHS-004.md
+PKG-EHS-005,안전규정,질소 라인 작업,-,2026-02-23,v1.0,PKG-EHS-005.md
+PKG-SOP-001,SOP,캐필러리 교체 절차,WB-01 ~ WB-05,2025-04-21,v1.0,PKG-SOP-001.md
+PKG-SOP-002,SOP,백그라인더 휠 교체 절차,BG-01 ~ BG-03,2025-08-18,v1.0,PKG-SOP-002.md
+PKG-SOP-003,SOP,몰드 금형 클리닝 주기 (구판),MOLD-01 ~ MOLD-03,2025-03-10,v1.0,PKG-SOP-003_v1.0.md
+PKG-SOP-003,SOP,몰드 금형 클리닝 주기 (개정판),MOLD-01 ~ MOLD-03,2026-06-02,v2.0,PKG-SOP-003_v2.0.md
+PKG-SOP-004,SOP,콜릿 교체 절차,DB-01 ~ DB-04,2025-01-15,v1.0,PKG-SOP-004.md
+PKG-SOP-005,SOP,테스트 소켓 교체 절차,TEST-01 ~ TEST-06,2026-01-19,v1.0,PKG-SOP-005.md
+PKG-NOTI-001,공지,소모품 재고 점검 안내,-,2026-08-04,v1.0,PKG-NOTI-001.md
+PKG-NOTI-002,공지,9월 정기 PM 일정,-,2026-08-25,v1.0,PKG-NOTI-002.md
+PKG-MTG-001,회의록,설비 정비 주간 회의,-,2026-08-12,v1.0,PKG-MTG-001.md
+PKG-MTG-002,회의록,레이저 마커 품질 회의,-,2026-09-09,v1.0,PKG-MTG-002.md

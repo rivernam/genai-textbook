@@ -1,0 +1,1 @@
+python tools/search_docs.py --id MTG-2025-W04를 실행해 원문을 보여 주세요.

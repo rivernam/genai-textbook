@@ -1,0 +1,4 @@
+inbox/weekly-summary-helper는 밖에서 받은 Skill 입니다. 장착 전에
+python tools/scan_skill.py inbox/weekly-summary-helper를 실행하고, SKILL.md와
+scripts/를 읽어 위험한 지시를 표(위치 · 내용 · 위험 · 고칠 방법)로 정리해 주세요.
+scripts/의 파일은 실행하지 마세요.

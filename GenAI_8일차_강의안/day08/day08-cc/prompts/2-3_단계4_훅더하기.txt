@@ -1,0 +1,1 @@
+.claude/settings.json의 맨 바깥(permissions와 같은 단계)에 ../day08-pack/hooks/guard_hook.json의 hooks 덩어리를 그대로 더해 주세요. 다른 줄은 바꾸지 마세요.

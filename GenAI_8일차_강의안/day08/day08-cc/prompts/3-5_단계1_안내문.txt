@@ -1,0 +1,1 @@
+mission_tables/guide_template.md 틀로 drafting-chamber-report의 사용 안내문을 써서 out/guide.md로 저장해 주세요.

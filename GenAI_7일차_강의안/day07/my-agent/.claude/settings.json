@@ -1,0 +1,22 @@
+{
+  "model": "sonnet",
+  "permissions": {
+    "defaultMode": "default",
+    "allow": [
+      "PowerShell(python tools/*)",
+      "Bash(python tools/*)",
+      "PowerShell(python bench/*)",
+      "Bash(python bench/*)",
+      "Write(./answers/**)",
+      "Edit(./answers/**)",
+      "Write(./out/**)",
+      "Edit(./out/**)"
+    ],
+    "deny": [
+      "Read(./data/**)",
+      "Edit(./data/**)",
+      "Read(./rules/**)",
+      "Edit(./rules/**)"
+    ]
+  }
+}

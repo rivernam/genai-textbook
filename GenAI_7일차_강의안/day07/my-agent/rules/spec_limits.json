@@ -1,0 +1,152 @@
+[
+ {
+  "product": "PKG-A100",
+  "item": "thickness",
+  "unit": "um",
+  "lower": 198.0,
+  "upper": 228.0,
+  "grade_a": 6.0,
+  "grade_b": 12.0,
+  "grade_basis": "가운데 값에서 벗어난 폭"
+ },
+ {
+  "product": "PKG-A200",
+  "item": "thickness",
+  "unit": "um",
+  "lower": 202.0,
+  "upper": 230.0,
+  "grade_a": 5.0,
+  "grade_b": 10.0,
+  "grade_basis": "가운데 값에서 벗어난 폭"
+ },
+ {
+  "product": "PKG-B300",
+  "item": "thickness",
+  "unit": "um",
+  "lower": 206.0,
+  "upper": 234.0,
+  "grade_a": 6.0,
+  "grade_b": 12.0,
+  "grade_basis": "가운데 값에서 벗어난 폭"
+ },
+ {
+  "product": "PKG-B310",
+  "item": "thickness",
+  "unit": "um",
+  "lower": 206.0,
+  "upper": 234.0,
+  "grade_a": 4.0,
+  "grade_b": 8.0,
+  "grade_basis": "가운데 값에서 벗어난 폭"
+ },
+ {
+  "product": "PKG-C500",
+  "item": "thickness",
+  "unit": "um",
+  "lower": 198.0,
+  "upper": 222.0,
+  "grade_a": 8.0,
+  "grade_b": 16.0,
+  "grade_basis": "가운데 값에서 벗어난 폭"
+ },
+ {
+  "product": "PKG-A100",
+  "item": "loop_height",
+  "unit": "um",
+  "lower": 155.0,
+  "upper": 175.0,
+  "grade_a": 4.0,
+  "grade_b": 8.0,
+  "grade_basis": "가운데 값에서 벗어난 폭"
+ },
+ {
+  "product": "PKG-A200",
+  "item": "loop_height",
+  "unit": "um",
+  "lower": 158.0,
+  "upper": 172.0,
+  "grade_a": 3.0,
+  "grade_b": 6.0,
+  "grade_basis": "가운데 값에서 벗어난 폭"
+ },
+ {
+  "product": "PKG-B300",
+  "item": "loop_height",
+  "unit": "um",
+  "lower": 160.0,
+  "upper": 180.0,
+  "grade_a": 5.0,
+  "grade_b": 10.0,
+  "grade_basis": "가운데 값에서 벗어난 폭"
+ },
+ {
+  "product": "PKG-B310",
+  "item": "loop_height",
+  "unit": "um",
+  "lower": 160.0,
+  "upper": 180.0,
+  "grade_a": 5.0,
+  "grade_b": 10.0,
+  "grade_basis": "가운데 값에서 벗어난 폭"
+ },
+ {
+  "product": "PKG-C500",
+  "item": "loop_height",
+  "unit": "um",
+  "lower": 150.0,
+  "upper": 185.0,
+  "grade_a": 6.0,
+  "grade_b": 12.0,
+  "grade_basis": "가운데 값에서 벗어난 폭"
+ },
+ {
+  "product": "PKG-A100",
+  "item": "tilt",
+  "unit": "deg",
+  "lower": 0.0,
+  "upper": 0.8,
+  "grade_a": 0.3,
+  "grade_b": 0.6,
+  "grade_basis": "측정값 그대로"
+ },
+ {
+  "product": "PKG-A200",
+  "item": "tilt",
+  "unit": "deg",
+  "lower": 0.0,
+  "upper": 0.7,
+  "grade_a": 0.25,
+  "grade_b": 0.5,
+  "grade_basis": "측정값 그대로"
+ },
+ {
+  "product": "PKG-B300",
+  "item": "tilt",
+  "unit": "deg",
+  "lower": 0.0,
+  "upper": 0.8,
+  "grade_a": 0.3,
+  "grade_b": 0.6,
+  "grade_basis": "측정값 그대로"
+ },
+ {
+  "product": "PKG-B310",
+  "item": "tilt",
+  "unit": "deg",
+  "lower": 0.0,
+  "upper": 0.6,
+  "grade_a": 0.2,
+  "grade_b": 0.4,
+  "grade_basis": "측정값 그대로"
+ },
+ {
+  "product": "PKG-C500",
+  "item": "tilt",
+  "unit": "deg",
+  "lower": 0.0,
+  "upper": 1.0,
+  "grade_a": 0.4,
+  "grade_b": 0.8,
+  "grade_basis": "측정값 그대로"
+ }
+]

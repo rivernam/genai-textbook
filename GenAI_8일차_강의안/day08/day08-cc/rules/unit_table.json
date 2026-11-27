@@ -1,0 +1,38 @@
+[
+ {
+  "from_unit": "mil",
+  "to_unit": "um",
+  "factor": 25.4,
+  "note": "1 mil = 25.4 μm"
+ },
+ {
+  "from_unit": "um",
+  "to_unit": "mil",
+  "factor": 0.03937008,
+  "note": "역환산"
+ },
+ {
+  "from_unit": "mm",
+  "to_unit": "um",
+  "factor": 1000,
+  "note": ""
+ },
+ {
+  "from_unit": "deg",
+  "to_unit": "mrad",
+  "factor": 17.4533,
+  "note": "각도를 밀리라디안으로"
+ },
+ {
+  "from_unit": "bar",
+  "to_unit": "psi",
+  "factor": 14.5038,
+  "note": "압력"
+ },
+ {
+  "from_unit": "gf",
+  "to_unit": "mN",
+  "factor": 9.80665,
+  "note": "본딩 하중"
+ }
+]
