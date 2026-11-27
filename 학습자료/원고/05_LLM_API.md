@@ -238,7 +238,7 @@ for name, options in cases.items():
 
 모델은 출력 토큰을 하나씩 생성해 이어 붙이므로(1장), 요청 하나가 몇 초씩 걸립니다. 그동안 요청을 보낸 프로그램은 계산하지 않고 응답을 기다리기만 합니다. 문의 100건을 한 건씩 차례로 보내면 이 대기 시간이 100번 더해집니다. 여러 요청을 차례로 기다리지 않고 한꺼번에 보내는 [[병렬 처리]](parallel requests)를 하면 대기 시간이 겹칩니다. 요청 하나가 3초 걸리고 한 번에 8건까지 병렬로 보내면, 100건은 약 300초가 아니라 약 40초(100 ÷ 8 × 3초)에 끝납니다. 이 계산은 서버가 여러 요청을 함께 처리해 요청 하나의 응답 시간이 그대로라고 가정한 것입니다. 처리 용량이 작은 서버에서는 요청이 서버에서 차례를 기다리므로 요청마다 응답 시간이 늘어납니다.
 
-파이썬에서는 `concurrent.futures.ThreadPoolExecutor`로 요청을 병렬로 보냅니다. 스레드는 한 프로그램 안에서 따로 실행되는 작업 흐름입니다. 파이썬은 한 번에 스레드 하나만 파이썬 코드를 실행하지만, 한 스레드가 응답을 기다리는 동안 다른 스레드가 다음 요청을 보낼 수 있습니다. `with ThreadPoolExecutor(max_workers=8) as pool:` 안에서 `pool.map(함수, 목록)`을 호출하면, 진행 중인 요청이 8건이 될 때까지 보내고 하나가 끝날 때마다 다음 요청을 보냅니다. 결과는 요청이 끝난 순서와 상관없이 입력 순서대로 돌려줍니다.
+파이썬에서는 `concurrent.futures.ThreadPoolExecutor`로 요청을 병렬로 보냅니다. 스레드는 한 프로그램 안에서 따로 실행되는 작업 흐름입니다. 파이썬은 한 번에 스레드 하나만 파이썬 코드를 실행하지만, 한 스레드가 응답을 기다리는 동안 다른 스레드가 다음 요청을 보낼 수 있습니다. `with ThreadPoolExecutor(max_workers=8) as pool:` 안에서 `pool.map(함수, 목록)`을 호출하면, 진행 중인 요청이 8건이 될 때까지 보내고 하나가 끝날 때마다 다음 요청을 보냅니다. 결과는 요청이 끝난 순서와 상관없이 입력 순서대로 돌려줍니다. 문의 여러 건을 병렬로 보내고 결과를 저장하는 코드는 관통 프로젝트 2단계(6장)에서 작성합니다.
 
 ### 한 번에 보낼 요청 수
 
@@ -332,7 +332,7 @@ print('예측:', my_guess)
 
 - 429를 두 번 받은 뒤 성공하면 "완료", 세 번 모두 429면 "실패", 404는 한 번만 보내고 "실패"입니다.
 - 종료 이유가 `end`가 아니면 응답 텍스트가 있어도 "확인 필요"입니다.
-- 잘린 응답의 결과 dict에 `input_tokens` 50, `output_tokens` 2000, 0보다 큰 `cost`가 들어 있습니다.
+- 잘린 응답의 결과 dict에 `input_tokens` 50, `output_tokens` 2000, 0보다 큰 `cost`, 응답에 적힌 모델 이름 `model`('mock')이 들어 있습니다. 모델 이름은 6장에서 결과를 저장할 때 씁니다.
 
 :::힌트
 힌트 1. `for attempt in range(tries):` 안에서 `send()`를 부르고, `except llm.CallError as error:`에서 `error.retryable`이 거짓이면 바로 결과를 돌려줍니다.
@@ -346,9 +346,9 @@ SYSTEM = '너는 반도체 후공정 라인의 문의에 답하는 도우미다.
 
 def answer(question, tier='소형', tries=3, send=llm.send, sleep=time.sleep):
     """질문 하나에 답합니다. 돌려주는 dict의 키: question, status('완료', '확인 필요', '실패'),
-    answer, input_tokens, output_tokens, cost, reason"""
+    answer, input_tokens, output_tokens, cost, model(응답에 적힌 실제 모델 이름), reason"""
     return {'question': question, 'status': '실패', 'answer': '', 'input_tokens': 0,
-            'output_tokens': 0, 'cost': 0.0, 'reason': '작성하지 않음'}  # TODO
+            'output_tokens': 0, 'cost': 0.0, 'model': '', 'reason': '작성하지 않음'}  # TODO
 
 
 def mock_send(results):
@@ -389,9 +389,9 @@ SYSTEM = '너는 반도체 후공정 라인의 문의에 답하는 도우미다.
 
 def answer(question, tier='소형', tries=3, send=llm.send, sleep=time.sleep):
     """질문 하나에 답합니다. 돌려주는 dict의 키: question, status('완료', '확인 필요', '실패'),
-    answer, input_tokens, output_tokens, cost, reason"""
+    answer, input_tokens, output_tokens, cost, model(응답에 적힌 실제 모델 이름), reason"""
     result = {'question': question, 'status': '실패', 'answer': '', 'input_tokens': 0,
-              'output_tokens': 0, 'cost': 0.0, 'reason': ''}
+              'output_tokens': 0, 'cost': 0.0, 'model': '', 'reason': ''}
     for attempt in range(tries):
         try:
             reply = send([{'role': 'user', 'content': question}], system=SYSTEM, model=tier, max_tokens=2000)
@@ -403,7 +403,7 @@ def answer(question, tier='소형', tries=3, send=llm.send, sleep=time.sleep):
                 sleep(2 ** attempt + random.random())  # 1초, 2초 … 백오프에 지터를 더합니다
             continue
         result.update(answer=reply.text, input_tokens=reply.input_tokens, output_tokens=reply.output_tokens,
-                      cost=cost(reply, tier), reason=reply.stop_reason,
+                      cost=cost(reply, tier), model=reply.model, reason=reply.stop_reason,
                       status='완료' if reply.stop_reason == 'end' else '확인 필요')
         return result
     return result
