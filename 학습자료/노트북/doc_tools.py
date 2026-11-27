@@ -60,7 +60,7 @@ _DF = Counter(term for counts in _COUNTS.values() for term in counts)
 
 
 def _score(query_terms, doc_id, k1=1.2, b=0.75):
-    """BM25 점수(9장에서 설명합니다). 드문 낱말이 많이 겹칠수록 높습니다"""
+    """BM25 점수(7장에서 설명합니다). 드문 낱말이 많이 겹칠수록 높습니다"""
     counts, total = _COUNTS[doc_id], 0.0
     for term in set(query_terms):
         if term in counts:
